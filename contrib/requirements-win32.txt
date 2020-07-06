@@ -1,0 +1,3 @@
+electrumsv-node
+plyvel-win32
+electrumx
