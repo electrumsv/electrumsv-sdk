@@ -1,5 +1,3 @@
 {
-    "depends_dir": "G:\\electrumsv-sdk\\sdk_depends",
-    "depends_dir_electrumx": "G:\\electrumsv-sdk\\sdk_depends\\electrumx",
-    "depends_dir_electrumx_data": "G:\\electrumsv-sdk\\sdk_depends\\electrumx_data"
+    "comment": "see app.Config. This is only a placeholder until the app is run for the first time"
 }

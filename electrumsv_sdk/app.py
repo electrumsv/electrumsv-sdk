@@ -11,31 +11,26 @@ sys.argv and find the relevant args to feed to the appropriate ArgumentParser in
 """
 
 import argparse
-import textwrap
 from argparse import RawTextHelpFormatter
+import platform
 from sys import argv
 import sys
-import platform
-from typing import List, Dict
+import textwrap
+from typing import List
 
-# subcommands_map -> cmd_name: ArgumentParser (parent or children)
-subcommands_map: Dict[str, argparse.ArgumentParser] = {}
-
-# subcommands_args_map -> cmd_name: list of arguments
-subcommands_args_map: Dict[str, List[str]] = {}
-
-# parser_args_map -> cmd_name: list of parsed arguments
-parsed_args_map = {}
+from .config import load_config
+from .install_dependencies import install_dependencies
 
 
 def register_subcommands(subparsers: List[argparse.ArgumentParser]):
+    config = load_config()
     for cmd in subparsers:
         cmd_name = cmd.prog.split(sep=" ")[1]
-        subcommands_map.update({cmd_name: cmd})
+        config.subcmd_map.update({cmd_name: cmd})
 
     # initialize subcommands_args_map with empty arg list
-    for cmd_name in subcommands_map.keys():
-        subcommands_args_map[cmd_name] = []
+    for cmd_name in config.subcmd_map.keys():
+        config.subcmd_raw_args_map[cmd_name] = []
 
 
 def manual_argparsing(args):
@@ -69,44 +64,29 @@ def manual_argparsing(args):
 
 
 def update_subcommands_args_map(args, subcommand_indices):
+    config = load_config()
     for cmd_name in subcommand_indices:
         for index in subcommand_indices[cmd_name]:
-            subcommands_args_map[cmd_name].append(args[index])
+            config.subcmd_raw_args_map[cmd_name].append(args[index])
 
 
 def feed_to_argparsers(args, subcommand_indices):
     """feeds relevant arguments to each child (or parent) ArgumentParser"""
+    config = load_config()
     update_subcommands_args_map(args, subcommand_indices)
 
-    for cmd_name in subcommands_map:
-        parsed_args = subcommands_map[cmd_name].parse_args(
-            args=subcommands_args_map[cmd_name]
+    for cmd_name in config.subcmd_map:
+        parsed_args = config.subcmd_map[cmd_name].parse_args(
+            args=config.subcmd_raw_args_map[cmd_name]
         )
-        parsed_args_map[cmd_name] = parsed_args
+        config.subcmd_parsed_args_map[cmd_name] = parsed_args
         print(f"{cmd_name}: {parsed_args}")
 
 
-
-def main():
-    """
-    Command-line interface for the ElectrumSV Software Development Kit
-
-    The argparser module does not seem to naturally support the use of
-    multiple subcommands simultaneously (which we need to support). This is handled
-    manually by parsing sys.argv and feeding the correct options to the correct
-    ArgumentParser instance (for the given subcommand). So in the end we get both
-    a) the help menu interface via built-in argparser module
-    b) the ability to string multiple subcommands + optional args together into a single cli
-    command.
-    """
-    print("ElectrumSV Software Development Kit")
-    print(
-        f"-Python version {sys.version_info.major}.{sys.version_info.minor}."
-        f"{sys.version_info.micro}-{platform.architecture()[0]}"
-    )
-    print()
-
-    help_text = textwrap.dedent("""
+def setup_argparser():
+    config = load_config()
+    help_text = textwrap.dedent(
+        """
 
         codes:
         ------
@@ -121,36 +101,33 @@ def main():
         > electrumsv-sdk --run full-stack or
         > electrumsv-sdk --run esv-ex-node
         will run electrumsv + electrumx + electrumsv-node (both have equivalent effect)
-        
+
         > electrumsv-sdk --run esv-idx-node
         will run electrumsv + electrumsv-indexer + electrumsv-node
-        
+
         dependencies are installed on-demand at run-time
-        
+
         specify which local or remote (git repo) and branch for each component with the 
         subcommands below. ('repo' can take the form: 
         - repo=https://github.com/electrumsv/electrumsv.git or 
         - repo=G:/electrumsv for a local dev repo)
-        
+
         > electrumsv-sdk --run full-stack electrumsv repo=G:/electrumsv branch=develop
-        
+
         all arguments are optional
-        """)
-    parser = argparse.ArgumentParser(description=help_text, formatter_class=RawTextHelpFormatter)
+        """
+    )
+    parser = argparse.ArgumentParser(
+        description=help_text, formatter_class=RawTextHelpFormatter
+    )
     parser.add_argument(
         "--run",
         default="",
         type=str,
-        choices=['full-stack', 'node', 'ex-node', 'esv-ex-node', 'esv-idx-node'],
-        help=""
+        choices=["full-stack", "node", "ex-node", "esv-ex-node", "esv-idx-node"],
+        help="",
     )
-    parser.add_argument(
-        "--dapp",
-        default="",
-        dest="dapp_path",
-        type=str,
-        help=""
-    )
+    parser.add_argument("--dapp", default="", dest="dapp_path", type=str, help="")
 
     subparsers = parser.add_subparsers(help="subcommand", required=False)
 
@@ -216,7 +193,32 @@ def main():
         help="electrumsv_node git repo branch (optional)",
     )
     subparsers_list = [electrumsv, electrumx, electrumsv_indexer, electrumsv_node]
-    subcommands_map["electrumsv_sdk"] = parser  # register parent ArgumentParser
+    config.subcmd_map["electrumsv_sdk"] = parser  # register parent ArgumentParser
     register_subcommands(subparsers_list)
-    manual_argparsing(argv)  # updates global parsed_args_map
-    # print(parsed_args_map)
+
+
+def main():
+    """
+    Command-line interface for the ElectrumSV Software Development Kit
+
+    The argparser module does not seem to naturally support the use of
+    multiple subcommands simultaneously (which we need to support). This is handled
+    manually by parsing sys.argv and feeding the correct options to the correct
+    ArgumentParser instance (for the given subcommand). So in the end we get both
+    a) the help menu interface via built-in argparser module
+    b) the ability to string multiple subcommands + optional args together into a single cli
+    command.
+
+    Note: all configuration is saved to / loaded from config.json and each function accesses it
+    by dependency-injection.
+    """
+    print("ElectrumSV Software Development Kit")
+    print(
+        f"-Python version {sys.version_info.major}.{sys.version_info.minor}."
+        f"{sys.version_info.micro}-{platform.architecture()[0]}"
+    )
+    print()
+
+    setup_argparser()
+    manual_argparsing(argv)  # updates global 'Config.subcmd_parsed_args_map'
+    install_dependencies()
