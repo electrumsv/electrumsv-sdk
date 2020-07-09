@@ -18,12 +18,12 @@ import sys
 import textwrap
 from typing import List
 
-from .config import load_config
+from .config import load_config, Config
 from .handle_dependencies import handle_dependencies
 
 
 def register_subcommands(subparsers: List[argparse.ArgumentParser]):
-    config = load_config()
+    config = Config
     for cmd in subparsers:
         cmd_name = cmd.prog.split(sep=" ")[1]
         config.subcmd_map.update({cmd_name: cmd})
@@ -37,7 +37,7 @@ def manual_argparsing(args):
     """manually iterate through sys.argv and feed arguments to either:
     a) parent ArgumentParser
     b) child ArgumentParsers (aka subcommands)"""
-    config = load_config()
+    config = Config
     args.pop(0)
 
     # subcommand_indices -> cmd_name: [index_arg1, index_arg2]
@@ -64,7 +64,7 @@ def manual_argparsing(args):
 
 
 def update_subcommands_args_map(args, subcommand_indices):
-    config = load_config()
+    config = Config
     for cmd_name in subcommand_indices:
         for index in subcommand_indices[cmd_name]:
             config.subcmd_raw_args_map[cmd_name].append(args[index])
@@ -72,7 +72,7 @@ def update_subcommands_args_map(args, subcommand_indices):
 
 def feed_to_argparsers(args, subcommand_indices):
     """feeds relevant arguments to each child (or parent) ArgumentParser"""
-    config = load_config()
+    config = Config
     update_subcommands_args_map(args, subcommand_indices)
 
     for cmd_name in config.subcmd_map:
@@ -84,7 +84,7 @@ def feed_to_argparsers(args, subcommand_indices):
 
 
 def setup_argparser():
-    config = load_config()
+    config = Config
     help_text = textwrap.dedent(
         """
 

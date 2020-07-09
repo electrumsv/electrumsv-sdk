@@ -7,9 +7,8 @@ from pathlib import Path
 # most of the directories will be hard-coded relative to the position of this file
 # I'd rather not over-complicate things by trying to give everything a variable name
 # and making it easy to refactor... Can do that as/when it is deemed necessary.
-MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
-with open(Path("contrib").joinpath("config.json").__str__(), 'r') as f:
-    config = json.loads(f.read())
+from electrumsv_sdk.config import Config
+
 
 def create_if_not_exist(path):
     path = Path(path)
@@ -24,26 +23,34 @@ def create_if_not_exist(path):
             os.mkdir(cur_dir)
             print(f"created '{cur_dir}' successfully")
 
+
+def install_electrumsv():
+    # Note - this is only so that it works "out-of-the-box". But for development
+    # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
+    depends_dir_electrumsv_req = Config.depends_dir_electrumsv.joinpath(
+        'contrib').joinpath('deterministic-build').joinpath('requirements.txt')
+    depends_dir_electrumsv_req_bin = Config.depends_dir_electrumsv.joinpath(
+        'contrib').joinpath('deterministic-build').joinpath('requirements-binaries.txt')
+
+    create_if_not_exist(Config.depends_dir)
+    create_if_not_exist(Config.depends_dir_electrumsv)
+
+    os.chdir(Config.depends_dir.__str__())
+    if not Config.depends_dir_electrumsv.exists():
+        subprocess.run(f"git clone https://github.com/electrumsv/electrumsv.git", shell=True)
+        subprocess.run(f"{sys.executable} -m pip install -r {depends_dir_electrumsv_req}")
+        subprocess.run(f"{sys.executable} -m pip install -r {depends_dir_electrumsv_req_bin}")
+
+
 def install_electrumx():
-    depends_dir = Path(MODULE_DIR).parent.joinpath("sdk_depends")
-    depends_dir_electrumx = depends_dir.joinpath("electrumx")
-    depends_dir_electrumx_data = depends_dir.joinpath("electrumx_data")
-    electrumx_server_exe = depends_dir_electrumx.joinpath('electrumx').joinpath('electrumx_server')
+    electrumx_server_exe = Config.depends_dir_electrumx.joinpath('electrumx').joinpath('electrumx_server')
 
-    with open(Path("contrib").joinpath("config.json").__str__(), 'r+') as f:
-        config = json.loads(f.read())
-        config['depends_dir'] = depends_dir.__str__()
-        config['depends_dir_electrumx'] = depends_dir_electrumx.__str__()
-        config['depends_dir_electrumx_data'] = depends_dir_electrumx_data.__str__()
-        f.seek(0)
-        f.write(json.dumps(config, indent=4))
+    create_if_not_exist(Config.depends_dir.__str__())
+    create_if_not_exist(Config.depends_dir_electrumx.__str__())
+    create_if_not_exist(Config.depends_dir_electrumx_data.__str__())
 
-    create_if_not_exist(depends_dir.__str__())
-    create_if_not_exist(depends_dir_electrumx.__str__())
-    create_if_not_exist(depends_dir_electrumx_data.__str__())
-
-    os.chdir(depends_dir.__str__())
-    if not depends_dir_electrumx.exists():
+    os.chdir(Config.depends_dir.__str__())
+    if not Config.depends_dir_electrumx.exists():
         subprocess.run(f"git clone https://github.com/kyuupichan/electrumx.git", shell=True)
 
     def make_bat_file(filename, electrumx_env_vars):
@@ -69,7 +76,7 @@ def install_electrumx():
             f.write('exit')
 
     electrumx_env_vars = {
-        'DB_DIRECTORY': config['depends_dir_electrumx_data'],
+        'DB_DIRECTORY': Config.depends_dir_electrumx_data,
         'DAEMON_URL': "http://rpcuser:rpcpassword@127.0.0.1:18332",
         'DB_ENGINE': 'leveldb',
         'SERVICES': "tcp://:51001,rpc://",
@@ -86,21 +93,5 @@ def install_electrumx():
     elif sys.platform in ['linux', 'darwin']:
         make_bash_file("electrumx.sh", electrumx_env_vars)
 
-def install_electrumsv():
-    # Note - this is only so that it works "out-of-the-box". But for development
-    # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
-    depends_dir = Path(MODULE_DIR).parent.joinpath("sdk_depends")
-    depends_dir_electrumsv = depends_dir.joinpath("electrumsv")
-    depends_dir_electrumsv_req = depends_dir_electrumsv.joinpath(
-        'contrib').joinpath('deterministic-build').joinpath('requirements.txt')
-    depends_dir_electrumsv_req_bin = depends_dir_electrumsv.joinpath(
-        'contrib').joinpath('deterministic-build').joinpath('requirements-binaries.txt')
-
-    create_if_not_exist(depends_dir)
-    create_if_not_exist(depends_dir_electrumsv)
-
-    os.chdir(depends_dir.__str__())
-    if not depends_dir_electrumsv.exists():
-        subprocess.run(f"git clone https://github.com/electrumsv/electrumsv.git", shell=True)
-        subprocess.run(f"{sys.executable} -m pip install -r {depends_dir_electrumsv_req}")
-        subprocess.run(f"{sys.executable} -m pip install -r {depends_dir_electrumsv_req_bin}")
+def install_electrumsv_node():
+    subprocess.run(f"{sys.executable} -m pip install electrumsv-node", shell=True, check=True)

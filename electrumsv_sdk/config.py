@@ -17,21 +17,22 @@ class Config:
     at the start of any dependent functions and if modified should write the updated
     config back to the file.
     """
+
     # package names
-    ELECTRUMSV_SDK = 'electrumsv_sdk'
-    ELECTRUMSV = 'electrumsv'
-    ELECTRUMX = 'electrumx'
-    ELECTRUMSV_INDEXER = 'electrumsv_indexer'
-    ELECTRUMSV_NODE = 'electrumsv_node'
+    ELECTRUMSV_SDK = "electrumsv_sdk"
+    ELECTRUMSV = "electrumsv"
+    ELECTRUMX = "electrumx"
+    ELECTRUMSV_INDEXER = "electrumsv_indexer"
+    ELECTRUMSV_NODE = "electrumsv_node"
 
     subcmd_map: Dict[str, argparse.ArgumentParser] = {}  # cmd_name: ArgumentParser
     subcmd_raw_args_map: Dict[str, List[str]] = {}  # cmd_name: raw arguments
     subcmd_parsed_args_map = {}  # cmd_name: parsed arguments
 
-    depends_dir = Path(MODULE_DIR).joinpath("electrumsv-sdk").joinpath("sdk_depends")
-    depends_dir_electrumx = (Path(MODULE_DIR).joinpath("electrumsv-sdk").joinpath("electrumx"))
-    depends_dir_electrumx_data = (Path(MODULE_DIR).joinpath("electrumsv-sdk")
-        .joinpath("electrumx_data"))
+    depends_dir = Path(MODULE_DIR).parent.joinpath("sdk_depends")
+    depends_dir_electrumsv = depends_dir.joinpath("electrumsv")
+    depends_dir_electrumx = depends_dir.joinpath("electrumx")
+    depends_dir_electrumx_data = depends_dir.joinpath("electrumx_data")
 
     required_dependencies_set: Set[str] = set()
 
@@ -42,12 +43,20 @@ class Config:
             setattr(config_instance, key, val)
         return config_instance
 
+    @classmethod
+    def to_dict(cls,):
+        config_dict = {}
+        for key, val in cls.__dict__.items():
+            config_dict[key] = val
+        return config_dict
+
 
 def load_config() -> Config:
     config_path = Path(MODULE_DIR).joinpath("config.json")
     with open(config_path.__str__(), "r") as f:
         config = json.loads(f.read())
     return Config.from_dict(config)
+
 
 def save_config(config: Config):
     """completely overwrites config with new config json"""
