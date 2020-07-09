@@ -16,6 +16,12 @@ class Config:
     at the start of any dependent functions and if modified should write the updated
     config back to the file.
     """
+    ELECTRUMSV_SDK = 'electrumsv_sdk'
+    ELECTRUMSV = 'electrumsv'
+    ELECTRUMX = 'electrumx'
+    ELECTRUMSV_INDEXER = 'electrumsv_indexer'
+    ELECTRUMSV_NODE = 'electrumsv_node'
+
     subcmd_map: Dict[str, argparse.ArgumentParser] = {}  # cmd_name: ArgumentParser
     subcmd_raw_args_map: Dict[str, List[str]] = {}  # cmd_name: raw arguments
     subcmd_parsed_args_map = {}  # cmd_name: parsed arguments

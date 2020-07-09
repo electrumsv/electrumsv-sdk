@@ -19,7 +19,7 @@ import textwrap
 from typing import List
 
 from .config import load_config
-from .install_dependencies import install_dependencies
+from .handle_dependencies import handle_dependencies
 
 
 def register_subcommands(subparsers: List[argparse.ArgumentParser]):
@@ -37,18 +37,18 @@ def manual_argparsing(args):
     """manually iterate through sys.argv and feed arguments to either:
     a) parent ArgumentParser
     b) child ArgumentParsers (aka subcommands)"""
+    config = load_config()
     args.pop(0)
 
     # subcommand_indices -> cmd_name: [index_arg1, index_arg2]
     subcommand_indices = {}
 
-    cur_cmd_name = "electrumsv_sdk"
+    cur_cmd_name = config.ELECTRUMSV_SDK
+    subcommand_indices[cur_cmd_name] = []
     for index, arg in enumerate(args):
         # parent ArgumentParser
-        if (
-            arg.startswith("-") or arg.startswith("-")
-        ) and cur_cmd_name == "electrumsv_sdk":
-            subcommand_indices[cur_cmd_name] = [index]
+        if arg.startswith("--") and cur_cmd_name == "electrumsv_sdk":
+            subcommand_indices[cur_cmd_name].append(index)
 
         # child ArgumentParser (aka a subcommand)
         if not arg.startswith("-"):  # new subcommand
@@ -80,7 +80,7 @@ def feed_to_argparsers(args, subcommand_indices):
             args=config.subcmd_raw_args_map[cmd_name]
         )
         config.subcmd_parsed_args_map[cmd_name] = parsed_args
-        print(f"{cmd_name}: {parsed_args}")
+        # print(f"{cmd_name}: {parsed_args}")
 
 
 def setup_argparser():
@@ -98,11 +98,11 @@ def setup_argparser():
         dependencies of electrumsv as of July 2020.
 
         examples:
-        > electrumsv-sdk --run full-stack or
-        > electrumsv-sdk --run esv-ex-node
+        > electrumsv-sdk --full-stack or
+        > electrumsv-sdk --esv-ex-node
         will run electrumsv + electrumx + electrumsv-node (both have equivalent effect)
 
-        > electrumsv-sdk --run esv-idx-node
+        > electrumsv-sdk --esv-idx-node
         will run electrumsv + electrumsv-indexer + electrumsv-node
 
         dependencies are installed on-demand at run-time
@@ -112,7 +112,7 @@ def setup_argparser():
         - repo=https://github.com/electrumsv/electrumsv.git or 
         - repo=G:/electrumsv for a local dev repo)
 
-        > electrumsv-sdk --run full-stack electrumsv repo=G:/electrumsv branch=develop
+        > electrumsv-sdk --full-stack electrumsv repo=G:/electrumsv branch=develop
 
         all arguments are optional
         """
@@ -121,18 +121,36 @@ def setup_argparser():
         description=help_text, formatter_class=RawTextHelpFormatter
     )
     parser.add_argument(
-        "--run",
-        default="",
-        type=str,
-        choices=["full-stack", "node", "ex-node", "esv-ex-node", "esv-idx-node"],
-        help="",
+        "--full-stack", action="store_true", help="",
     )
-    parser.add_argument("--dapp", default="", dest="dapp_path", type=str, help="")
+    parser.add_argument(
+        "--node", action="store_true", help="",
+    )
+    parser.add_argument(
+        "--ex-node", action="store_true", help="",
+    )
+    parser.add_argument(
+        "--esv-ex-node", action="store_true", help="",
+    )
+    parser.add_argument(
+        "--esv-idx-node", action="store_true", help="",
+    )
+
+    parser.add_argument(
+        "--extapp",
+        default="",
+        dest="extapp_path",
+        type=str,
+        help="path to 3rd party applications. The 'extapp' flag can be specified multiple times. "
+             "For electrumsv 'daemon apps' please see electrumsv subcommand help menu",
+    )
 
     subparsers = parser.add_subparsers(help="subcommand", required=False)
 
     # ELECTRUMSV
-    electrumsv = subparsers.add_parser("electrumsv", help="specify repo and branch")
+    electrumsv = subparsers.add_parser(
+        config.ELECTRUMSV, help="specify repo and branch"
+    )
     electrumsv.add_argument(
         "-repo",
         type=str,
@@ -143,9 +161,16 @@ def setup_argparser():
     electrumsv.add_argument(
         "-branch", type=str, default="", help="electrumsv git repo branch (optional)",
     )
+    electrumsv.add_argument(
+        "-dapp",
+        default="",
+        dest="dapp_path",
+        type=str,
+        help="load and launch a daemon app plugin on the electrumsv daemon",
+    )
 
     # ELECTRUMX
-    electrumx = subparsers.add_parser("electrumx", help="specify repo and branch")
+    electrumx = subparsers.add_parser(config.ELECTRUMX, help="specify repo and branch")
     electrumx.add_argument(
         "-repo",
         type=str,
@@ -159,7 +184,7 @@ def setup_argparser():
 
     # ELECTRUMSV-INDEXER
     electrumsv_indexer = subparsers.add_parser(
-        "electrumsv_indexer", help="specify repo and branch"
+        config.ELECTRUMSV_INDEXER, help="specify repo and branch"
     )
     electrumsv_indexer.add_argument(
         "-repo",
@@ -177,7 +202,7 @@ def setup_argparser():
 
     # ELECTRUMSV-NODE
     electrumsv_node = subparsers.add_parser(
-        "electrumsv_node", help="specify repo and branch"
+        config.ELECTRUMSV_NODE, help="specify repo and branch"
     )
     electrumsv_node.add_argument(
         "-repo",
@@ -193,7 +218,7 @@ def setup_argparser():
         help="electrumsv_node git repo branch (optional)",
     )
     subparsers_list = [electrumsv, electrumx, electrumsv_indexer, electrumsv_node]
-    config.subcmd_map["electrumsv_sdk"] = parser  # register parent ArgumentParser
+    config.subcmd_map[config.ELECTRUMSV_SDK] = parser  # register parent ArgumentParser
     register_subcommands(subparsers_list)
 
 
@@ -221,4 +246,4 @@ def main():
 
     setup_argparser()
     manual_argparsing(argv)  # updates global 'Config.subcmd_parsed_args_map'
-    install_dependencies()
+    handle_dependencies()
