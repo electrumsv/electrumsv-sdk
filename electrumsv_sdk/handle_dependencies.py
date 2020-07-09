@@ -79,10 +79,19 @@ class Handlers:
             )
 
         if parsed_args.repo == "":
-            print("default repo for electrumsv")
+            parsed_args.repo = "https://github.com/electrumsv/electrumsv.git"
+            print(f"-repo (default) = {parsed_args.repo}")
+        elif parsed_args.repo.startswith("https://"):
+            print(f"-repo (url) = {parsed_args.repo}")
+        else:
+            print(f"-repo (local) = {parsed_args.repo}")
 
         if parsed_args.branch == "":
-            print("default branch for electrumsv")
+            print("-default branch")
+        else:
+            print(f"-branch = {parsed_args.branch}")
+
+
 
     @classmethod
     def handle_electrumx_args(cls, parsed_args):
@@ -94,25 +103,17 @@ class Handlers:
         print(f"{config.ELECTRUMX} is required")
 
         if parsed_args.repo == "":
-            print("default repo for electrumx")
+            parsed_args.repo = "https://github.com/kyuupichan/electrumx.git"
+            print(f"-repo (default) = {parsed_args.repo}")
+        elif parsed_args.repo.startswith("https://"):
+            print(f"-repo (url) = {parsed_args.repo}")
+        else:
+            print(f"-repo (local) = {parsed_args.repo}")
 
         if parsed_args.branch == "":
-            print("default branch for electrumx")
-
-    @classmethod
-    def handle_electrumsv_indexer_args(cls, parsed_args):
-        # print("handle_electrumsv_indexer_args")
-        config = load_config()
-        if not config.ELECTRUMSV_INDEXER in config.required_dependencies_set:
-            print(f"{config.ELECTRUMSV_INDEXER} not required")
-            return
-        print(f"{config.ELECTRUMSV_INDEXER} is required")
-
-        if parsed_args.repo == "":
-            print("default repo for electrumsv indexer")
-
-        if parsed_args.branch == "":
-            print("default branch for electrumsv indexer")
+            print("-default branch")
+        else:
+            print(f"-branch = {parsed_args.branch}")
 
     @classmethod
     def handle_electrumsv_node_args(cls, parsed_args):
@@ -124,10 +125,42 @@ class Handlers:
         print(f"{config.ELECTRUMSV_NODE} is required")
 
         if parsed_args.repo == "":
-            print("default repo for electrumsv node")
+            parsed_args.repo = "https://github.com/electrumsv/electrumsv_node.git"
+            print(f"-repo (default) = {parsed_args.repo}")
+        elif parsed_args.repo.startswith("https://"):
+            print(f"-repo (url) = {parsed_args.repo}")
+        else:
+            print(f"-repo (local) = {parsed_args.repo}")
 
         if parsed_args.branch == "":
-            print("default branch for electrumsv node")
+            print("-default branch")
+        else:
+            print(f"-branch = {parsed_args.branch}")
+
+
+    @classmethod
+    def handle_electrumsv_indexer_args(cls, parsed_args):
+        # print("handle_electrumsv_indexer_args")
+        config = load_config()
+        if not config.ELECTRUMSV_INDEXER in config.required_dependencies_set:
+            print(f"{config.ELECTRUMSV_INDEXER} not required")
+            return
+
+        print(f"{config.ELECTRUMSV_INDEXER} is required")
+        raise NotImplementedError("electrumsv_indexer installation is not supported yet.")
+
+        if parsed_args.repo == "":
+            parsed_args.repo = "????"
+            print(f"-repo (default) = {parsed_args.repo}")
+        elif parsed_args.repo.startswith("https://"):
+            print(f"-repo (url) = {parsed_args.repo}")
+        else:
+            print(f"-repo (local) = {parsed_args.repo}")
+
+        if parsed_args.branch == "":
+            print("-default branch")
+        else:
+            print(f"-branch = {parsed_args.branch}")
 
 
 def handle_dependencies():

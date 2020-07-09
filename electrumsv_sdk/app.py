@@ -217,7 +217,7 @@ def setup_argparser():
         default="",
         help="electrumsv_node git repo branch (optional)",
     )
-    subparsers_list = [electrumsv, electrumx, electrumsv_indexer, electrumsv_node]
+    subparsers_list = [electrumsv, electrumx, electrumsv_node, electrumsv_indexer]
     config.subcmd_map[config.ELECTRUMSV_SDK] = parser  # register parent ArgumentParser
     register_subcommands(subparsers_list)
 
