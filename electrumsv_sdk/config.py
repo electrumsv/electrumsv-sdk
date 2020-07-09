@@ -1,8 +1,9 @@
 import argparse
+import collections
 import json
 import os
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Set
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -16,6 +17,7 @@ class Config:
     at the start of any dependent functions and if modified should write the updated
     config back to the file.
     """
+    # package names
     ELECTRUMSV_SDK = 'electrumsv_sdk'
     ELECTRUMSV = 'electrumsv'
     ELECTRUMX = 'electrumx'
@@ -30,6 +32,8 @@ class Config:
     depends_dir_electrumx = (Path(MODULE_DIR).joinpath("electrumsv-sdk").joinpath("electrumx"))
     depends_dir_electrumx_data = (Path(MODULE_DIR).joinpath("electrumsv-sdk")
         .joinpath("electrumx_data"))
+
+    required_dependencies_set: Set[str] = set()
 
     @classmethod
     def from_dict(cls, config: Dict):
