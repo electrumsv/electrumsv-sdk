@@ -3,6 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 from electrumsv_sdk.config import Config
+from electrumsv_sdk.utils import checkout_branch
 
 
 def create_if_not_exist(path):
@@ -27,8 +28,7 @@ def install_electrumsv(url, branch):
     if not Config.depends_dir_electrumsv.exists():
         create_if_not_exist(Config.depends_dir_electrumsv)
         subprocess.run(f"git clone {url}", shell=True, check=True)
-        if branch != "":
-            subprocess.run(f"git checkout {branch}", shell=True, check=True)
+        checkout_branch(branch)
         subprocess.run(f"{sys.executable} -m pip install -r {Config.depends_dir_electrumsv_req}")
         subprocess.run(
             f"{sys.executable} -m pip install -r {Config.depends_dir_electrumsv_req_bin}"

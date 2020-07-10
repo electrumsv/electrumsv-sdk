@@ -20,6 +20,7 @@ from typing import List
 
 from .config import load_config, Config
 from .handle_dependencies import handle_dependencies
+from .runners import run_electrumsv_daemon
 
 
 def register_subcommands(subparsers: List[argparse.ArgumentParser]):
@@ -247,3 +248,4 @@ def main():
     setup_argparser()
     manual_argparsing(argv)  # updates global 'Config.subcmd_parsed_args_map'
     handle_dependencies()
+    run_electrumsv_daemon()

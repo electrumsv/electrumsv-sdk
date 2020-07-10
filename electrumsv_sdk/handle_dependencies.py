@@ -5,6 +5,8 @@ from pathlib import Path
 
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.install_tools import install_electrumsv, install_electrumsv_node
+from electrumsv_sdk.runners import run_electrumsv_daemon
+from electrumsv_sdk.utils import checkout_branch
 
 
 def validate_only_one_mode(parsed_args):
@@ -42,8 +44,7 @@ class CheckInstall:
             )
             if result.stdout.strip() == url:
                 print(f"- electrumsv is already installed (url={url})")
-                if branch != "":
-                    subprocess.run(f"git checkout {branch}", shell=True, check=True)
+                checkout_branch(branch)
                 subprocess.run(f"git pull", shell=True, check=True)
                 subprocess.run(
                     f"{sys.executable} -m pip install -r {Config.depends_dir_electrumsv_req}",
@@ -245,7 +246,7 @@ class Handlers:
         if not Config.ELECTRUMSV_INDEXER in Config.required_dependencies_set:
             print(f"{Config.ELECTRUMSV_INDEXER} not required")
             print(f"-------------------------------")
-            print(f"- skipping installation of {Config.ELECTRUMSV_NODE}")
+            print(f"- skipping installation of {Config.ELECTRUMSV_INDEXER}")
             return
         print()
         print(f"{Config.ELECTRUMSV_INDEXER} is required")
