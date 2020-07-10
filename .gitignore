@@ -3,3 +3,6 @@
 dist/*
 build/*
 electrumsv_sdk.egg-info/*
+sdk_depends/electrumsv
+sdk_depends/electrumx
+sdk_depends/electrumx_data

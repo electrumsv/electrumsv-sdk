@@ -34,6 +34,11 @@ class Config:
     depends_dir_electrumx = depends_dir.joinpath("electrumx")
     depends_dir_electrumx_data = depends_dir.joinpath("electrumx_data")
 
+    depends_dir_electrumsv_req = depends_dir_electrumsv.joinpath(
+        'contrib').joinpath('deterministic-build').joinpath('requirements.txt')
+    depends_dir_electrumsv_req_bin = depends_dir_electrumsv.joinpath(
+        'contrib').joinpath('deterministic-build').joinpath('requirements-binaries.txt')
+
     required_dependencies_set: Set[str] = set()
 
     @classmethod
