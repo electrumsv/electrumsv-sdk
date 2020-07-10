@@ -4,7 +4,8 @@ import subprocess
 from pathlib import Path
 
 from electrumsv_sdk.config import Config
-from electrumsv_sdk.install_tools import install_electrumsv, install_electrumsv_node
+from electrumsv_sdk.install_tools import install_electrumsv, install_electrumsv_node, \
+    install_electrumx
 from electrumsv_sdk.runners import run_electrumsv_daemon
 from electrumsv_sdk.utils import checkout_branch
 
@@ -73,21 +74,39 @@ class CheckInstall:
         """3 possibilities:
         (dir doesn't exists) -> install
         (dir exists, url matches)
-        (dir exists, url does not match)
+        (dir exists, url does not match - it's a forked repo)
         """
         if not Config.depends_dir_electrumx.exists():
-            print("- installing electrumx")
-            # install_electrumx()
+            print(f"- installing electrumx (url={url})")
+            install_electrumx(url, branch)
         elif Config.depends_dir_electrumsv.exists():
             os.chdir(Config.depends_dir_electrumx.__str__())
-            result = subprocess.run(f"git config --get remote.origin.url", shell=True, check=True)
-            if result.stdout == url:
-                # attempt pull and reinstall dependencies that may have changed.
-                print(f"url for electrumx = {result.stdout}")
-            if result.stdout != url:
-                print(f"url for electrumx = {result.stdout}")
-                # todo - rename to electrumx.bak to
-                #  and only then do install_electrumsv
+            result = subprocess.run(
+                f"git config --get remote.origin.url",
+                shell=True,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            if result.stdout.strip() == url:
+                print(f"- electrumx is already installed (url={url})")
+                checkout_branch(branch)
+                subprocess.run(f"git pull", shell=True, check=True)
+                # Todo - cannot re-install requirements dynamically because of plyvel
+                #  awaiting a PR for electrumx
+
+            if result.stdout.strip() != url:
+                existing_fork = Config.depends_dir_electrumx.__str__()
+                print(f"- alternate fork of electrumx is already installed")
+                print(f"- moving existing fork (to {existing_fork.__str__() + '.bak'}")
+                print(f"- installing electrumsv (url={url})")
+                os.rename(
+                    Config.depends_dir_electrumsv.__str__(),
+                    Config.depends_dir_electrumsv.__str__() + ".bak",
+                )
+                install_electrumsv(url, branch)
+
 
     @classmethod
     def check_remote_electrumsv_node_install(cls, branch):
@@ -244,6 +263,7 @@ class Handlers:
     def handle_electrumsv_indexer_args(cls, parsed_args):
         # print("handle_electrumsv_indexer_args")
         if not Config.ELECTRUMSV_INDEXER in Config.required_dependencies_set:
+            print()
             print(f"{Config.ELECTRUMSV_INDEXER} not required")
             print(f"-------------------------------")
             print(f"- skipping installation of {Config.ELECTRUMSV_INDEXER}")

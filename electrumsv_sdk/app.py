@@ -11,6 +11,9 @@ sys.argv and find the relevant args to feed to the appropriate ArgumentParser in
 """
 
 import argparse
+import signal
+import subprocess
+import time
 from argparse import RawTextHelpFormatter
 import platform
 from sys import argv
@@ -18,9 +21,11 @@ import sys
 import textwrap
 from typing import List
 
-from .config import load_config, Config
+from electrumsv_node import electrumsv_node
+
+from .config import Config
 from .handle_dependencies import handle_dependencies
-from .runners import run_electrumsv_daemon
+from .runners import run_electrumsv_daemon, run_electrumsv_node, run_electrumx_server
 
 
 def register_subcommands(subparsers: List[argparse.ArgumentParser]):
@@ -222,6 +227,22 @@ def setup_argparser():
     config.subcmd_map[config.ELECTRUMSV_SDK] = parser  # register parent ArgumentParser
     register_subcommands(subparsers_list)
 
+def startup():
+    print()
+    print()
+    print("running stack...")
+    procs = []
+    if 'electrumsv_node' in Config.required_dependencies_set:
+        run_electrumsv_node()
+
+    if 'electrumx' in Config.required_dependencies_set:
+        electrumx_process = run_electrumx_server()
+        procs.append(electrumx_process)
+
+    if 'electrumsv' in Config.required_dependencies_set:
+        esv_process = run_electrumsv_daemon()
+        procs.append(esv_process)
+    return procs
 
 def main():
     """
@@ -238,14 +259,28 @@ def main():
     Note: all configuration is saved to / loaded from config.json and each function accesses it
     by dependency-injection.
     """
-    print("ElectrumSV Software Development Kit")
-    print(
-        f"-Python version {sys.version_info.major}.{sys.version_info.minor}."
-        f"{sys.version_info.micro}-{platform.architecture()[0]}"
-    )
-    print()
+    procs = []
+    try:
+        print("ElectrumSV Software Development Kit")
+        print(
+            f"-Python version {sys.version_info.major}.{sys.version_info.minor}."
+            f"{sys.version_info.micro}-{platform.architecture()[0]}"
+        )
+        print()
 
-    setup_argparser()
-    manual_argparsing(argv)  # updates global 'Config.subcmd_parsed_args_map'
-    handle_dependencies()
-    run_electrumsv_daemon()
+        setup_argparser()
+        manual_argparsing(argv)  # updates global 'Config.subcmd_parsed_args_map'
+        handle_dependencies()
+        procs = startup()
+
+        while True:
+            time.sleep(0.2)
+    except KeyboardInterrupt:
+        electrumsv_node.stop()
+
+        # Todo - this doesn't work
+        if len(procs) != 0:
+            for proc in procs:
+                subprocess.run(f"taskkill.exe /PID {proc.pid} /T /F")
+    except:
+        print("stack terminated")

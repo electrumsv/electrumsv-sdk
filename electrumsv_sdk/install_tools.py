@@ -34,57 +34,62 @@ def install_electrumsv(url, branch):
             f"{sys.executable} -m pip install -r {Config.depends_dir_electrumsv_req_bin}"
         )
 
+def generate_run_script_electrumx():
+    os.chdir(Config.run_scripts_dir)
+    electrumx_env_vars = {
+        'DB_DIRECTORY': Config.depends_dir_electrumx_data.__str__(),
+        'DAEMON_URL': 'http://rpcuser:rpcpassword@127.0.0.1:18332',
+        'DB_ENGINE': 'leveldb',
+        'SERVICES': 'tcp://:51001,rpc://',
+        'COIN': 'BitcoinSV',
+        'COST_SOFT_LIMIT': '0',
+        'COST_HARD_LIMIT': '0',
+        'MAX_SEND': '10000000',
+        'LOG_LEVEL': 'debug',
+        'NET': 'regtest',
+    }
 
-def install_electrumx():
-    electrumx_server_exe = Config.depends_dir_electrumx.joinpath("electrumx").joinpath(
-        "electrumx_server"
-    )
+    def make_bat_file(filename):
+        open(filename, 'w').close()
+        with open(filename, 'a') as f:
+            f.write("@echo off\n")
+            for key, val in electrumx_env_vars.items():
+                f.write(f"set {key}={val}\n")
+            f.write(
+                '"' + f"{sys.executable}" + '"' + " " +
+                '"' + f"{Config.depends_dir_electrumx.joinpath('electrumx_server')}" + '"\n')
+            f.write("pause\n")
 
-    create_if_not_exist(Config.depends_dir.__str__())
-    create_if_not_exist(Config.depends_dir_electrumx.__str__())
-    create_if_not_exist(Config.depends_dir_electrumx_data.__str__())
+    def make_bash_file(filename):
+        open(filename, 'w').close()
+        with open(filename, 'a') as f:
+            f.write("#!/bin/bash\n")
+            f.write("set echo off\n")
+            for key, val in electrumx_env_vars.items():
+                f.write(f"export {key}={val}\n")
+            f.write(
+                '"' + f"{sys.executable}" + '"' + " " +
+                '"' + f"{Config.depends_dir_electrumx.joinpath('electrumx_server')}" + '"\n')
+            f.write('read -s -n 1 -p "Press any key to continue" . . .\n')
+            f.write('exit')
+
+    if sys.platform == 'win32':
+        make_bat_file("electrumx.bat")
+    elif sys.platform in ['linux', 'darwin']:
+        make_bash_file("electrumx.sh")
+
+def install_electrumx(url, branch):
 
     os.chdir(Config.depends_dir.__str__())
     if not Config.depends_dir_electrumx.exists():
-        subprocess.run(f"git clone https://github.com/kyuupichan/electrumx.git", shell=True)
+        create_if_not_exist(Config.depends_dir_electrumx.__str__())
+        create_if_not_exist(Config.depends_dir_electrumx_data.__str__())
+        subprocess.run(f"git clone {url}", shell=True, check=True)
+        checkout_branch(branch)
 
-    def make_bat_file(filename, electrumx_env_vars):
-        open(filename, "w").close()
-        with open(filename, "a") as f:
-            f.write("@echo off\n")
-            for key, value in electrumx_env_vars.items():
-                f.write(f"set {key}={value}\n")
-            f.write('"' + f"{sys.executable}" + '"' + " " + '"' + f"{electrumx_server_exe}" + '"\n')
-            f.write("pause\n")
-
-    def make_bash_file(filename, electrumx_env_vars):
-        open(filename, "w").close()
-        with open(filename, "a") as f:
-            f.write("#!/bin/bash\n")
-            f.write("set echo off\n")
-            for key, value in electrumx_env_vars.items():
-                f.write(f"export {key}={value}\n")
-            f.write('"' + f"{sys.executable}" + '"' + " " + '"' + f"{electrumx_server_exe}" + '"\n')
-            f.write('read -s -n 1 -p "Press any key to continue" . . .\n')
-            f.write("exit")
-
-    electrumx_env_vars = {
-        "DB_DIRECTORY": Config.depends_dir_electrumx_data,
-        "DAEMON_URL": "http://rpcuser:rpcpassword@127.0.0.1:18332",
-        "DB_ENGINE": "leveldb",
-        "SERVICES": "tcp://:51001,rpc://",
-        "COIN": "BitcoinSV",
-        "COST_SOFT_LIMIT": 0,
-        "COST_HARD_LIMIT": 0,
-        "MAX_SEND": 10000000,
-        "LOG_LEVEL": "debug",
-        "NET": "regtest",
-    }
-
-    if sys.platform == "win32":
-        make_bat_file("electrumx.bat", electrumx_env_vars)
-    elif sys.platform in ["linux", "darwin"]:
-        make_bash_file("electrumx.sh", electrumx_env_vars)
+        # use modified requirements to exclude the plyvel install (problematic on windows)
+        subprocess.run(f"{sys.executable} -m pip install -r {Config.sdk_requirements_electrumx}")
+        generate_run_script_electrumx()
 
 
 def install_electrumsv_node():

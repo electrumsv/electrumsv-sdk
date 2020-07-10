@@ -29,6 +29,15 @@ class Config:
     subcmd_raw_args_map: Dict[str, List[str]] = {}  # cmd_name: raw arguments
     subcmd_parsed_args_map = {}  # cmd_name: parsed arguments
 
+    sdk_requirements_linux = Path(MODULE_DIR).joinpath("requirements").joinpath(
+        "requirements-linux.txt")
+    sdk_requirements_win32 = Path(MODULE_DIR).joinpath("requirements").joinpath(
+        "requirements-win32.txt")
+
+    # exclude plyvel from electrumx requirements.txt (windows workaround)
+    sdk_requirements_electrumx = Path(MODULE_DIR).joinpath("requirements").joinpath(
+        "requirements-electrumx.txt")
+
     depends_dir = Path(MODULE_DIR).parent.joinpath("sdk_depends")
     depends_dir_electrumsv = depends_dir.joinpath("electrumsv")
     depends_dir_electrumx = depends_dir.joinpath("electrumx")
@@ -40,6 +49,8 @@ class Config:
         'contrib').joinpath('deterministic-build').joinpath('requirements-binaries.txt')
 
     required_dependencies_set: Set[str] = set()
+
+    run_scripts_dir = Path(MODULE_DIR).joinpath("run_scripts")
 
     @classmethod
     def from_dict(cls, config: Dict):
