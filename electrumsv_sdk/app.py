@@ -282,5 +282,4 @@ def main():
         if len(procs) != 0:
             for proc in procs:
                 subprocess.run(f"taskkill.exe /PID {proc.pid} /T /F")
-    except:
         print("stack terminated")

@@ -15,3 +15,139 @@ Overview
 This project provides a consolidated set of resources that together can allow a developer, whether
 working on ElectrumSV directly or on an application based on ElectrumSV, to develop, run and test
 while offline.
+
+Instructions
+============
+This project is still in early stages. However, to test it out
+in this early stage of development you can do
+(from the top-level directory of this repository)::
+
+    > pip install -e .
+
+(the '-e' flag is for installing in development 'editable' mode).
+Now you have global access to a script called 'electrumsv-sdk.exe' from
+any console window. Now do::
+
+    > electrumsv-sdk
+
+Which will run the default 'full-stack' of:
+
+- electrumsv (in daemon mode)
+- electrumx server
+- RegTest bitcoin daemon (as a background process)
+
+**Ctrl + C** will terminate the servers cleanly and close the newly opened console windows.
+
+For help::
+
+    > electrumsv-sdk --help
+
+Which (on 11/07/2020) will show::
+
+    ElectrumSV Software Development Kit
+    -Python version 3.8.4-64bit
+
+    usage: electrumsv-sdk [-h] [--full-stack] [--node] [--ex-node] [--esv-ex-node] [--esv-idx-node]
+                          [--extapp EXTAPP_PATH]
+                          {electrumsv,electrumx,electrumsv_indexer,electrumsv_node} ...
+
+    codes:
+    ------
+    - esv=electrumsv daemon
+    - ex=electrumx server
+    - node=electrumsv-node
+    - idx=electrumsv-indexer (with pushdata-centric API)
+    - full-stack=defaults to 'esv-ex-node' as these are the default run-time
+    dependencies of electrumsv as of July 2020.
+
+    examples:
+    > electrumsv-sdk --full-stack or
+    > electrumsv-sdk --esv-ex-node
+    will run electrumsv + electrumx + electrumsv-node (both have equivalent effect)
+
+    > electrumsv-sdk --esv-idx-node
+    will run electrumsv + electrumsv-indexer + electrumsv-node
+
+    dependencies are installed on-demand at run-time
+
+    specify which local or remote (git repo) and branch for each component with the
+    subcommands below. ('repo' can take the form:
+    - repo=https://github.com/electrumsv/electrumsv.git or
+    - repo=G:/electrumsv for a local dev repo)
+
+    > electrumsv-sdk --full-stack electrumsv repo=G:/electrumsv branch=develop
+
+    all arguments are optional
+
+    positional arguments:
+      {electrumsv,electrumx,electrumsv_indexer,electrumsv_node}
+                            subcommand
+        electrumsv          specify repo and branch
+        electrumx           specify repo and branch
+        electrumsv_indexer  specify repo and branch
+        electrumsv_node     specify repo and branch
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      --full-stack
+      --node
+      --ex-node
+      --esv-ex-node
+      --esv-idx-node
+      --extapp EXTAPP_PATH  path to 3rd party applications. The 'extapp' flag can be specified multiple times. For electrumsv 'daemon apps' please see electrumsv subcommand help menu
+
+Mode (which servers to run)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The first, "--" prefixed argument sets the "mode" of operation
+(in other words which servers are required).
+Only one mode can be specified.
+The default is to run with ``--full-stack`` if no arguments are parsed which runs:
+
+1) electrumsv daemon
+2) electrumx
+3) bitcoin daemon
+
+But in other cases you may wish to run the electrumsv **GUI** instead
+(or your own 3rd party application that only requires these two
+dependencies). So you may elect to use the ``--ex-node`` flag to only run:
+
+1) electrumx
+2) bitcoin daemon.
+
+Extension 3rd party Apps (Not implemented yet)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The second, "--" prefixed, optional argument is ``--extapp`` which will add
+to the above list your own 3rd party server to be launched and terminated
+alongside the others. This argument can be specified multiple times like::
+
+    > electrumsv-sdk --extapp pathtoapp1 --extapp pathtoapp2
+
+NOTE: must be an executable (which allows use to support any programming language)
+a good example usecase for this is to run a localhost node.js block
+explorer alongside this RegTest stack.
+
+Subcommands (server-specific configurations)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+After the initial "--" prefixed, top-level arguments (that always come first),
+what follows is optional server-specific configurations for:
+
+1) electrumsv
+2) electrumx
+3) electrumsv_node
+4) electrumsv_indexer (in development)
+
+The syntax is to specify the name of the server followed by "-" prefixed
+optional arguments like this::
+
+    > electrumsv-sdk electrumsv -repo=https://github.com/electrumsv/electrumsv.git -branch=master
+
+
+**(Remote repo):** A 'repo' beginning with "https://" is automatically installed to the 'sdk_depends/'
+directory as part of this SDK - this could be a forked repository or the official repo
+(which is the default anyway).
+
+**(Local repo):** If there is no such "https://" prefix to the 'repo' argument, it is assumed to be
+a filesystem path to a local development repository and so no installation or
+``git pull`` is attempted - it becomes the developers responsibility for the correct
+functioning of this server. But it will be launched and terminated in the usual way.

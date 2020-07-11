@@ -175,29 +175,30 @@ class Handlers:
             Config.required_dependencies_set.add(Config.ELECTRUMX)
             Config.required_dependencies_set.add(Config.ELECTRUMSV_NODE)
 
-        if parsed_args.esv_ex_node:
+        elif parsed_args.esv_ex_node:
             Config.required_dependencies_set.add(Config.ELECTRUMSV)
             Config.required_dependencies_set.add(Config.ELECTRUMX)
             Config.required_dependencies_set.add(Config.ELECTRUMSV_NODE)
 
-        if parsed_args.esv_idx_node:
+        elif parsed_args.esv_idx_node:
             raise NotImplementedError("esv_idx_node mode is not supported yet")
 
-        if parsed_args.ex_node:
+        elif parsed_args.ex_node:
             Config.required_dependencies_set.add(Config.ELECTRUMX)
             Config.required_dependencies_set.add(Config.ELECTRUMSV_NODE)
 
-        if parsed_args.node:
+        elif parsed_args.node:
             raise NotImplementedError("node mode is not supported yet")
+
+        else:  # no args defaults to '--full_stack'
+            Config.required_dependencies_set.add(Config.ELECTRUMSV)
+            Config.required_dependencies_set.add(Config.ELECTRUMX)
+            Config.required_dependencies_set.add(Config.ELECTRUMSV_NODE)
 
         if parsed_args.extapp_path != "":
             raise NotImplementedError(
                 "loading extapps on the electrumsv daemon is " "not supported yet"
             )
-        else:  # no args defaults to '--full_stack'
-            Config.required_dependencies_set.add(Config.ELECTRUMSV)
-            Config.required_dependencies_set.add(Config.ELECTRUMX)
-            Config.required_dependencies_set.add(Config.ELECTRUMSV_NODE)
 
     @classmethod
     def handle_electrumsv_args(cls, parsed_args):
