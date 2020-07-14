@@ -3,7 +3,26 @@ import sys
 
 from setuptools import find_packages, setup
 
-__version__ = '0.0.3'
+"""
+# on a win32 machine
+py -3.7-32 .\setup.py build bdist_wheel --plat-name win32
+py -3.8-32 .\setup.py build bdist_wheel --plat-name win32
+py -3.7 .\setup.py build bdist_wheel --plat-name win-amd64
+py -3.8 .\setup.py build bdist_wheel --plat-name win-amd64
+twine upload dist/*
+
+now uninstall all conflicting versions of the script:
+py -3.7-32 -m pip uninstall electrumsv-sdk
+py -3.8-32 -m pip uninstall electrumsv-sdk
+py -3.7 -m pip uninstall electrumsv-sdk
+py -3.8 -m pip uninstall electrumsv-sdk
+
+and install the one you want:
+py -3.8 -m pip install electrumsv-sdk
+
+"""
+
+__version__ = '0.0.4'
 
 from electrumsv_sdk.config import Config
 
@@ -18,6 +37,11 @@ if sys.platform == 'win32':
 elif sys.platform == 'linux':
     with open(Config.sdk_requirements_linux, 'r') as f:
         requirements = f.read().splitlines()
+
+with open(Config.sdk_requirements_electrumx, 'r') as f:
+    # use modified requirements to exclude the plyvel install (problematic on windows)
+    requirement_electrumx = f.read().splitlines()
+    requirements.append(requirement_electrumx)
 
 setup(
     name='electrumsv-sdk',

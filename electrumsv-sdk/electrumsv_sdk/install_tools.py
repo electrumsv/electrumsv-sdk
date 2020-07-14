@@ -87,9 +87,6 @@ def install_electrumx(url, branch):
         os.chdir(Config.depends_dir.__str__())
         subprocess.run(f"git clone {url}", shell=True, check=True)
         checkout_branch(branch)
-
-        # use modified requirements to exclude the plyvel install (problematic on windows)
-        subprocess.run(f"{sys.executable} -m pip install -r {Config.sdk_requirements_electrumx}")
         generate_run_script_electrumx()
 
 
