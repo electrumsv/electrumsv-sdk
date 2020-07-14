@@ -3,7 +3,7 @@ import sys
 
 from setuptools import find_packages, setup
 
-__version__ = '0.0.1'
+__version__ = '0.0.3'
 
 from electrumsv_sdk.config import Config
 
@@ -43,7 +43,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'electrumsv-sdk=cli:main'
+            'electrumsv-sdk=electrumsv_sdk.__main__:main'
         ]
     },
     classifiers=[

@@ -24,9 +24,9 @@ def install_electrumsv(url, branch):
     # Note - this is only so that it works "out-of-the-box". But for development
     # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
 
-    os.chdir(Config.depends_dir.__str__())
     if not Config.depends_dir_electrumsv.exists():
         create_if_not_exist(Config.depends_dir_electrumsv)
+        os.chdir(Config.depends_dir.__str__())
         subprocess.run(f"git clone {url}", shell=True, check=True)
         checkout_branch(branch)
         subprocess.run(f"{sys.executable} -m pip install -r {Config.depends_dir_electrumsv_req}")
@@ -35,6 +35,7 @@ def install_electrumsv(url, branch):
         )
 
 def generate_run_script_electrumx():
+    create_if_not_exist(Config.run_scripts_dir)
     os.chdir(Config.run_scripts_dir)
     electrumx_env_vars = {
         'DB_DIRECTORY': Config.depends_dir_electrumx_data.__str__(),
@@ -80,10 +81,10 @@ def generate_run_script_electrumx():
 
 def install_electrumx(url, branch):
 
-    os.chdir(Config.depends_dir.__str__())
     if not Config.depends_dir_electrumx.exists():
         create_if_not_exist(Config.depends_dir_electrumx.__str__())
         create_if_not_exist(Config.depends_dir_electrumx_data.__str__())
+        os.chdir(Config.depends_dir.__str__())
         subprocess.run(f"git clone {url}", shell=True, check=True)
         checkout_branch(branch)
 

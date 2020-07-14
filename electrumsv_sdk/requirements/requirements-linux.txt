@@ -1,1 +1,2 @@
 electrumsv-node
+requests

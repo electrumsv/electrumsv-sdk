@@ -5,8 +5,8 @@ import time
 
 from electrumsv_node import electrumsv_node
 
-from electrumsv_sdk.app import setup_argparser, manual_argparsing, startup
-from electrumsv_sdk.handle_dependencies import handle_dependencies
+from .app import setup_argparser, manual_argparsing, startup
+from .handle_dependencies import handle_dependencies
 
 
 def main():
