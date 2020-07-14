@@ -43,7 +43,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'electrumsv-sdk=electrumsv_sdk.app:main'
+            'electrumsv-sdk=cli:main'
         ]
     },
     classifiers=[

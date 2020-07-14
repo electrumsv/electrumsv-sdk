@@ -2,8 +2,8 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from electrumsv_sdk.config import Config
-from electrumsv_sdk.utils import checkout_branch
+from .config import Config
+from .utils import checkout_branch
 
 
 def create_if_not_exist(path):

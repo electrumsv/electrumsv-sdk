@@ -3,11 +3,10 @@ import sys
 import subprocess
 from pathlib import Path
 
-from electrumsv_sdk.config import Config
-from electrumsv_sdk.install_tools import install_electrumsv, install_electrumsv_node, \
+from .config import Config
+from .install_tools import install_electrumsv, install_electrumsv_node, \
     install_electrumx
-from electrumsv_sdk.runners import run_electrumsv_daemon
-from electrumsv_sdk.utils import checkout_branch
+from .utils import checkout_branch
 
 
 def validate_only_one_mode(parsed_args):

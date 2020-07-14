@@ -6,7 +6,6 @@ from .config import Config
 
 def run_electrumsv_node():
     from electrumsv_node import electrumsv_node
-
     electrumsv_node.start()
 
 
