@@ -188,7 +188,7 @@ class Handlers:
             Config.required_dependencies_set.add(Config.ELECTRUMSV_NODE)
 
         elif parsed_args.node:
-            raise NotImplementedError("node mode is not supported yet")
+            Config.required_dependencies_set.add(Config.ELECTRUMSV_NODE)
 
         else:  # no args defaults to '--full_stack'
             Config.required_dependencies_set.add(Config.ELECTRUMSV)
@@ -203,9 +203,11 @@ class Handlers:
     @classmethod
     def handle_electrumsv_args(cls, parsed_args):
         if not Config.ELECTRUMSV in Config.required_dependencies_set:
+            print()
             print(f"{Config.ELECTRUMSV} not required")
-            print(f"- skipping installation of {Config.ELECTRUMSV_NODE}")
+            print(f"- skipping installation of {Config.ELECTRUMSV}")
             return
+        print()
         print(f"{Config.ELECTRUMSV} is required")
         print(f"-------------------------------")
 
@@ -224,6 +226,7 @@ class Handlers:
     @classmethod
     def handle_electrumx_args(cls, parsed_args):
         if not Config.ELECTRUMX in Config.required_dependencies_set:
+            print()
             print(f"{Config.ELECTRUMX} not required")
             print(f"-------------------------------")
             print(f"- skipping installation of {Config.ELECTRUMSV_NODE}")
@@ -245,6 +248,7 @@ class Handlers:
     def handle_electrumsv_node_args(cls, parsed_args):
         # print("handle_electrumsv_node_args")
         if not Config.ELECTRUMSV_NODE in Config.required_dependencies_set:
+            print()
             print(f"{Config.ELECTRUMSV_NODE} not required")
             print(f"- skipping installation of {Config.ELECTRUMSV_NODE}")
             return
