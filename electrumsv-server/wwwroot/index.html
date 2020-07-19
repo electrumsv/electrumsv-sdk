@@ -1,0 +1,278 @@
+<html>
+  <head>
+    <title>Merchant Payment Server - ElectrumSV SDK</title>
+    <style>
+        body {
+            width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+          margin-top: 20px;
+        }
+        h1, h2, h3 {
+          text-align: center;
+        }
+        div#qrcode {
+          text-align: center;
+        }
+        div#qrcode img {
+          display: inline !important;
+        }
+        form .form-label {
+          min-width: 80;
+          display: inline-block;
+          text-align: right;
+        }
+        form .form-field {
+          min-width: 200;
+          text-align: left;
+          display: inline-block;
+        }
+        form .output-fields {
+          padding-bottom: 10px;
+          margin: 0 auto;
+          text-align: center;
+        }
+        .centered {
+          margin-top: 20px;
+          text-align: center;
+        }
+    </style>
+    <!-- https://github.com/davidshimjs/qrcodejs -->
+    <script type="text/javascript" src="qrcode.js"></script>
+    <script type="text/javascript" src="bip270.js"></script>
+    <script type="text/javascript">
+      class DetailPage {
+        constructor() {
+          this.page_element = document.getElementById("page-enter-details");
+          this.reset();
+        }
+
+        show() {
+          this.page_element.style = "";
+          payment_page.hide();
+        }
+
+        hide() {
+          this.page_element.style = "display: none";
+        }
+
+        addOutputLine() {
+          let outputTemplates = document.getElementsByName("output-template");
+          let outputTemplate = outputTemplates[0];
+
+          let outputContainer = document.getElementById("detail-outputs");
+          let outputSection = outputTemplate.cloneNode(true);
+          outputContainer.appendChild(outputSection);
+        }
+
+        reset() {
+          let outputContainer = document.getElementById("detail-outputs");
+          while (outputContainer.firstElementChild) {
+            outputContainer.firstElementChild.remove();
+          }
+
+          this.addOutputLine();
+          this.addOutputLine();
+
+          let this_ = this;
+          function on_click() {
+            this_.onSubmitClick();
+          }
+
+          var submit_button = document.getElementById("page-enter-details-submit");
+          submit_button.onclick = on_click;
+        }
+
+        getOutputData() {
+          let data = [];
+          let descriptions = document.getElementsByName("field-value-description");
+          let amounts = document.getElementsByName("field-value-amount");
+          for (let i = 0; i < descriptions.length; i++) {
+            let description = descriptions[i].value.trim() || null;
+            let amount = Number(amounts[i].value);
+            if (Number.isInteger(amount) && amount > 0)
+                data.push([ description, amount ]);
+          }
+          return data;
+        }
+
+        onSubmitClick() {
+          const data = this.getOutputData();
+          if (data.length === 0) {
+            alert("No valid amounts.")
+            return;
+          }
+
+          // Disable all form elements.
+          let outputContainer = document.getElementById("page-enter-details");
+          for (let input_element of outputContainer.getElementsByTagName("input")) {
+            input_element.disabled = true;
+          }
+
+          fetch("api/bip270", this.createPostData(data)).then(function (response) {
+            response.json().then(function (data) {
+              payment_page.setRequestUri(data.request_uri);
+              payment_page.setExpiryTimestamp(data.expiry_timestamp);
+              payment_page.show();
+            });
+          });
+        }
+
+        createPostData(data = {}) {
+          // Default options are marked with *
+          return {
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            credentials: 'same-origin', // include, *same-origin, omit
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'error', // manual, *follow, error
+            referrerPolicy: 'no-referrer',
+            body: JSON.stringify(data) // body data type must match "Content-Type" header
+          };
+        }
+      }
+
+      class PaymentPage {
+        constructor() {
+          this.page_element = document.getElementById("page-make-payment");
+          this.qrcode_element = document.getElementById("qrcode");
+          this.qrcode_expiry_element = document.getElementById("qrcode-expiry");
+          this.qrcode = new QRCode(this.qrcode_element, "https://electrumsv.io");
+          this.button = document.getElementById("page-make-payment-submit");
+
+          this.request_uri = null;
+          this.expiry_date = null;
+          this.expiry_timer_id = null;
+
+          var this_ = this;
+          this.button.onclick = function() {
+            this_.copyToClipboard(this_.request_uri);
+          };
+        }
+
+        show() {
+          this.page_element.style = "";
+          detail_page.hide();
+        }
+
+        hide() {
+          this.page_element.style = "display: none";
+          window.clearInterval(this.expiry_timer_id);
+        }
+
+        setRequestUri(request_uri) {
+          this.request_uri = request_uri;
+          this.qrcode.makeCode(request_uri);
+        }
+
+        setExpiryTimestamp(expiry_timestamp) {
+          this.expiry_date = new Date(expiry_timestamp * 1000);
+
+          const this_ = this;
+          function intervalFunc() {
+            this_.updateExpiryText();
+          }
+          this.expiry_timer_id = window.setInterval(intervalFunc, 1000);
+        }
+
+        updateExpiryText() {
+          const delta = (this.expiry_date - Date.now());
+          const total_seconds = Math.trunc(delta / 1000);
+          const minutes = Math.trunc(total_seconds / 60);
+          const seconds = total_seconds - (minutes * 60);
+
+          let text = "This payment request ";
+          if (minutes > 0) {
+            // As we do not display the seconds with the minutes, bump the minutes.
+            text += "expires in "+ (minutes + 1) +" minutes.";
+          } else if (seconds > 0) {
+            text += "expires in "+ seconds +" seconds";
+          } else {
+            text += "is expired.";
+          }
+
+          this.qrcode_expiry_element.innerText = text;
+        }
+
+        copyToClipboard(text) {
+          // The following function was copied from and is licensed according to:
+          // https://stackoverflow.com/a/33928558/11881963
+          if (window.clipboardData && window.clipboardData.setData) {
+              // Internet Explorer-specific code path to prevent textarea being shown while dialog is visible.
+              return clipboardData.setData("Text", text);
+
+          }
+          else if (document.queryCommandSupported && document.queryCommandSupported("copy")) {
+              var textarea = document.createElement("textarea");
+              textarea.textContent = text;
+              textarea.style.position = "fixed";  // Prevent scrolling to bottom of page in Microsoft Edge.
+              document.body.appendChild(textarea);
+              textarea.select();
+              try {
+                  return document.execCommand("copy");  // Security exception may be thrown by some browsers.
+              }
+              catch (ex) {
+                  console.warn("Copy to clipboard failed.", ex);
+                  return false;
+              }
+              finally {
+                  document.body.removeChild(textarea);
+              }
+          }
+        }
+      }
+
+      var detail_page = null;
+      var payment_page = null;
+
+      window.onload = function () {
+        detail_page = new DetailPage();
+        payment_page = new PaymentPage();
+      };
+    </script>
+  </head>
+  <body>
+    <h1>ElectrumSV SDK - Merchant Payment Server</h1>
+
+    <div name="page" id="page-enter-details">
+      <h2>Payment Details</h2>
+      <form>
+        <h3>Payment items</h3>
+        <div id="detail-outputs"></div>
+        <div id="buttons" class="centered">
+          <input id="page-enter-details-submit" type="button" value="Start Payment" />
+        </div>
+      </form>
+    </div>
+
+    <div name="page" id="page-make-payment" style="display: none">
+      <h2>Make Payment</h2>
+      <div id="qrcode"></div>
+      <div id="qrcode-expiry" class="centered">&nbsp;</div>
+      <div id="buttons" class="centered">
+        <input id="page-make-payment-submit" type="button" value="Copy to clipboard" />
+      </div>
+    </div>
+
+    <div style="display: none">
+      <div name="output-template" class="output-fields">
+        <span name="description-field">
+          <span class="form-label">Description:</span>
+          <span class="form-field">
+            <input type="text" name="field-value-description" placeholder="Optional note" />
+          </span>
+        </span>
+        <span name="amount-field">
+          <span class="form-label">Amount:</span>
+          <span class="form-field">
+            <input type="number" name="field-value-amount" placeholder="Amount (in satoshis)" />
+          </span>
+        </span>
+      </div>
+    </div>
+  </body>
+</html>

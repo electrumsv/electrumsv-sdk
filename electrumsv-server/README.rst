@@ -1,5 +1,5 @@
-ElectrumSV Server
-=================
+ElectrumSV Payment Server
+=========================
 
 ::
 
@@ -20,7 +20,6 @@ Exposes APIs:
 
 - REST-based for web-based calls.
 - Websocket-based for web-based RPC.
-- ElectrumSV-hosting-based for both calls and RPC (deferred).
 
 Planned Work
 ============

@@ -1,0 +1,6 @@
+
+DEFAULT_HTTP_PORT = 58200
+DEFAULT_PAGE = "index.html"
+
+
+NAME_SQLITE = "sqlite"

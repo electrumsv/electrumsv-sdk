@@ -2,6 +2,8 @@ import argparse
 import os
 from typing import Any, Dict, Iterable, Optional
 
+from .constants import DEFAULT_HTTP_PORT, NAME_SQLITE
+
 
 class EnvDefault(argparse.Action):
     def __init__(self, option_strings: Iterable[str], dest: str, required=True, default=None,
@@ -27,6 +29,12 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 def extend_parser(parser: argparse.ArgumentParser) -> argparse.Namespace:
-    group = parser.add_argument_group("API server options")
-    group.add_argument("--api-server-port", action=EnvDefault, default=58100, type=int,
-        help="The port that the API server listens to HTTP requests.")
+    group = parser.add_argument_group("HTTP server options")
+    group.add_argument("--database", action=EnvDefault, default=NAME_SQLITE, type=str,
+        help=f"'{NAME_SQLITE}' or some as yet undefined thing for postgres.")
+    group.add_argument("--data-path", action=EnvDefault, type=str,
+        help="The path that internal state and data is stored under.")
+    group.add_argument("--wwwroot-path", action=EnvDefault, type=str,
+        help="The path that web pages and content is served from.")
+    group.add_argument("--http-server-port", action=EnvDefault, default=DEFAULT_HTTP_PORT, type=int,
+        help="The port that the server listens to for HTTP requests.")
