@@ -2,6 +2,7 @@ import argparse
 import collections
 import json
 import os
+import textwrap
 from pathlib import Path
 from typing import Dict, List, Set
 
@@ -17,9 +18,15 @@ class Config:
     at the start of any dependent functions and if modified should write the updated
     config back to the file.
     """
+    NAMESPACE = ''  # one of 'start', 'stop' or 'reset'
+
+    # top-level namespaces
+    TOP_LEVEL = "top_level"
+    START = "start"
+    STOP = "stop"
+    RESET = "reset"
 
     # package names
-    ELECTRUMSV_SDK = "electrumsv_sdk"
     ELECTRUMSV = "electrumsv"
     ELECTRUMX = "electrumx"
     ELECTRUMSV_INDEXER = "electrumsv_indexer"
@@ -79,3 +86,64 @@ def save_config(config: Config):
     config_path = Path(MODULE_DIR).joinpath("config.json")
     with open(config_path.__str__(), "w") as f:
         f.write(json.dumps(config))
+
+TOP_LEVEL_HELP_TEXT = textwrap.dedent("""
+    electrumsv-sdk has a similar interface to systemctl with namespaces:
+    - "start"
+    - "stop"
+    - "reset"
+
+    The "start" command is the most feature-rich and launches servers as background 
+    processes (see next):
+
+    *********
+    * start *
+    *********
+
+    examples:
+    > electrumsv-sdk start --full-stack or
+    > electrumsv-sdk start --esv-ex-node
+    runs electrumsv + electrumx + electrumsv-node (both have equivalent effect)
+
+    > electrumsv-sdk start --esv-idx-node
+    will run electrumsv + electrumsv-indexer + electrumsv-node
+
+     -------------------------------------------------------
+    | esv = electrumsv daemon                               |
+    | ex = electrumx server                                 |
+    | node = electrumsv-node                                |
+    | idx = electrumsv-indexer (with pushdata-centric API)  |
+    | full-stack = defaults to 'esv-ex-node'                |
+     -------------------------------------------------------
+
+    input the needed mixture to suit your needs
+
+    dependencies are installed on-demand at run-time
+
+    specify a local or remote git repo and branch for each server e.g.
+    > electrumsv-sdk start --full-stack electrumsv repo=G:/electrumsv branch=develop
+
+    'repo' can take the form repo=https://github.com/electrumsv/electrumsv.git for a remote 
+    repo or repo=G:/electrumsv for a local dev repo
+
+    all arguments are optional
+
+
+    ********
+    * stop *
+    ********
+
+    stops all running servers/spawned processes
+
+
+    *********
+    * reset *
+    *********
+
+    resets server state. e.g. 
+    - bitcoin node state is reset back to genesis
+    - electrumx state is reset back to genesis 
+    - electrumsv RegTest wallet history is erased to match blockchain state
+
+
+    """)

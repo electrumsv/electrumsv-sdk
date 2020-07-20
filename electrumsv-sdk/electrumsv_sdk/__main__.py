@@ -5,7 +5,8 @@ import time
 
 from electrumsv_node import electrumsv_node
 
-from .app import setup_argparser, manual_argparsing, startup
+from electrumsv_sdk.config import Config
+from .app import setup_argparser, manual_start_namespace_argparsing, startup
 from .handle_dependencies import handle_dependencies
 
 
@@ -34,12 +35,13 @@ def main():
         print()
 
         setup_argparser()
-        manual_argparsing(sys.argv)  # updates global 'Config.subcmd_parsed_args_map'
+        manual_start_namespace_argparsing(sys.argv)  # updates global 'Config.subcmd_parsed_args_map'
         handle_dependencies()
-        procs = startup()
+        if Config.NAMESPACE == Config.START:
+            procs = startup()
 
-        while True:
-            time.sleep(0.2)
+            while True:
+                time.sleep(0.2)
     except KeyboardInterrupt:
         electrumsv_node.stop()
 

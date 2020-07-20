@@ -11,61 +11,80 @@ sys.argv and find the relevant args to feed to the appropriate ArgumentParser in
 """
 
 import argparse
-import signal
-import subprocess
-import time
 from argparse import RawTextHelpFormatter
-import platform
-from sys import argv
-import sys
 import textwrap
 from typing import List
 
-from electrumsv_node import electrumsv_node
-
-from .config import Config
-from .handle_dependencies import handle_dependencies
+from .config import Config, TOP_LEVEL_HELP_TEXT
 from .runners import run_electrumsv_daemon, run_electrumsv_node, run_electrumx_server
 
 
-def register_subcommands(subparsers: List[argparse.ArgumentParser]):
-    config = Config
-    for cmd in subparsers:
-        cmd_name = cmd.prog.split(sep=" ")[1]
-        config.subcmd_map.update({cmd_name: cmd})
-
-    # initialize subcommands_args_map with empty arg list
-    for cmd_name in config.subcmd_map.keys():
-        config.subcmd_raw_args_map[cmd_name] = []
+class InvalidInput(Exception):
+    pass
 
 
-def manual_argparsing(args):
+def manual_start_namespace_argparsing(args):
     """manually iterate through sys.argv and feed arguments to either:
     a) parent ArgumentParser
     b) child ArgumentParsers (aka subcommands)"""
-    config = Config
     args.pop(0)
 
     # subcommand_indices -> cmd_name: [index_arg1, index_arg2]
     subcommand_indices = {}
 
-    cur_cmd_name = config.ELECTRUMSV_SDK
-    subcommand_indices[cur_cmd_name] = []
+    cur_cmd_name = Config.TOP_LEVEL
+    Config.NAMESPACE = Config.TOP_LEVEL
+    subcommand_indices[Config.TOP_LEVEL] = []
     for index, arg in enumerate(args):
-        # parent ArgumentParser
-        if arg.startswith("--") and cur_cmd_name == "electrumsv_sdk":
-            subcommand_indices[cur_cmd_name].append(index)
+        if index == 0:
+            if arg == 'start':
+                cur_cmd_name = Config.START
+                Config.NAMESPACE = Config.START
+                subcommand_indices[Config.START] = []
+            elif arg == Config.STOP:
+                cur_cmd_name = Config.STOP
+                Config.NAMESPACE = Config.STOP
+                subcommand_indices[Config.STOP] = []
+            elif arg == Config.RESET:
+                cur_cmd_name = Config.RESET
+                Config.NAMESPACE = Config.RESET
+                subcommand_indices[Config.RESET] = []
+            elif arg == '--help':
+                pass
+            else:
+                raise InvalidInput("First argument must be one of: [start, stop, reset, --help]")
 
-        # child ArgumentParser (aka a subcommand)
-        if not arg.startswith("-"):  # new subcommand
-            cur_cmd_name = arg
-            subcommand_indices[cur_cmd_name] = []
+        # TOP_LEVEL NAMESPACE (first argument was *not* one of 'start', 'stop' or 'reset'.
+        # Most likely they did:
+        #   > electrumsv-sdk --help
+        if Config.NAMESPACE == Config.TOP_LEVEL:
+            subcommand_indices[Config.TOP_LEVEL].append(index)
 
-        # child ArgumentParser arguments
-        if arg.startswith("-") and cur_cmd_name != "electrumsv_sdk":
-            subcommand_indices[cur_cmd_name].append(index)
+        # START NAMESPACE
+        if Config.NAMESPACE == Config.START:
+            # 'start' top-level arguments
+            if arg.startswith("--"):
+                subcommand_indices[cur_cmd_name].append(index)
 
-    # print(f"subcommand_indices={subcommand_indices}")
+            # new child ArgumentParser
+            if not arg.startswith("-"):
+                cur_cmd_name = arg
+                subcommand_indices[cur_cmd_name] = []
+
+            # child ArgumentParser arguments
+            if arg.startswith("-") and not arg.startswith("--"):
+                subcommand_indices[cur_cmd_name].append(index)
+
+        # STOP NAMESPACE
+        if Config.NAMESPACE == Config.STOP:
+            pass
+
+        # RESET NAMESPACE
+        if Config.NAMESPACE == Config.RESET:
+            pass
+
+        # print(f"index={index}, arg={arg}, subcommand_indices={subcommand_indices}")
+
     feed_to_argparsers(args, subcommand_indices)
 
 
@@ -90,59 +109,53 @@ def feed_to_argparsers(args, subcommand_indices):
 
 
 def setup_argparser():
+    """
+    Structure of CLI interface:
+
+    top_level_parser
+        start
+            --full-stack
+            --node
+            --ex-node
+            --esv-ex-node
+            --esv-idx-node
+            --extapp
+            electrumsv          (subcmd of 'start' namespace for config options)
+            electrumx           (subcmd of 'start' namespace for config options)
+            electrumsv-indexer  (subcmd of 'start' namespace for config options)
+            electrumsv-node     (subcmd of 'start' namespace for config options)
+        stop
+        reset
+
+    """
     config = Config
-    help_text = textwrap.dedent(
-        """
 
-        codes:
-        ------
-        - esv=electrumsv daemon
-        - ex=electrumx server
-        - node=electrumsv-node
-        - idx=electrumsv-indexer (with pushdata-centric API)
-        - full-stack=defaults to 'esv-ex-node' as these are the default run-time
-        dependencies of electrumsv as of July 2020.
-
-        examples:
-        > electrumsv-sdk --full-stack or
-        > electrumsv-sdk --esv-ex-node
-        will run electrumsv + electrumx + electrumsv-node (both have equivalent effect)
-
-        > electrumsv-sdk --esv-idx-node
-        will run electrumsv + electrumsv-indexer + electrumsv-node
-
-        dependencies are installed on-demand at run-time
-
-        specify which local or remote (git repo) and branch for each component with the 
-        subcommands below. ('repo' can take the form: 
-        - repo=https://github.com/electrumsv/electrumsv.git or 
-        - repo=G:/electrumsv for a local dev repo)
-
-        > electrumsv-sdk --full-stack electrumsv repo=G:/electrumsv branch=develop
-
-        all arguments are optional
-        """
+    top_level_parser = argparse.ArgumentParser(
+        description=TOP_LEVEL_HELP_TEXT, formatter_class=RawTextHelpFormatter
     )
-    parser = argparse.ArgumentParser(
-        description=help_text, formatter_class=RawTextHelpFormatter
-    )
-    parser.add_argument(
+
+    namespaces = top_level_parser.add_subparsers(help="namespaces", required=False)
+
+    # ----- START NAMESPACE ----- #
+    start_parser = namespaces.add_parser("start", help="specify which servers to run")
+
+    start_parser.add_argument(
         "--full-stack", action="store_true", help="",
     )
-    parser.add_argument(
+    start_parser.add_argument(
         "--node", action="store_true", help="",
     )
-    parser.add_argument(
+    start_parser.add_argument(
         "--ex-node", action="store_true", help="",
     )
-    parser.add_argument(
+    start_parser.add_argument(
         "--esv-ex-node", action="store_true", help="",
     )
-    parser.add_argument(
+    start_parser.add_argument(
         "--esv-idx-node", action="store_true", help="",
     )
 
-    parser.add_argument(
+    start_parser.add_argument(
         "--extapp",
         default="",
         dest="extapp_path",
@@ -151,7 +164,7 @@ def setup_argparser():
              "For electrumsv 'daemon apps' please see electrumsv subcommand help menu",
     )
 
-    subparsers = parser.add_subparsers(help="subcommand", required=False)
+    subparsers = start_parser.add_subparsers(help="subcommand", required=False)
 
     # ELECTRUMSV
     electrumsv = subparsers.add_parser(
@@ -223,9 +236,28 @@ def setup_argparser():
         default="",
         help="electrumsv_node git repo branch (optional)",
     )
-    subparsers_list = [electrumsv, electrumx, electrumsv_node, electrumsv_indexer]
-    config.subcmd_map[config.ELECTRUMSV_SDK] = parser  # register parent ArgumentParser
-    register_subcommands(subparsers_list)
+
+    # ----- STOP NAMESPACE ----- #
+    stop_parser = namespaces.add_parser("stop", help="stop all servers/spawned processes")
+
+    # ----- RESET NAMESPACE ----- #
+    reset_parser = namespaces.add_parser("reset", help="reset state of relevant servers to genesis")
+
+    subparsers_list = [electrumsv, electrumx, electrumsv_indexer, electrumsv_node]
+    # register top-level ArgumentParsers
+    config.subcmd_map[config.TOP_LEVEL] = top_level_parser
+    config.subcmd_map[config.START] = start_parser
+    config.subcmd_map[config.STOP] = stop_parser
+    config.subcmd_map[config.RESET] = reset_parser
+
+    config = Config
+    for cmd in subparsers_list:
+        cmd_name = cmd.prog.split(sep=" ")[2]
+        config.subcmd_map.update({cmd_name: cmd})
+
+    # initialize subcommands_args_map with empty arg list
+    for cmd_name in config.subcmd_map.keys():
+        config.subcmd_raw_args_map[cmd_name] = []
 
 def startup():
     print()

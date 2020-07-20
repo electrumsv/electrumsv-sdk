@@ -150,9 +150,16 @@ class Handlers:
             raise e
 
     # ----- MAIN ARGUMENT HANDLERS ----- #
+    @classmethod
+    def handle_top_level_args(cls, parsed_args):
+        if not Config.NAMESPACE == Config.TOP_LEVEL:
+            return
+
+        # print("TOP LEVEL ARGS HANDLER")
+        # print(f"parsed_args={parsed_args}")
 
     @classmethod
-    def handle_electrumsv_sdk_args(cls, parsed_args):
+    def handle_start_args(cls, parsed_args):
         """the top-level arguments (preceeding any subcommand) cover two main functionalities:
         1) mode of operation:
         --full-stack OR --node OR --ex-node OR --esv-ex-node OR --esv-idx-node
@@ -164,6 +171,9 @@ class Handlers:
         For (2), extension app support is not supported yet (but will allow for any non-python
         servers to be run (e.g. a localhost blockexplorer perhaps)
         """
+        if not Config.NAMESPACE == Config.START:
+            return
+
         valid_input, modes_selected = validate_only_one_mode(parsed_args)
         if not valid_input:
             print(f"You must only select ONE mode of operation. You selected '{modes_selected}'")
@@ -200,7 +210,28 @@ class Handlers:
             )
 
     @classmethod
+    def handle_stop_args(cls, parsed_args):
+        if not Config.NAMESPACE == Config.STOP:
+            return
+
+        raise NotImplementedError
+        # print("STOP ARGS HANDLER")
+        # print(f"parsed_args={parsed_args}")
+
+    @classmethod
+    def handle_reset_args(cls, parsed_args):
+        if not Config.NAMESPACE == Config.RESET:
+            return
+
+        raise NotImplementedError
+        # print("RESET ARGS HANDLER")
+        # print(f"parsed_args={parsed_args}")
+
+    @classmethod
     def handle_electrumsv_args(cls, parsed_args):
+        if not Config.NAMESPACE == Config.START:
+            return
+
         if not Config.ELECTRUMSV in Config.required_dependencies_set:
             print()
             print(f"{Config.ELECTRUMSV} not required")
@@ -224,6 +255,9 @@ class Handlers:
 
     @classmethod
     def handle_electrumx_args(cls, parsed_args):
+        if not Config.NAMESPACE == Config.START:
+            return
+
         if not Config.ELECTRUMX in Config.required_dependencies_set:
             print()
             print(f"{Config.ELECTRUMX} not required")
@@ -245,6 +279,9 @@ class Handlers:
 
     @classmethod
     def handle_electrumsv_node_args(cls, parsed_args):
+        if not Config.NAMESPACE == Config.START:
+            return
+
         # print("handle_electrumsv_node_args")
         if not Config.ELECTRUMSV_NODE in Config.required_dependencies_set:
             print()
@@ -265,6 +302,9 @@ class Handlers:
 
     @classmethod
     def handle_electrumsv_indexer_args(cls, parsed_args):
+        if not Config.NAMESPACE == Config.START:
+            return
+
         # print("handle_electrumsv_indexer_args")
         if not Config.ELECTRUMSV_INDEXER in Config.required_dependencies_set:
             print()
