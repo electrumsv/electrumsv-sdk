@@ -23,7 +23,7 @@ class InvalidInput(Exception):
     pass
 
 
-def manual_start_namespace_argparsing(args):
+def manual_argparsing(args):
     """manually iterate through sys.argv and feed arguments to either:
     a) parent ArgumentParser
     b) child ArgumentParsers (aka subcommands)"""
@@ -108,35 +108,7 @@ def feed_to_argparsers(args, subcommand_indices):
         # print(f"{cmd_name}: {parsed_args}")
 
 
-def setup_argparser():
-    """
-    Structure of CLI interface:
-
-    top_level_parser
-        start
-            --full-stack
-            --node
-            --ex-node
-            --esv-ex-node
-            --esv-idx-node
-            --extapp
-            electrumsv          (subcmd of 'start' namespace for config options)
-            electrumx           (subcmd of 'start' namespace for config options)
-            electrumsv-indexer  (subcmd of 'start' namespace for config options)
-            electrumsv-node     (subcmd of 'start' namespace for config options)
-        stop
-        reset
-
-    """
-    config = Config
-
-    top_level_parser = argparse.ArgumentParser(
-        description=TOP_LEVEL_HELP_TEXT, formatter_class=RawTextHelpFormatter
-    )
-
-    namespaces = top_level_parser.add_subparsers(help="namespaces", required=False)
-
-    # ----- START NAMESPACE ----- #
+def add_start_argparser(namespaces):
     start_parser = namespaces.add_parser("start", help="specify which servers to run")
 
     start_parser.add_argument(
@@ -168,7 +140,7 @@ def setup_argparser():
 
     # ELECTRUMSV
     electrumsv = subparsers.add_parser(
-        config.ELECTRUMSV, help="specify repo and branch"
+        Config.ELECTRUMSV, help="specify repo and branch"
     )
     electrumsv.add_argument(
         "-repo",
@@ -189,7 +161,7 @@ def setup_argparser():
     )
 
     # ELECTRUMX
-    electrumx = subparsers.add_parser(config.ELECTRUMX, help="specify repo and branch")
+    electrumx = subparsers.add_parser(Config.ELECTRUMX, help="specify repo and branch")
     electrumx.add_argument(
         "-repo",
         type=str,
@@ -203,7 +175,7 @@ def setup_argparser():
 
     # ELECTRUMSV-INDEXER
     electrumsv_indexer = subparsers.add_parser(
-        config.ELECTRUMSV_INDEXER, help="specify repo and branch"
+        Config.ELECTRUMSV_INDEXER, help="specify repo and branch"
     )
     electrumsv_indexer.add_argument(
         "-repo",
@@ -221,7 +193,7 @@ def setup_argparser():
 
     # ELECTRUMSV-NODE
     electrumsv_node = subparsers.add_parser(
-        config.ELECTRUMSV_NODE, help="specify repo and branch"
+        Config.ELECTRUMSV_NODE, help="specify repo and branch"
     )
     electrumsv_node.add_argument(
         "-repo",
@@ -236,28 +208,61 @@ def setup_argparser():
         default="",
         help="electrumsv_node git repo branch (optional)",
     )
+    start_namespace_subcommands = [electrumsv, electrumsv_node, electrumx, electrumsv_indexer]
+    return start_parser, start_namespace_subcommands
 
-    # ----- STOP NAMESPACE ----- #
+def add_stop_argparser(namespaces):
     stop_parser = namespaces.add_parser("stop", help="stop all servers/spawned processes")
+    return stop_parser
 
-    # ----- RESET NAMESPACE ----- #
+
+def add_reset_argparser(namespaces):
     reset_parser = namespaces.add_parser("reset", help="reset state of relevant servers to genesis")
+    return reset_parser
 
-    subparsers_list = [electrumsv, electrumx, electrumsv_indexer, electrumsv_node]
+
+def setup_argparser():
+    """
+    Structure of CLI interface:
+
+    top_level_parser
+        start
+            --full-stack
+            --node
+            --ex-node
+            --esv-ex-node
+            --esv-idx-node
+            --extapp
+            electrumsv          (subcmd of 'start' namespace for config options)
+            electrumx           (subcmd of 'start' namespace for config options)
+            electrumsv-indexer  (subcmd of 'start' namespace for config options)
+            electrumsv-node     (subcmd of 'start' namespace for config options)
+        stop
+        reset
+
+    """
+    top_level_parser = argparse.ArgumentParser(
+        description=TOP_LEVEL_HELP_TEXT, formatter_class=RawTextHelpFormatter
+    )
+
+    namespaces = top_level_parser.add_subparsers(help="namespaces", required=False)
+    start_parser, start_namespace_subcommands = add_start_argparser(namespaces)
+    stop_parser = add_stop_argparser(namespaces)
+    reset_parser = add_reset_argparser(namespaces)
+
     # register top-level ArgumentParsers
-    config.subcmd_map[config.TOP_LEVEL] = top_level_parser
-    config.subcmd_map[config.START] = start_parser
-    config.subcmd_map[config.STOP] = stop_parser
-    config.subcmd_map[config.RESET] = reset_parser
+    Config.subcmd_map[Config.TOP_LEVEL] = top_level_parser
+    Config.subcmd_map[Config.START] = start_parser
+    Config.subcmd_map[Config.STOP] = stop_parser
+    Config.subcmd_map[Config.RESET] = reset_parser
 
-    config = Config
-    for cmd in subparsers_list:
+    for cmd in start_namespace_subcommands:
         cmd_name = cmd.prog.split(sep=" ")[2]
-        config.subcmd_map.update({cmd_name: cmd})
+        Config.subcmd_map[cmd_name] = cmd
 
     # initialize subcommands_args_map with empty arg list
-    for cmd_name in config.subcmd_map.keys():
-        config.subcmd_raw_args_map[cmd_name] = []
+    for cmd_name in Config.subcmd_map.keys():
+        Config.subcmd_raw_args_map[cmd_name] = []
 
 def startup():
     print()
