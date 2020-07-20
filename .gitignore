@@ -7,3 +7,5 @@ electrumsv-sdk/sdk_depends/electrumsv
 electrumsv-sdk/sdk_depends/electrumx
 electrumsv-sdk/sdk_depends/electrumx_data
 *.bat
+.vscode/*
+electrumsv-server/data

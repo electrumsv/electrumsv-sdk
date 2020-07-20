@@ -157,11 +157,13 @@
         show() {
           this.page_element.style = "";
           detail_page.hide();
+
+          this.setupExpiryTimer();
         }
 
         hide() {
           this.page_element.style = "display: none";
-          window.clearInterval(this.expiry_timer_id);
+          this.clearExpiryTimer();
         }
 
         setRequestUri(request_uri) {
@@ -169,17 +171,39 @@
           this.qrcode.makeCode(request_uri);
         }
 
-        setExpiryTimestamp(expiry_timestamp) {
-          this.expiry_date = new Date(expiry_timestamp * 1000);
-
-          const this_ = this;
-          function intervalFunc() {
-            this_.updateExpiryText();
+        setupExpiryTimer() {
+          this.clearExpiryTimer();
+          if (this.handleExpiryTimerEvent()) {
+            function intervalFunc() {
+              if (!this.handleExpiryTimerEvent()) {
+                this.clearExpiryTimer();
+                // this.button.style = "display: none";
+              }
+            }
+            this.expiry_timer_id = window.setInterval(intervalFunc.bind(this), 1000);
           }
-          this.expiry_timer_id = window.setInterval(intervalFunc, 1000);
         }
 
-        updateExpiryText() {
+        clearExpiryTimer() {
+          if (this.expiry_timer_id !== null) {
+            window.clearInterval(this.expiry_timer_id);
+            this.expiry_timer_id = null;
+          }
+        }
+
+        setExpiryTimestamp(expiry_timestamp) {
+          this.expiry_date = new Date(expiry_timestamp * 1000);
+          this.setupExpiryTimer();
+        }
+
+        handleExpiryTimerEvent() {
+          // Does not expire.
+          if (this.expiry_date === null) {
+            this.qrcode_expiry_element.innerText = "";
+            return false;
+          }
+
+          let result = true;
           const delta = (this.expiry_date - Date.now());
           const total_seconds = Math.trunc(delta / 1000);
           const minutes = Math.trunc(total_seconds / 60);
@@ -193,9 +217,11 @@
             text += "expires in "+ seconds +" seconds";
           } else {
             text += "is expired.";
+            result = false;
           }
 
           this.qrcode_expiry_element.innerText = text;
+          return result;
         }
 
         copyToClipboard(text) {

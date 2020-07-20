@@ -22,6 +22,7 @@ class PaymentRequest(BaseModel):
     description = peewee.TextField(null=True)
     date_expires = peewee.TimestampField(null=True, utc=True)
     date_created = peewee.TimestampField(utc=True)
+    tx_hash = peewee.BlobField(null=True)
 
 
 class PaymentRequestOutput(BaseModel):

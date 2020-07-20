@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -6,8 +7,11 @@ from .config import parse_args
 from .exceptions import StartupError
 from . import server_web
 
-
 def run() -> None:
+    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',
+        level=logging.DEBUG,
+        datefmt='%Y-%m-%d %H:%M:%S')
+
     config = parse_args()
     try:
         app = Application(config)
