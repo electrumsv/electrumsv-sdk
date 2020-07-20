@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 import platform
@@ -7,7 +8,25 @@ from electrumsv_node import electrumsv_node
 
 from electrumsv_sdk.config import Config
 from .app import setup_argparser, manual_argparsing, startup
-from .handle_dependencies import handle_dependencies
+from .handlers import handle
+
+def start():
+    procs = startup()
+    with open(Config.proc_ids_path, 'w') as f:
+        f.write(json.dumps(procs))
+
+def stop():
+    with open(Config.proc_ids_path, 'r') as f:
+        procs = json.loads(f.read())
+    electrumsv_node.stop()
+
+    if len(procs) != 0:
+        for proc in procs:
+            subprocess.run(f"taskkill.exe /PID {proc} /T /F")
+    print("stack terminated")
+
+def reset():
+    pass
 
 
 def main():
@@ -33,12 +52,15 @@ def main():
 
         setup_argparser()
         manual_argparsing(sys.argv)  # updates global 'Config.subcmd_parsed_args_map'
-        handle_dependencies()
+        handle()
         if Config.NAMESPACE == Config.START:
-            procs = startup()
+            start()
 
-            while True:
-                time.sleep(0.2)
+        if Config.NAMESPACE == Config.STOP:
+            stop()
+
+        if Config.NAMESPACE == Config.RESET:
+            reset()
     except KeyboardInterrupt:
         electrumsv_node.stop()
 

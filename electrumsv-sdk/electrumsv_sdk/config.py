@@ -58,6 +58,7 @@ class Config:
     required_dependencies_set: Set[str] = set()
 
     run_scripts_dir = Path(MODULE_DIR).joinpath("run_scripts")
+    proc_ids_path = run_scripts_dir.joinpath("proc_ids.json")
 
     @classmethod
     def from_dict(cls, config: Dict):

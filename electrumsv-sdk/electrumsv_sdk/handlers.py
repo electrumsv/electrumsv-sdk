@@ -211,10 +211,10 @@ class Handlers:
 
     @classmethod
     def handle_stop_args(cls, parsed_args):
+        """takes no arguments"""
         if not Config.NAMESPACE == Config.STOP:
             return
 
-        raise NotImplementedError
         # print("STOP ARGS HANDLER")
         # print(f"parsed_args={parsed_args}")
 
@@ -328,7 +328,7 @@ class Handlers:
 # ----- HANDLERS ENTRY POINT ----- #
 
 
-def handle_dependencies():
+def handle():
     for cmd, parsed_args in Config.subcmd_parsed_args_map.items():
         func = getattr(Handlers, "handle_" + cmd + "_args")
         func(parsed_args)

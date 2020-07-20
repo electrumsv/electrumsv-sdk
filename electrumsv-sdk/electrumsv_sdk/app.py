@@ -274,9 +274,9 @@ def startup():
 
     if 'electrumx' in Config.required_dependencies_set:
         electrumx_process = run_electrumx_server()
-        procs.append(electrumx_process)
+        procs.append(electrumx_process.pid)
 
     if 'electrumsv' in Config.required_dependencies_set:
         esv_process = run_electrumsv_daemon()
-        procs.append(esv_process)
+        procs.append(esv_process.pid)
     return procs
