@@ -2,8 +2,8 @@
 .idea/*
 dist/*
 build/*
-electrumsv_sdk.egg-info/*
-sdk_depends/electrumsv
-sdk_depends/electrumx
-sdk_depends/electrumx_data
+electrumsv-sdk/electrumsv_sdk.egg-info/*
+electrumsv-sdk/sdk_depends/electrumsv
+electrumsv-sdk/sdk_depends/electrumx
+electrumsv-sdk/sdk_depends/electrumx_data
 *.bat
