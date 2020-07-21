@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .config import Config
 from .install_tools import install_electrumsv, install_electrumsv_node, install_electrumx, \
-    create_if_not_exist, generate_run_script_electrumsv, generate_run_script_electrumx
+    create_if_not_exist, generate_run_scripts_electrumsv, generate_run_script_electrumx
 from .utils import checkout_branch
 
 
@@ -74,7 +74,7 @@ class CheckInstall:
 
     @classmethod
     def check_local_electrumsv_install(cls, url, branch):
-        generate_run_script_electrumsv()
+        generate_run_scripts_electrumsv()
 
     @classmethod
     def check_remote_electrumx_install(cls, url, branch):

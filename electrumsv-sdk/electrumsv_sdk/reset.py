@@ -22,14 +22,17 @@ orm_logger.setLevel(logging.WARNING)
 
 def reset_node():
     electrumsv_node.reset()
+    logger.debug("reset of RegTest bitcoin daemon completed successfully.")
 
 def reset_electrumx():
+    logger.debug("resetting state of RegTest electrumx server...")
     electrumx_data_dir = Config.electrumx_data_dir
     if electrumx_data_dir.exists():
         shutil.rmtree(electrumx_data_dir.__str__())
         os.mkdir(electrumx_data_dir.__str__())
     else:
         create_if_not_exist(electrumx_data_dir)
+    logger.debug("reset of RegTest electrumx server completed successfully.")
 
 def reset_electrumsv_wallet():
     """depends on having node and electrumx already running"""
@@ -93,3 +96,4 @@ def reset_electrumsv_wallet():
     delete_wallet()
     create_wallet()
     topup_wallet()
+    logger.debug("reset of RegTest electrumsv wallet completed successfully.")

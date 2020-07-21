@@ -33,71 +33,98 @@ def install_electrumsv(url, branch):
         subprocess.run(
             f"{sys.executable} -m pip install -r {Config.electrumsv_binary_requirements_path}"
         )
-    generate_run_script_electrumsv()
+    generate_run_scripts_electrumsv()
 
-def generate_run_script_electrumsv():
+
+def make_bat_file(filename, commandline_string_split, env_vars):
+    open(filename, "w").close()
+    with open(filename, "a") as f:
+        f.write("@echo off\n")
+        for key, val in env_vars.items():
+            f.write(f"set {key}={val}\n")
+        for subcmd in commandline_string_split:
+            f.write(f"{subcmd}" + " ")
+        f.write("\n")
+        f.write("pause\n")
+
+
+def make_bash_file(filename, commandline_string_split, env_vars):
+    open(filename, "w").close()
+    with open(filename, "a") as f:
+        f.write("#!/bin/bash\n")
+        f.write("set echo off\n")
+        for key, val in env_vars.items():
+            f.write(f"export {key}={val}\n")
+        for subcmd in commandline_string_split:
+            f.write(f"{subcmd}" + " ")
+        f.write("\n")
+        f.write('read -s -n 1 -p "Press any key to continue" . . .\n')
+        f.write("exit")
+
+
+def make_esv_daemon_script(esv_script, electrumsv_env_vars):
+    commandline_string = (
+        f"{sys.executable} {esv_script} --regtest daemon -dapp restapi "
+        f"--v=debug --file-logging --restapi --server=127.0.0.1:51001:t "
+        f"--portable"
+    )
+
+    if sys.platform == "win32":
+        commandline_string_split = shlex.split(commandline_string, posix=0)
+        make_bat_file("electrumsv.bat", commandline_string_split, electrumsv_env_vars)
+
+    elif sys.platform in ["linux", "darwin"]:
+        commandline_string_split = shlex.split(commandline_string, posix=1)
+        make_bash_file("electrumsv.sh", commandline_string_split, electrumsv_env_vars)
+
+
+def make_esv_gui_script(esv_script, electrumsv_env_vars):
+    commandline_string = (
+        f"{sys.executable} {esv_script} --v=debug --file-logging "
+        f"--server=127.0.0.1:51001:t --portable"
+    )
+
+    if sys.platform == "win32":
+        commandline_string_split = shlex.split(commandline_string, posix=0)
+        make_bat_file("electrumsv-gui.bat", commandline_string_split, electrumsv_env_vars)
+
+    elif sys.platform in ["linux", "darwin"]:
+        commandline_string_split = shlex.split(commandline_string, posix=1)
+        make_bash_file("electrumsv-gui.sh", commandline_string_split, electrumsv_env_vars)
+
+
+def generate_run_scripts_electrumsv():
+    """makes both the daemon script and a script for running the GUI"""
     create_if_not_exist(Config.run_scripts_dir)
     os.chdir(Config.run_scripts_dir)
     path_to_dapp_example_apps = Config.electrumsv_dir.joinpath("examples").joinpath("applications")
     electrumsv_env_vars = {
-        'PYTHONPATH': path_to_dapp_example_apps.__str__(),
+        "PYTHONPATH": path_to_dapp_example_apps.__str__(),
     }
     esv_script = Config.electrumsv_dir.joinpath("electrum-sv").__str__()
-
-    commandline_string = (f"{sys.executable} {esv_script} --regtest daemon -dapp restapi "
-                          f"--v=debug --file-logging --restapi --server=127.0.0.1:51001:t "
-                          f"--portable")
-
-    commandline_string_split = shlex.split(commandline_string, posix=0)
-
-    def make_bat_file(filename):
-        open(filename, 'w').close()
-        with open(filename, 'a') as f:
-            f.write("@echo off\n")
-            for key, val in electrumsv_env_vars.items():
-                f.write(f"set {key}={val}\n")
-            for subcmd in commandline_string_split:
-                f.write(f"{subcmd}" + " ")
-            f.write("\n")
-            f.write("pause\n")
-
-    def make_bash_file(filename):
-        open(filename, 'w').close()
-        with open(filename, 'a') as f:
-            f.write("#!/bin/bash\n")
-            f.write("set echo off\n")
-            for key, val in electrumsv_env_vars.items():
-                f.write(f"export {key}={val}\n")
-            for subcmd in commandline_string_split:
-                f.write(f"{subcmd}" + " ")
-            f.write("\n")
-            f.write('read -s -n 1 -p "Press any key to continue" . . .\n')
-            f.write('exit')
-    if sys.platform == 'win32':
-        make_bat_file("electrumsv.bat")
-    elif sys.platform in ['linux', 'darwin']:
-        make_bash_file("electrumsv.sh")
+    make_esv_daemon_script(esv_script, electrumsv_env_vars)
+    make_esv_gui_script(esv_script, electrumsv_env_vars)
 
 
 def generate_run_script_electrumx():
     create_if_not_exist(Config.run_scripts_dir)
     os.chdir(Config.run_scripts_dir)
     electrumx_env_vars = {
-        'DB_DIRECTORY': Config.electrumx_data_dir.__str__(),
-        'DAEMON_URL': 'http://rpcuser:rpcpassword@127.0.0.1:18332',
-        'DB_ENGINE': 'leveldb',
-        'SERVICES': 'tcp://:51001,rpc://',
-        'COIN': 'BitcoinSV',
-        'COST_SOFT_LIMIT': '0',
-        'COST_HARD_LIMIT': '0',
-        'MAX_SEND': '10000000',
-        'LOG_LEVEL': 'debug',
-        'NET': 'regtest',
+        "DB_DIRECTORY": Config.electrumx_data_dir.__str__(),
+        "DAEMON_URL": "http://rpcuser:rpcpassword@127.0.0.1:18332",
+        "DB_ENGINE": "leveldb",
+        "SERVICES": "tcp://:51001,rpc://",
+        "COIN": "BitcoinSV",
+        "COST_SOFT_LIMIT": "0",
+        "COST_HARD_LIMIT": "0",
+        "MAX_SEND": "10000000",
+        "LOG_LEVEL": "debug",
+        "NET": "regtest",
     }
 
     def make_bat_file(filename):
-        open(filename, 'w').close()
-        with open(filename, 'a') as f:
+        open(filename, "w").close()
+        with open(filename, "a") as f:
             f.write("@echo off\n")
             for key, val in electrumx_env_vars.items():
                 f.write(f"set {key}={val}\n")
@@ -107,8 +134,8 @@ def generate_run_script_electrumx():
             f.write("pause\n")
 
     def make_bash_file(filename):
-        open(filename, 'w').close()
-        with open(filename, 'a') as f:
+        open(filename, "w").close()
+        with open(filename, "a") as f:
             f.write("#!/bin/bash\n")
             f.write("set echo off\n")
             for key, val in electrumx_env_vars.items():
@@ -117,12 +144,13 @@ def generate_run_script_electrumx():
                 '"' + f"{sys.executable}" + '"' + " " +
                 '"' + f"{Config.electrumx_dir.joinpath('electrumx_server')}" + '"\n')
             f.write('read -s -n 1 -p "Press any key to continue" . . .\n')
-            f.write('exit')
+            f.write("exit")
 
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         make_bat_file("electrumx.bat")
-    elif sys.platform in ['linux', 'darwin']:
+    elif sys.platform in ["linux", "darwin"]:
         make_bash_file("electrumx.sh")
+
 
 def install_electrumx(url, branch):
 

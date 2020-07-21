@@ -59,6 +59,10 @@ def start_and_stop_ESV(electrumsv_server_script):
 
 
 def run_electrumsv_daemon(is_first_run=False):
+    """Todo - this currently uses ugly hacks with starting and stopping the ESV wallet in order to:
+    1) generate the config files (so that it can be directly edited) - would be obviated by
+    fixing this: https://github.com/electrumsv/electrumsv/issues/111
+    2) newly created wallet doesn't seem to be fully useable until after stopping the daemon."""
     if sys.platform == "win32":
         electrumsv_server_script = Config.run_scripts_dir.joinpath("electrumsv.bat")
     else:
@@ -73,10 +77,14 @@ def run_electrumsv_daemon(is_first_run=False):
         )
         if is_first_run:
             reset_electrumsv_wallet()  # create first-time wallet
+            logger.debug("reset of RegTest electrumsv wallet complete.")
+            subprocess.run(f"taskkill.exe /PID {process.pid} /T /F")
+            run_electrumsv_daemon(is_first_run=False)
+
         return process
-    except FileNotFoundError:  # config files don't exist if ESV has not been run before
-        start_and_stop_ESV(electrumsv_server_script)
-        disable_rest_api_authentication()
+    except FileNotFoundError:  # is_first_run = True
+        start_and_stop_ESV(electrumsv_server_script)  # generates config json file
+        disable_rest_api_authentication()  # now this will work
         return run_electrumsv_daemon(is_first_run=True)
 
 
@@ -110,6 +118,7 @@ def reset():
     Config.required_dependencies_set.add(Config.ELECTRUMX)
     Config.required_dependencies_set.add(Config.ELECTRUMSV)
     start()
+    time.sleep(5)
     reset_electrumsv_wallet()
     stop()
 
