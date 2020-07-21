@@ -22,7 +22,7 @@ py -3.8 -m pip install electrumsv-sdk
 
 """
 
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 
 from electrumsv_sdk.config import Config
 
