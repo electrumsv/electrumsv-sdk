@@ -10,17 +10,10 @@ MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class Config:
-    """
-    Config object that can be saved/loaded to/from a json file and provides IDE support
-    by virtue of being represented as a python class.
+    """Only electrumsv paths are saved to config.json so that 'reset' works on correct wallet."""
+    NAMESPACE = ''  # 'start', 'stop' or 'reset'
 
-    Usage pattern is to read in the configuration from file by dependency-injection
-    at the start of any dependent functions and if modified should write the updated
-    config back to the file.
-    """
-    NAMESPACE = ''  # one of 'start', 'stop' or 'reset'
-
-    # top-level namespaces
+    # namespaces
     TOP_LEVEL = "top_level"
     START = "start"
     STOP = "stop"
@@ -46,7 +39,9 @@ class Config:
         "requirements-electrumx.txt")
 
     depends_dir = Path(MODULE_DIR).parent.joinpath("sdk_depends")
-    electrumsv_dir = None  # set dynamically at startup
+
+    # electrumsv paths are set dynamically at startup - see: set_electrumsv_path()
+    electrumsv_dir = None
     electrumsv_data_dir = None
     electrumsv_regtest_dir = None
     electrumsv_regtest_config_dir = None
@@ -65,8 +60,8 @@ class Config:
     @classmethod
     def set_electrumsv_path(cls, electrumsv_dir: Path):
         """This is set dynamically at startup. It is *only persisted for purposes of the 'reset'
-        command. The repo will need to be specified anew every time the SDK 'start' command is run.
-        """
+        command. The trade-off is that the electrumsv 'repo' will need to be specified anew every
+        time the SDK 'start' command is run."""
         cls.electrumsv_dir = electrumsv_dir
         cls.electrumsv_data_dir = cls.electrumsv_dir.joinpath("electrum_sv_data")
         cls.electrumsv_regtest_dir = cls.electrumsv_data_dir.joinpath("regtest")
@@ -170,6 +165,5 @@ TOP_LEVEL_HELP_TEXT = textwrap.dedent("""
     - bitcoin node state is reset back to genesis
     - electrumx state is reset back to genesis 
     - electrumsv RegTest wallet history is erased to match blockchain state
-
 
     """)

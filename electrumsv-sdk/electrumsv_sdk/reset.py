@@ -96,4 +96,4 @@ def reset_electrumsv_wallet():
     delete_wallet()
     create_wallet()
     topup_wallet()
-    logger.debug("reset of RegTest electrumsv wallet completed successfully.")
+    logger.debug("reset of RegTest electrumsv wallet completed successfully")

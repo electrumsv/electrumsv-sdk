@@ -77,9 +77,8 @@ def run_electrumsv_daemon(is_first_run=False):
         )
         if is_first_run:
             reset_electrumsv_wallet()  # create first-time wallet
-            logger.debug("reset of RegTest electrumsv wallet complete.")
             subprocess.run(f"taskkill.exe /PID {process.pid} /T /F")
-            run_electrumsv_daemon(is_first_run=False)
+            return run_electrumsv_daemon(is_first_run=False)
 
         return process
     except FileNotFoundError:  # is_first_run = True

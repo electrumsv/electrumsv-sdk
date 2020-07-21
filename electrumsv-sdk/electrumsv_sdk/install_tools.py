@@ -122,34 +122,14 @@ def generate_run_script_electrumx():
         "NET": "regtest",
     }
 
-    def make_bat_file(filename):
-        open(filename, "w").close()
-        with open(filename, "a") as f:
-            f.write("@echo off\n")
-            for key, val in electrumx_env_vars.items():
-                f.write(f"set {key}={val}\n")
-            f.write(
-                '"' + f"{sys.executable}" + '"' + " " +
-                '"' + f"{Config.electrumx_dir.joinpath('electrumx_server')}" + '"\n')
-            f.write("pause\n")
-
-    def make_bash_file(filename):
-        open(filename, "w").close()
-        with open(filename, "a") as f:
-            f.write("#!/bin/bash\n")
-            f.write("set echo off\n")
-            for key, val in electrumx_env_vars.items():
-                f.write(f"export {key}={val}\n")
-            f.write(
-                '"' + f"{sys.executable}" + '"' + " " +
-                '"' + f"{Config.electrumx_dir.joinpath('electrumx_server')}" + '"\n')
-            f.write('read -s -n 1 -p "Press any key to continue" . . .\n')
-            f.write("exit")
+    commandline_string = f"{sys.executable} {Config.electrumx_dir.joinpath('electrumx_server')}"
 
     if sys.platform == "win32":
-        make_bat_file("electrumx.bat")
+        commandline_string_split = shlex.split(commandline_string, posix=0)
+        make_bat_file("electrumx.bat", commandline_string_split, electrumx_env_vars)
     elif sys.platform in ["linux", "darwin"]:
-        make_bash_file("electrumx.sh")
+        commandline_string_split = shlex.split(commandline_string, posix=1)
+        make_bash_file("electrumx.bat", commandline_string_split, electrumx_env_vars)
 
 
 def install_electrumx(url, branch):

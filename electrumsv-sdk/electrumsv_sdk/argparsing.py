@@ -1,13 +1,9 @@
 """
-In a nutshell I needed to workaround the lack of support for argparse to take multiple
-subcommands (+/- args) simultaneously.
+As a workaround to lack of support for argparse to take multiple subcommands (+/- args)
+simultaneously I manually parse sys.argv and find the relevant args to feed to the appropriate
+ArgumentParser instance.
 
-The help menu displays how I would like so I have stayed with usual conventions / standard
-docs.
-
-But in order to actually feed the arguments to the 2nd or 3rd subcommand, I manually parse
-sys.argv and find the relevant args to feed to the appropriate ArgumentParser instance
-(either the top-level parent or one of the child ArgumentParsers)
+Fortunately the help menu displays as expected so does not deviate from the standard docuementation.
 """
 
 import argparse
@@ -26,8 +22,7 @@ def manual_argparsing(args):
     b) child ArgumentParsers (aka subcommands)"""
     args.pop(0)
 
-    # subcommand_indices -> cmd_name: [index_arg1, index_arg2]
-    subcommand_indices = {}
+    subcommand_indices = {}  # cmd_name: [index_arg1, index_arg2]
 
     cur_cmd_name = Config.TOP_LEVEL
     Config.NAMESPACE = Config.TOP_LEVEL
@@ -51,13 +46,9 @@ def manual_argparsing(args):
             else:
                 raise InvalidInput("First argument must be one of: [start, stop, reset, --help]")
 
-        # TOP_LEVEL NAMESPACE (first argument was *not* one of 'start', 'stop' or 'reset'.
-        # Most likely they did:
-        #   > electrumsv-sdk --help
         if Config.NAMESPACE == Config.TOP_LEVEL:
             subcommand_indices[Config.TOP_LEVEL].append(index)
 
-        # START NAMESPACE
         if Config.NAMESPACE == Config.START:
             # 'start' top-level arguments
             if arg.startswith("--"):
@@ -72,15 +63,11 @@ def manual_argparsing(args):
             if arg.startswith("-") and not arg.startswith("--"):
                 subcommand_indices[cur_cmd_name].append(index)
 
-        # STOP NAMESPACE
         if Config.NAMESPACE == Config.STOP:
             pass
 
-        # RESET NAMESPACE
         if Config.NAMESPACE == Config.RESET:
             pass
-
-        # print(f"index={index}, arg={arg}, subcommand_indices={subcommand_indices}")
 
     feed_to_argparsers(args, subcommand_indices)
 
@@ -102,7 +89,6 @@ def feed_to_argparsers(args, subcommand_indices):
             args=config.subcmd_raw_args_map[cmd_name]
         )
         config.subcmd_parsed_args_map[cmd_name] = parsed_args
-        # print(f"{cmd_name}: {parsed_args}")
 
 
 def add_start_argparser(namespaces):
@@ -209,7 +195,7 @@ def add_start_argparser(namespaces):
     return start_parser, start_namespace_subcommands
 
 def add_stop_argparser(namespaces):
-    stop_parser = namespaces.add_parser("stop", help="stop all servers/spawned processes")
+    stop_parser = namespaces.add_parser("stop", help="stop all spawned processes")
     return stop_parser
 
 
@@ -253,10 +239,10 @@ def setup_argparser():
     Config.subcmd_map[Config.STOP] = stop_parser
     Config.subcmd_map[Config.RESET] = reset_parser
 
+    # register subcommands second so that handlers are called in desired ordering
     for cmd in start_namespace_subcommands:
         cmd_name = cmd.prog.split(sep=" ")[2]
         Config.subcmd_map[cmd_name] = cmd
 
-    # initialize subcommands_args_map with empty arg list
     for cmd_name in Config.subcmd_map.keys():
         Config.subcmd_raw_args_map[cmd_name] = []

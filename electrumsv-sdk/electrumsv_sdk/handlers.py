@@ -135,6 +135,10 @@ class Handlers:
     - would hate to destroy all of their hard work!
 
     No arg ("") will default to the 'official' github repo.
+
+    All handlers are called no matter what and args are fed to them - if any. But if their
+    relevant namespace is not 'active' (i.e. 'start', 'stop' or 'reset') then they do not action
+    anything -> return
     """
 
     @classmethod
