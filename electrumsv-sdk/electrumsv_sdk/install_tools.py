@@ -21,21 +21,6 @@ def create_if_not_exist(path):
             print(f"created '{cur_dir}' successfully")
 
 
-def install_electrumsv(url, branch):
-    # Note - this is only so that it works "out-of-the-box". But for development
-    # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
-
-    if not Config.electrumsv_dir.exists():
-        os.chdir(Config.depends_dir.__str__())
-        subprocess.run(f"git clone {url}", shell=True, check=True)
-        checkout_branch(branch)
-        subprocess.run(f"{sys.executable} -m pip install -r {Config.electrumsv_requirements_path}")
-        subprocess.run(
-            f"{sys.executable} -m pip install -r {Config.electrumsv_binary_requirements_path}"
-        )
-    generate_run_scripts_electrumsv()
-
-
 def make_bat_file(filename, commandline_string_split, env_vars):
     open(filename, "w").close()
     with open(filename, "a") as f:
@@ -132,6 +117,21 @@ def generate_run_script_electrumx():
         make_bash_file("electrumx.bat", commandline_string_split, electrumx_env_vars)
 
 
+def install_electrumsv(url, branch):
+    # Note - this is only so that it works "out-of-the-box". But for development
+    # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
+
+    if not Config.electrumsv_dir.exists():
+        os.chdir(Config.depends_dir.__str__())
+        subprocess.run(f"git clone {url}", shell=True, check=True)
+        checkout_branch(branch)
+        subprocess.run(f"{sys.executable} -m pip install -r {Config.electrumsv_requirements_path}")
+        subprocess.run(
+            f"{sys.executable} -m pip install -r {Config.electrumsv_binary_requirements_path}"
+        )
+    generate_run_scripts_electrumsv()
+
+
 def install_electrumx(url, branch):
 
     if not Config.electrumx_dir.exists():
@@ -140,7 +140,7 @@ def install_electrumx(url, branch):
         os.chdir(Config.depends_dir.__str__())
         subprocess.run(f"git clone {url}", shell=True, check=True)
         checkout_branch(branch)
-        generate_run_script_electrumx()
+    generate_run_script_electrumx()
 
 
 def install_electrumsv_node():

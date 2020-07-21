@@ -29,16 +29,16 @@ class Config:
     subcmd_raw_args_map: Dict[str, List[str]] = {}  # cmd_name: raw arguments
     subcmd_parsed_args_map = {}  # cmd_name: parsed arguments
 
-    sdk_requirements_linux = Path(MODULE_DIR).joinpath("requirements").joinpath(
+    sdk_requirements_linux = Path(MODULE_DIR).parent.joinpath("requirements").joinpath(
         "requirements-linux.txt")
-    sdk_requirements_win32 = Path(MODULE_DIR).joinpath("requirements").joinpath(
+    sdk_requirements_win32 = Path(MODULE_DIR).parent.joinpath("requirements").joinpath(
         "requirements-win32.txt")
 
     # exclude plyvel from electrumx requirements.txt (windows workaround)
-    sdk_requirements_electrumx = Path(MODULE_DIR).joinpath("requirements").joinpath(
+    sdk_requirements_electrumx = Path(MODULE_DIR).parent.joinpath("requirements").joinpath(
         "requirements-electrumx.txt")
 
-    depends_dir = Path(MODULE_DIR).parent.joinpath("sdk_depends")
+    depends_dir = Path(MODULE_DIR).joinpath("sdk_depends")
 
     # electrumsv paths are set dynamically at startup - see: set_electrumsv_path()
     electrumsv_dir = None

@@ -86,7 +86,7 @@ class CheckInstall:
         if not Config.electrumx_dir.exists():
             print(f"- installing electrumx (url={url})")
             install_electrumx(url, branch)
-        elif Config.electrumsv_dir.exists():
+        elif Config.electrumx_dir.exists():
             os.chdir(Config.electrumx_dir.__str__())
             result = subprocess.run(
                 f"git config --get remote.origin.url",
@@ -109,10 +109,10 @@ class CheckInstall:
                 print(f"- moving existing fork (to {existing_fork.__str__() + '.bak'}")
                 print(f"- installing electrumsv (url={url})")
                 os.rename(
-                    Config.electrumsv_dir.__str__(),
-                    Config.electrumsv_dir.__str__() + ".bak",
+                    Config.electrumx_dir.__str__(),
+                    Config.electrumx_dir.__str__() + ".bak",
                 )
-                install_electrumsv(url, branch)
+                install_electrumx(url, branch)
 
     @classmethod
     def check_local_electrumx_install(cls, path, branch):

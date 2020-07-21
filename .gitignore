@@ -1,9 +1,9 @@
 **.pyc
 .idea/*
 electrumsv-sdk/electrumsv_sdk.egg-info/*
-electrumsv-sdk/sdk_depends/electrumsv
-electrumsv-sdk/sdk_depends/electrumx
-electrumsv-sdk/sdk_depends/electrumx_data
+electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumsv
+electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumx
+electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumx_data
 *.bat
 *.sh
 .vscode/*
