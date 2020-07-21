@@ -46,14 +46,16 @@ class Config:
         "requirements-electrumx.txt")
 
     depends_dir = Path(MODULE_DIR).parent.joinpath("sdk_depends")
-    depends_dir_electrumsv = depends_dir.joinpath("electrumsv")
-    depends_dir_electrumx = depends_dir.joinpath("electrumx")
-    depends_dir_electrumx_data = depends_dir.joinpath("electrumx_data")
+    electrumsv_dir = None  # set dynamically at startup
+    electrumsv_data_dir = None
+    electrumsv_regtest_dir = None
+    electrumsv_regtest_config_dir = None
+    electrumsv_regtest_wallets_dir = None
+    electrumsv_requirements_path = None
+    electrumsv_binary_requirements_path = None
 
-    depends_dir_electrumsv_req = depends_dir_electrumsv.joinpath(
-        'contrib').joinpath('deterministic-build').joinpath('requirements.txt')
-    depends_dir_electrumsv_req_bin = depends_dir_electrumsv.joinpath(
-        'contrib').joinpath('deterministic-build').joinpath('requirements-binaries.txt')
+    electrumx_dir = depends_dir.joinpath("electrumx")
+    electrumx_data_dir = depends_dir.joinpath("electrumx_data")
 
     required_dependencies_set: Set[str] = set()
 
@@ -61,7 +63,22 @@ class Config:
     proc_ids_path = run_scripts_dir.joinpath("proc_ids.json")
 
     @classmethod
-    def from_dict(cls, config: Dict):
+    def set_electrumsv_path(cls, electrumsv_dir: Path):
+        """This is set dynamically at startup. It is *only persisted for purposes of the 'reset'
+        command. The repo will need to be specified anew every time the SDK 'start' command is run.
+        """
+        cls.electrumsv_dir = electrumsv_dir
+        cls.electrumsv_data_dir = cls.electrumsv_dir.joinpath("electrum_sv_data")
+        cls.electrumsv_regtest_dir = cls.electrumsv_data_dir.joinpath("regtest")
+        cls.electrumsv_regtest_config_dir = cls.electrumsv_regtest_dir.joinpath("config")
+        cls.electrumsv_regtest_wallets_dir = cls.electrumsv_regtest_dir.joinpath("wallets")
+        cls.electrumsv_requirements_path = cls.electrumsv_dir.joinpath('contrib').joinpath(
+            'deterministic-build').joinpath('requirements.txt')
+        cls.electrumsv_binary_requirements_path = cls.electrumsv_dir.joinpath('contrib').joinpath(
+            'deterministic-build').joinpath('requirements-binaries.txt')
+
+    @classmethod
+    def update_from_dict(cls, config: Dict):
         config_instance = cls()
         for key, val in config.items():
             setattr(config_instance, key, val)
@@ -74,19 +91,27 @@ class Config:
             config_dict[key] = val
         return config_dict
 
+    @classmethod
+    def save_repo_paths(cls):
+        """overwrites config.json"""
+        config_path = Path(MODULE_DIR).joinpath("config.json")
+        with open(config_path.__str__(), "w") as f:
+            repo_paths = {}
+            repo_paths['electrumsv_dir'] = cls.electrumsv_dir.__str__()
+            f.write(json.dumps(repo_paths))
 
-def load_config() -> Config:
-    config_path = Path(MODULE_DIR).joinpath("config.json")
-    with open(config_path.__str__(), "r") as f:
-        config = json.loads(f.read())
-    return Config.from_dict(config)
+    @classmethod
+    def load_repo_paths(cls) -> "Config":
+        """loads state from config.json"""
+        config_path = Path(MODULE_DIR).joinpath("config.json")
+        with open(config_path.__str__(), "r") as f:
+            config = json.loads(f.read())
+            electrumsv_dir = config.get("electrumsv_dir")
+            if electrumsv_dir:
+                cls.set_electrumsv_path(Path(electrumsv_dir))
+            else:
+                cls.set_electrumsv_path(Path(cls.depends_dir.joinpath("electrumsv")))
 
-
-def save_config(config: Config):
-    """completely overwrites config with new config json"""
-    config_path = Path(MODULE_DIR).joinpath("config.json")
-    with open(config_path.__str__(), "w") as f:
-        f.write(json.dumps(config))
 
 TOP_LEVEL_HELP_TEXT = textwrap.dedent("""
     electrumsv-sdk has a similar interface to systemctl with namespaces:

@@ -12,11 +12,8 @@ sys.argv and find the relevant args to feed to the appropriate ArgumentParser in
 
 import argparse
 from argparse import RawTextHelpFormatter
-import textwrap
-from typing import List
 
 from .config import Config, TOP_LEVEL_HELP_TEXT
-from .runners import run_electrumsv_daemon, run_electrumsv_node, run_electrumx_server
 
 
 class InvalidInput(Exception):
@@ -263,20 +260,3 @@ def setup_argparser():
     # initialize subcommands_args_map with empty arg list
     for cmd_name in Config.subcmd_map.keys():
         Config.subcmd_raw_args_map[cmd_name] = []
-
-def startup():
-    print()
-    print()
-    print("running stack...")
-    procs = []
-    if 'electrumsv_node' in Config.required_dependencies_set:
-        run_electrumsv_node()
-
-    if 'electrumx' in Config.required_dependencies_set:
-        electrumx_process = run_electrumx_server()
-        procs.append(electrumx_process.pid)
-
-    if 'electrumsv' in Config.required_dependencies_set:
-        esv_process = run_electrumsv_daemon()
-        procs.append(esv_process.pid)
-    return procs

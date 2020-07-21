@@ -4,8 +4,8 @@ import subprocess
 from pathlib import Path
 
 from .config import Config
-from .install_tools import install_electrumsv, install_electrumsv_node, \
-    install_electrumx
+from .install_tools import install_electrumsv, install_electrumsv_node, install_electrumx, \
+    create_if_not_exist, generate_run_script_electrumsv, generate_run_script_electrumx
 from .utils import checkout_branch
 
 
@@ -22,6 +22,7 @@ def validate_only_one_mode(parsed_args):
 
 
 class CheckInstall:
+
     @classmethod
     def check_remote_electrumsv_install(cls, url, branch):
         """3 possibilities:
@@ -29,11 +30,12 @@ class CheckInstall:
         (dir exists, url matches)
         (dir exists, url does not match - it's a forked repo)
         """
-        if not Config.depends_dir_electrumsv.exists():
+        if not Config.electrumsv_dir.exists():
             print(f"- installing electrumsv (url={url})")
             install_electrumsv(url, branch)
-        elif Config.depends_dir_electrumsv.exists():
-            os.chdir(Config.depends_dir_electrumsv.__str__())
+
+        elif Config.electrumsv_dir.exists():
+            os.chdir(Config.electrumsv_dir.__str__())
             result = subprocess.run(
                 f"git config --get remote.origin.url",
                 shell=True,
@@ -47,26 +49,32 @@ class CheckInstall:
                 checkout_branch(branch)
                 subprocess.run(f"git pull", shell=True, check=True)
                 subprocess.run(
-                    f"{sys.executable} -m pip install -r {Config.depends_dir_electrumsv_req}",
+                    f"{sys.executable} -m pip install -r {Config.electrumsv_requirements_path}",
                     shell=True,
                     check=True,
                 )
                 subprocess.run(
                     f"{sys.executable} -m pip install -r "
-                    f"{Config.depends_dir_electrumsv_req_bin}",
+                    f"{Config.electrumsv_binary_requirements_path}",
                     shell=True,
                     check=True,
                 )
             if result.stdout.strip() != url:
-                existing_fork = Config.depends_dir_electrumsv.__str__()
+                existing_fork = Config.electrumsv_dir.__str__()
                 print(f"- alternate fork of electrumsv is already installed")
                 print(f"- moving existing fork (to {existing_fork.__str__() + '.bak'}")
                 print(f"- installing electrumsv (url={url})")
                 os.rename(
-                    Config.depends_dir_electrumsv.__str__(),
-                    Config.depends_dir_electrumsv.__str__() + ".bak",
+                    Config.electrumsv_dir.__str__(),
+                    Config.electrumsv_dir.__str__() + ".bak",
                 )
                 install_electrumsv(url, branch)
+
+        create_if_not_exist(Config.electrumsv_regtest_wallets_dir)
+
+    @classmethod
+    def check_local_electrumsv_install(cls, url, branch):
+        generate_run_script_electrumsv()
 
     @classmethod
     def check_remote_electrumx_install(cls, url, branch):
@@ -75,11 +83,11 @@ class CheckInstall:
         (dir exists, url matches)
         (dir exists, url does not match - it's a forked repo)
         """
-        if not Config.depends_dir_electrumx.exists():
+        if not Config.electrumx_dir.exists():
             print(f"- installing electrumx (url={url})")
             install_electrumx(url, branch)
-        elif Config.depends_dir_electrumsv.exists():
-            os.chdir(Config.depends_dir_electrumx.__str__())
+        elif Config.electrumsv_dir.exists():
+            os.chdir(Config.electrumx_dir.__str__())
             result = subprocess.run(
                 f"git config --get remote.origin.url",
                 shell=True,
@@ -96,16 +104,19 @@ class CheckInstall:
                 #  awaiting a PR for electrumx
 
             if result.stdout.strip() != url:
-                existing_fork = Config.depends_dir_electrumx.__str__()
+                existing_fork = Config.electrumx_dir.__str__()
                 print(f"- alternate fork of electrumx is already installed")
                 print(f"- moving existing fork (to {existing_fork.__str__() + '.bak'}")
                 print(f"- installing electrumsv (url={url})")
                 os.rename(
-                    Config.depends_dir_electrumsv.__str__(),
-                    Config.depends_dir_electrumsv.__str__() + ".bak",
+                    Config.electrumsv_dir.__str__(),
+                    Config.electrumsv_dir.__str__() + ".bak",
                 )
                 install_electrumsv(url, branch)
 
+    @classmethod
+    def check_local_electrumx_install(cls, path, branch):
+        generate_run_script_electrumx()
 
     @classmethod
     def check_remote_electrumsv_node_install(cls, branch):
@@ -146,6 +157,13 @@ class Handlers:
             assert Path(path).exists(), f"the path {path} to {package_name} does not exist!"
             if branch != "":
                 subprocess.run(f"git checkout {branch}", shell=True, check=True)
+
+            if package_name == Config.ELECTRUMSV:
+                CheckInstall.check_local_electrumsv_install(path, branch)
+
+            if package_name == Config.ELECTRUMX:
+                CheckInstall.check_local_electrumx_install(path, branch)
+
         except Exception as e:
             raise e
 
@@ -220,10 +238,10 @@ class Handlers:
 
     @classmethod
     def handle_reset_args(cls, parsed_args):
+        """takes no arguments"""
         if not Config.NAMESPACE == Config.RESET:
             return
 
-        raise NotImplementedError
         # print("RESET ARGS HANDLER")
         # print(f"parsed_args={parsed_args}")
 
@@ -247,10 +265,13 @@ class Handlers:
 
         if parsed_args.repo == "":  # default
             parsed_args.repo = "https://github.com/electrumsv/electrumsv.git"
+            Config.set_electrumsv_path(Config.depends_dir.joinpath("electrumsv"))
             cls.handle_remote_repo(Config.ELECTRUMSV, parsed_args.repo, parsed_args.branch)
         elif parsed_args.repo.startswith("https://"):
+            Config.set_electrumsv_path(Config.depends_dir.joinpath("electrumsv"))
             cls.handle_remote_repo(Config.ELECTRUMSV, parsed_args.repo, parsed_args.branch)
         else:
+            Config.set_electrumsv_path(Path(parsed_args.repo))
             cls.handle_local_repo(Config.ELECTRUMSV, parsed_args.repo, parsed_args.branch)
 
     @classmethod
