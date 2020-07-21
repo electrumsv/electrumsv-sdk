@@ -77,6 +77,7 @@ def run_electrumsv_daemon(is_first_run=False):
         )
         if is_first_run:
             reset_electrumsv_wallet()  # create first-time wallet
+            time.sleep(2)
             subprocess.run(f"taskkill.exe /PID {process.pid} /T /F")
             return run_electrumsv_daemon(is_first_run=False)
 
