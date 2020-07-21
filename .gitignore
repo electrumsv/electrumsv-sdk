@@ -1,13 +1,14 @@
 **.pyc
 .idea/*
-dist/*
-build/*
 electrumsv-sdk/electrumsv_sdk.egg-info/*
 electrumsv-sdk/sdk_depends/electrumsv
 electrumsv-sdk/sdk_depends/electrumx
 electrumsv-sdk/sdk_depends/electrumx_data
 *.bat
+*.sh
 .vscode/*
 electrumsv-server/data
 electrumsv-sdk/electrumsv_sdk/run_scripts/proc_ids.json
 electrumsv-sdk/electrumsv_sdk/config.json
+electrumsv-sdk/build/*
+electrumsv-sdk/dist/*
