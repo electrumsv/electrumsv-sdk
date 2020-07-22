@@ -74,6 +74,7 @@ class CheckInstall:
 
     @classmethod
     def check_local_electrumsv_install(cls, url, branch):
+        create_if_not_exist(Config.electrumsv_regtest_wallets_dir)
         generate_run_scripts_electrumsv()
 
     @classmethod
