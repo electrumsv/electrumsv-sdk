@@ -41,6 +41,10 @@ def manual_argparsing(args):
                 cur_cmd_name = Config.RESET
                 Config.NAMESPACE = Config.RESET
                 subcommand_indices[Config.RESET] = []
+            elif arg == Config.NODE:
+                cur_cmd_name = Config.NODE
+                Config.NAMESPACE = Config.NODE
+                subcommand_indices[Config.NODE] = []
             elif arg == '--help':
                 pass
             else:
@@ -69,6 +73,12 @@ def manual_argparsing(args):
         if Config.NAMESPACE == Config.RESET:
             pass
 
+        if Config.NAMESPACE == Config.NODE:
+            if index != 0:
+                subcommand_indices[cur_cmd_name].append(index)
+
+        # print(f"subcommand_indices={subcommand_indices}, index={index}, arg={arg}")
+
     feed_to_argparsers(args, subcommand_indices)
 
 
@@ -85,9 +95,12 @@ def feed_to_argparsers(args, subcommand_indices):
     update_subcommands_args_map(args, subcommand_indices)
 
     for cmd_name in config.subcmd_map:
-        parsed_args = config.subcmd_map[cmd_name].parse_args(
-            args=config.subcmd_raw_args_map[cmd_name]
-        )
+        if cmd_name == Config.NODE:
+            parsed_args = config.subcmd_raw_args_map[cmd_name]
+        else:
+            parsed_args = config.subcmd_map[cmd_name].parse_args(
+                args=config.subcmd_raw_args_map[cmd_name]
+            )
         config.subcmd_parsed_args_map[cmd_name] = parsed_args
 
 
@@ -203,6 +216,13 @@ def add_reset_argparser(namespaces):
     reset_parser = namespaces.add_parser("reset", help="reset state of relevant servers to genesis")
     return reset_parser
 
+def add_node_argparser(namespaces):
+    node_parser = namespaces.add_parser("node", help="direct access to the built-in bitcoin "
+        "daemon RPC commands", usage="use as you would use bitcoin-cli")
+
+    # NOTE: this is a facade - all args are actually directed at the bitcoin RPC over http
+    # including the help menu
+    return node_parser
 
 def setup_argparser():
     """
@@ -232,12 +252,14 @@ def setup_argparser():
     start_parser, start_namespace_subcommands = add_start_argparser(namespaces)
     stop_parser = add_stop_argparser(namespaces)
     reset_parser = add_reset_argparser(namespaces)
+    node_parser = add_node_argparser(namespaces)
 
     # register top-level ArgumentParsers
     Config.subcmd_map[Config.TOP_LEVEL] = top_level_parser
     Config.subcmd_map[Config.START] = start_parser
     Config.subcmd_map[Config.STOP] = stop_parser
     Config.subcmd_map[Config.RESET] = reset_parser
+    Config.subcmd_map[Config.NODE] = node_parser
 
     # register subcommands second so that handlers are called in desired ordering
     for cmd in start_namespace_subcommands:

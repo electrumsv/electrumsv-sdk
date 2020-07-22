@@ -2,7 +2,7 @@ import sys
 import platform
 
 from electrumsv_sdk.config import Config
-from electrumsv_sdk.runners import start, stop, reset
+from electrumsv_sdk.runners import start, stop, reset, node
 from electrumsv_sdk.argparsing import setup_argparser, manual_argparsing
 from electrumsv_sdk.handlers import handle
 
@@ -37,6 +37,9 @@ def main():
 
     if Config.NAMESPACE == Config.RESET:
         reset()
+
+    if Config.NAMESPACE == Config.NODE:
+        node()
 
 if __name__ == "__main__":
     main()

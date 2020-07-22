@@ -250,6 +250,12 @@ class Handlers:
         # print(f"parsed_args={parsed_args}")
 
     @classmethod
+    def handle_node_args(cls, parsed_args):
+        if not Config.NAMESPACE == Config.NODE:
+            return
+        Config.node_args = parsed_args
+
+    @classmethod
     def handle_electrumsv_args(cls, parsed_args):
         if not Config.NAMESPACE == Config.START:
             return

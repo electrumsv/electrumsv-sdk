@@ -65,7 +65,7 @@ def make_esv_daemon_script(esv_script, electrumsv_env_vars):
 
 def make_esv_gui_script(esv_script, electrumsv_env_vars):
     commandline_string = (
-        f"{sys.executable} {esv_script} --v=debug --file-logging "
+        f"{sys.executable} {esv_script} --regtest --v=debug --file-logging "
         f"--server=127.0.0.1:51001:t --portable"
     )
 

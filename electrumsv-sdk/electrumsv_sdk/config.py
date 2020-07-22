@@ -18,6 +18,7 @@ class Config:
     START = "start"
     STOP = "stop"
     RESET = "reset"
+    NODE = "node"
 
     # package names
     ELECTRUMSV = "electrumsv"
@@ -56,6 +57,8 @@ class Config:
 
     run_scripts_dir = Path(MODULE_DIR).joinpath("run_scripts")
     proc_ids_path = run_scripts_dir.joinpath("proc_ids.json")
+
+    node_args = None
 
     @classmethod
     def set_electrumsv_path(cls, electrumsv_dir: Path):

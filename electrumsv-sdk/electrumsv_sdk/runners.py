@@ -109,6 +109,25 @@ def stop():
         f.write(json.dumps({}))
     print("stack terminated")
 
+def node():
+    def cast_str_int_args_to_int():
+        int_indices = []
+        for index, arg in enumerate(Config.node_args):
+            if arg.isdigit():
+                int_indices.append(index)
+
+        for i in int_indices:
+            Config.node_args[i] = int(Config.node_args[i])
+
+    cast_str_int_args_to_int()
+    assert electrumsv_node.is_running(), "bitcoin node must be running to respond to rpc methods. " \
+                                         "try: electrumsv-sdk start --node"
+
+    if Config.node_args[0] in ["--help", "-h"]:
+        Config.node_args[0] = "help"
+
+    result = electrumsv_node.call_any(Config.node_args[0], *Config.node_args[1:])
+    print(result.json()['result'])
 
 def reset():
     Config.load_repo_paths()
