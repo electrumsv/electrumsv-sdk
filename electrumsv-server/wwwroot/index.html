@@ -98,15 +98,25 @@
         }
 
         onSubmitClick() {
-          const data = this.getOutputData();
-          if (data.length === 0) {
+          const outputs = this.getOutputData();
+          if (outputs.length === 0) {
             alert("No valid amounts.")
             return;
           }
 
+          let data = {}
+          data["outputs"] = outputs;
+
+          let description_fields = document.getElementsByName("field-main-description");
+          if (description_fields.length == 1) {
+            let description_text = description_fields[0].value.trim();
+            if (description_text.length > 0)
+              data["description"] = description_text;
+          }
+
           // Disable all form elements.
-          let outputContainer = document.getElementById("page-enter-details");
-          for (let input_element of outputContainer.getElementsByTagName("input")) {
+          let parent_container = document.getElementById("page-enter-details");
+          for (let input_element of parent_container.getElementsByTagName("input")) {
             input_element.disabled = true;
           }
 
@@ -267,6 +277,12 @@
     <div name="page" id="page-enter-details">
       <h2>Payment Details</h2>
       <form>
+        <div name="description-field" class="centered">
+          <span class="form-label">Description:</span>
+          <span class="form-field">
+            <input type="text" name="field-main-description" placeholder="Optional note" />
+          </span>
+        </div>
         <h3>Payment items</h3>
         <div id="detail-outputs"></div>
         <div id="buttons" class="centered">

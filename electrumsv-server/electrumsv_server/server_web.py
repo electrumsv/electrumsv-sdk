@@ -4,6 +4,7 @@ from functools import partial
 import logging
 import json
 import os
+import types
 from typing import Any, Dict, Optional
 import uuid
 
@@ -34,15 +35,25 @@ async def api_home(app: Application, request: Request, filename: Optional[str]=N
 async def api_bip270_payment_prepare(app: Application, request: Request) -> Response:
     data = json.loads(await request.raw_body)
 
+    if type(data) is not dict:
+        raise HTTPError(HTTPStatus.BAD_REQUEST, "invalid payment data type")
+
+    description = data.get("description")
+    if description is not None and type(description) is not str:
+        raise HTTPError(HTTPStatus.BAD_REQUEST, "invalid payment description type")
+
+    output_list = data.get("outputs")
+    if type(output_list) is not list:
+        raise HTTPError(HTTPStatus.BAD_REQUEST, "invalid payment outputs type")
+
     request_uid = uuid.uuid4()
-    description = "Payment required"
     date_created = datetime.datetime.utcnow()
     date_expires = date_created + datetime.timedelta(minutes=10)
     request = PaymentRequest(uid=request_uid, description=description,
         date_created=date_created, date_expires=date_expires)
 
     outputs = []
-    for amount_entry in data:
+    for amount_entry in output_list:
         description, amount = amount_entry
         assert description is None or type(description) is str and len(description) < 100
         assert type(amount) is int
@@ -70,6 +81,7 @@ async def api_bip270_payment_request_get(app: Application, request: Request,
     pr = (PaymentRequest.select(PaymentRequest, PaymentRequestOutput)
         .join(PaymentRequestOutput)
         .where(PaymentRequest.uid == request_id.bytes)).get()
+    print("XXXXXXX", pr)
 
     outputs_object = []
     for output in pr.outputs:
@@ -78,6 +90,7 @@ async def api_bip270_payment_request_get(app: Application, request: Request,
 
     request_object = {
         "network": "bitcoin-sv",
+        "memo": pr.description,
         "paymentUrl":
             f"http://127.0.0.1:{app.config.http_server_port}/api/bip270/{id_text}",
         "outputs": outputs_object,
@@ -90,8 +103,6 @@ async def api_bip270_payment_request_get(app: Application, request: Request,
 async def api_bip270_payment_request_post(app: Application, request: Request,
         id_text: str) -> Response:
     payment_object = json.loads(await request.raw_body)
-
-    raise HTTPError(HTTPStatus.BAD_REQUEST, "invalid payment object <b>...</b>")
 
     request_id = uuid.UUID(hex=id_text)
     pr = (PaymentRequest.select(PaymentRequest, PaymentRequestOutput)
