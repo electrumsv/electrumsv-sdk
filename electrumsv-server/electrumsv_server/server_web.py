@@ -81,7 +81,6 @@ async def api_bip270_payment_request_get(app: Application, request: Request,
     pr = (PaymentRequest.select(PaymentRequest, PaymentRequestOutput)
         .join(PaymentRequestOutput)
         .where(PaymentRequest.uid == request_id.bytes)).get()
-    print("XXXXXXX", pr)
 
     outputs_object = []
     for output in pr.outputs:
@@ -103,6 +102,14 @@ async def api_bip270_payment_request_get(app: Application, request: Request,
 async def api_bip270_payment_request_post(app: Application, request: Request,
         id_text: str) -> Response:
     payment_object = json.loads(await request.raw_body)
+
+    content_type = request.headers.get('Content-Type')
+    if content_type != "application/bitcoinsv-payment":
+        raise HTTPError(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, content_type)
+
+    accept_content_type = request.headers.get('Accept')
+    if accept_content_type != "application/bitcoinsv-paymentack":
+        raise HTTPError(HTTPStatus.NOT_ACCEPTABLE, accept_content_type)
 
     request_id = uuid.UUID(hex=id_text)
     pr = (PaymentRequest.select(PaymentRequest, PaymentRequestOutput)
@@ -138,7 +145,7 @@ async def api_bip270_payment_request_post(app: Application, request: Request,
         # TODO: Broadcast it.
         # Broadcasting the transaction verifies that the transaction is valid.
 
-        # TODO: If it fails to broadcast error.
+        # TODO: If it fails to broadcast handle it.
 
         # Mark the invoice as paid by the given transaction.
         query = (PaymentRequest
@@ -155,7 +162,9 @@ async def api_bip270_payment_request_post(app: Application, request: Request,
     ack_object = {
         "payment": payment_object,
     }
-    return Response.json(ack_object)
+    return Response(status = HTTPStatus.OK, body = json.dumps(ack_object), headers = {
+        'Content-Type': 'application/bitcoinsv-paymentack',
+    })
 
 
 def create(app: Application) -> Trinket:
