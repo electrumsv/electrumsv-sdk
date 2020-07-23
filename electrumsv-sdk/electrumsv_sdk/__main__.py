@@ -2,6 +2,7 @@ import sys
 import platform
 
 from electrumsv_sdk.config import Config
+from electrumsv_sdk.install_tools import create_if_not_exist
 from electrumsv_sdk.runners import start, stop, reset, node
 from electrumsv_sdk.argparsing import setup_argparser, manual_argparsing
 from electrumsv_sdk.handlers import handle
@@ -25,6 +26,9 @@ def main():
         f"{sys.version_info.micro}-{platform.architecture()[0]}"
     )
     print()
+
+    create_if_not_exist(Config.depends_dir.__str__())
+    create_if_not_exist(Config.run_scripts_dir.__str__())
 
     setup_argparser()
     manual_argparsing(sys.argv)

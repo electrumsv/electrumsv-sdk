@@ -1,10 +1,10 @@
 import argparse
-import collections
 import json
 import os
 import textwrap
 from pathlib import Path
 from typing import Dict, List, Set
+from os.path import expanduser
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -39,7 +39,11 @@ class Config:
     sdk_requirements_electrumx = Path(MODULE_DIR).parent.joinpath("requirements").joinpath(
         "requirements-electrumx.txt")
 
-    depends_dir = Path(MODULE_DIR).joinpath("sdk_depends")
+    home = Path(expanduser("~"))
+    electrumsv_sdk_data_dir = home.joinpath("ElectrumSV-SDK")
+    depends_dir = electrumsv_sdk_data_dir.joinpath("sdk_depends")
+    run_scripts_dir = electrumsv_sdk_data_dir.joinpath("run_scripts")
+    proc_ids_path = run_scripts_dir.joinpath("proc_ids.json")
 
     # electrumsv paths are set dynamically at startup - see: set_electrumsv_path()
     electrumsv_dir = None
@@ -54,9 +58,6 @@ class Config:
     electrumx_data_dir = depends_dir.joinpath("electrumx_data")
 
     required_dependencies_set: Set[str] = set()
-
-    run_scripts_dir = Path(MODULE_DIR).joinpath("run_scripts")
-    proc_ids_path = run_scripts_dir.joinpath("proc_ids.json")
 
     node_args = None
 
@@ -112,25 +113,26 @@ class Config:
 
 
 TOP_LEVEL_HELP_TEXT = textwrap.dedent("""
-    electrumsv-sdk has a similar interface to systemctl with namespaces:
+    top-level
+    =========
+    electrumsv-sdk has four top-level namespaces (and works similarly to systemctl):
     - "start"
     - "stop"
     - "reset"
+    - "node"
 
     The "start" command is the most feature-rich and launches servers as background 
     processes (see next):
 
-    *********
-    * start *
-    *********
-
+    start
+    =====
     examples:
-    > electrumsv-sdk start --full-stack or
-    > electrumsv-sdk start --esv-ex-node
-    runs electrumsv + electrumx + electrumsv-node (both have equivalent effect)
+    run electrumsv + electrumx + electrumsv-node
+        > electrumsv-sdk start --full-stack or
+        > electrumsv-sdk start --esv-ex-node
 
-    > electrumsv-sdk start --esv-idx-node
-    will run electrumsv + electrumsv-indexer + electrumsv-node
+    run electrumsv + electrumsv-indexer + electrumsv-node
+        > electrumsv-sdk start --esv-idx-node
 
      -------------------------------------------------------
     | esv = electrumsv daemon                               |
@@ -145,28 +147,29 @@ TOP_LEVEL_HELP_TEXT = textwrap.dedent("""
     dependencies are installed on-demand at run-time
 
     specify a local or remote git repo and branch for each server e.g.
-    > electrumsv-sdk start --full-stack electrumsv repo=G:/electrumsv branch=develop
+        > electrumsv-sdk start --full-stack electrumsv repo=G:/electrumsv branch=develop
 
     'repo' can take the form repo=https://github.com/electrumsv/electrumsv.git for a remote 
     repo or repo=G:/electrumsv for a local dev repo
 
     all arguments are optional
 
-
-    ********
-    * stop *
-    ********
-
+    stop
+    ====
     stops all running servers/spawned processes
 
-
-    *********
-    * reset *
-    *********
-
+    reset
+    =====
     resets server state. e.g. 
     - bitcoin node state is reset back to genesis
     - electrumx state is reset back to genesis 
-    - electrumsv RegTest wallet history is erased to match blockchain state
+    - electrumsv RegTest wallet history is erased to match blockchain state e.g.
+        > electrumsv-sdk reset
+    
+    node
+    ====
+    direct access to the standard bitcoin JSON-RPC interface e.g.
+        > electrumsv-sdk node help
+        > electrumsv-sdk node generate 10
 
     """)

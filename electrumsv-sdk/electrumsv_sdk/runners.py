@@ -147,6 +147,7 @@ def startup():
     print()
     print()
     print("running stack...")
+
     procs = []
     if 'electrumsv_node' in Config.required_dependencies_set:
         run_electrumsv_node()
