@@ -151,6 +151,7 @@ def startup():
     procs = []
     if 'electrumsv_node' in Config.required_dependencies_set:
         run_electrumsv_node()
+        time.sleep(2)
 
     if 'electrumx' in Config.required_dependencies_set:
         electrumx_process = run_electrumx_server()

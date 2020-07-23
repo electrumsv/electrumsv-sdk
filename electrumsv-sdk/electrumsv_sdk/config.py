@@ -43,6 +43,7 @@ class Config:
     electrumsv_sdk_data_dir = home.joinpath("ElectrumSV-SDK")
     depends_dir = electrumsv_sdk_data_dir.joinpath("sdk_depends")
     run_scripts_dir = electrumsv_sdk_data_dir.joinpath("run_scripts")
+    electrumsv_sdk_config_path = electrumsv_sdk_data_dir.joinpath("config.json")
     proc_ids_path = run_scripts_dir.joinpath("proc_ids.json")
 
     # electrumsv paths are set dynamically at startup - see: set_electrumsv_path()
@@ -93,16 +94,18 @@ class Config:
     @classmethod
     def save_repo_paths(cls):
         """overwrites config.json"""
-        config_path = Path(MODULE_DIR).joinpath("config.json")
+        config_path = Config.electrumsv_sdk_data_dir.joinpath("config.json")
+        with open(config_path.__str__(), "r") as f:
+            config = json.loads(f.read())
+
         with open(config_path.__str__(), "w") as f:
-            repo_paths = {}
-            repo_paths['electrumsv_dir'] = cls.electrumsv_dir.__str__()
-            f.write(json.dumps(repo_paths))
+            config['electrumsv_dir'] = cls.electrumsv_dir.__str__()
+            f.write(json.dumps(config, indent=4))
 
     @classmethod
     def load_repo_paths(cls) -> "Config":
         """loads state from config.json"""
-        config_path = Path(MODULE_DIR).joinpath("config.json")
+        config_path = Config.electrumsv_sdk_data_dir.joinpath("config.json")
         with open(config_path.__str__(), "r") as f:
             config = json.loads(f.read())
             electrumsv_dir = config.get("electrumsv_dir")
