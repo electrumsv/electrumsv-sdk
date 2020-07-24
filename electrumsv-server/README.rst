@@ -1,5 +1,5 @@
-ElectrumSV Payment Server
-=========================
+ElectrumSV Server
+=================
 
 ::
 
@@ -16,12 +16,11 @@ This is a standalone server for access to the APIs required to run ElectrumSV. I
 intended to run against mainnet, testnet or scaling testnet. It should be run against regtest
 only.
 
-Exposes APIs:
+Exposed APIs:
 
-- REST-based for web-based calls.
-- Websocket-based for web-based RPC.
+- BIP270 merchant payment server.
 
 Planned Work
 ============
 
-- Add a simple initial web-based API.
+- Merchant API server.

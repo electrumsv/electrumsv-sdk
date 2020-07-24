@@ -1,12 +1,8 @@
 from argparse import Namespace
 import os
 
-from bitcoinx import bip32_key_from_string
-
-from .constants import NAME_SQLITE, XPUB_TEST
 from .database import open_database
 from .exceptions import StartupError
-from .payment_requests import derive_pubkey
 
 
 class Application:
