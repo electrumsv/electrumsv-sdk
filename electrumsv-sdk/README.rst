@@ -42,59 +42,66 @@ For help::
 
     > electrumsv-sdk --help
 
-Which (on 11/07/2020) will show::
+Which (on 24/07/2020) will show::
 
-    ElectrumSV Software Development Kit
-    -Python version 3.8.4-64bit
+    top-level
+    =========
+    electrumsv-sdk has four top-level namespaces (and works similarly to systemctl):
+    - "start"
+    - "stop"
+    - "reset"
+    - "node"
 
-    usage: electrumsv-sdk [-h] [--full-stack] [--node] [--ex-node] [--esv-ex-node] [--esv-idx-node]
-                          [--extapp EXTAPP_PATH]
-                          {electrumsv,electrumx,electrumsv_indexer,electrumsv_node} ...
+    The "start" command is the most feature-rich and launches servers as background
+    processes (see next):
 
-    codes:
-    ------
-    - esv=electrumsv daemon
-    - ex=electrumx server
-    - node=electrumsv-node
-    - idx=electrumsv-indexer (with pushdata-centric API)
-    - full-stack=defaults to 'esv-ex-node' as these are the default run-time
-    dependencies of electrumsv as of July 2020.
-
+    start
+    =====
     examples:
-    > electrumsv-sdk --full-stack or
-    > electrumsv-sdk --esv-ex-node
-    will run electrumsv + electrumx + electrumsv-node (both have equivalent effect)
+    run electrumsv + electrumx + electrumsv-node
+        > electrumsv-sdk start --full-stack or
+        > electrumsv-sdk start --esv-ex-node
 
-    > electrumsv-sdk --esv-idx-node
-    will run electrumsv + electrumsv-indexer + electrumsv-node
+    run electrumsv + electrumsv-indexer + electrumsv-node
+        > electrumsv-sdk start --esv-idx-node
+
+     -------------------------------------------------------
+    | esv = electrumsv daemon                               |
+    | ex = electrumx server                                 |
+    | node = electrumsv-node                                |
+    | idx = electrumsv-indexer (with pushdata-centric API)  |
+    | full-stack = defaults to 'esv-ex-node'                |
+     -------------------------------------------------------
+
+    input the needed mixture to suit your needs
 
     dependencies are installed on-demand at run-time
 
-    specify which local or remote (git repo) and branch for each component with the
-    subcommands below. ('repo' can take the form:
-    - repo=https://github.com/electrumsv/electrumsv.git or
-    - repo=G:/electrumsv for a local dev repo)
+    specify a local or remote git repo and branch for each server e.g.
+        > electrumsv-sdk start --full-stack electrumsv repo=G:/electrumsv branch=develop
 
-    > electrumsv-sdk --full-stack electrumsv repo=G:/electrumsv branch=develop
+    'repo' can take the form repo=https://github.com/electrumsv/electrumsv.git for a remote
+    repo or repo=G:/electrumsv for a local dev repo
 
     all arguments are optional
 
-    positional arguments:
-      {electrumsv,electrumx,electrumsv_indexer,electrumsv_node}
-                            subcommand
-        electrumsv          specify repo and branch
-        electrumx           specify repo and branch
-        electrumsv_indexer  specify repo and branch
-        electrumsv_node     specify repo and branch
+    stop
+    ====
+    stops all running servers/spawned processes
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      --full-stack
-      --node
-      --ex-node
-      --esv-ex-node
-      --esv-idx-node
-      --extapp EXTAPP_PATH  path to 3rd party applications. The 'extapp' flag can be specified multiple times. For electrumsv 'daemon apps' please see electrumsv subcommand help menu
+    reset
+    =====
+    resets server state. e.g.
+    - bitcoin node state is reset back to genesis
+    - electrumx state is reset back to genesis
+    - electrumsv RegTest wallet history is erased to match blockchain state e.g.
+        > electrumsv-sdk reset
+
+    node
+    ====
+    direct access to the standard bitcoin JSON-RPC interface e.g.
+        > electrumsv-sdk node help
+        > electrumsv-sdk node generate 10
 
 Mode (which servers to run)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
