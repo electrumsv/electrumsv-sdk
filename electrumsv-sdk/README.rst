@@ -151,3 +151,9 @@ directory as part of this SDK - this could be a forked repository or the officia
 a filesystem path to a local development repository and so no installation or
 ``git pull`` is attempted - it becomes the developers responsibility for the correct
 functioning of this server. But it will be launched and terminated in the usual way.
+
+Whatsonchain blockexplorer (localhost)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Please go to `Whatsonchain setup guide`_.
+
+.. _Whatsonchain setup guide: https://github.com/electrumsv/electrumsv-sdk/tree/master/electrumsv-sdk/contrib/whatsonchain/README.md
