@@ -6,6 +6,7 @@ from setuptools import find_packages, setup
 """
 # on a win32 machine...
 - make sure sdk_depends dir is empty
+- make sure config.json initial state == {"is_first_run": true}
 
 py -3.7-32 .\setup.py build bdist_wheel --plat-name win32
 py -3.8-32 .\setup.py build bdist_wheel --plat-name win32
@@ -24,7 +25,7 @@ py -3.8 -m pip install electrumsv-sdk
 
 """
 
-__version__ = '0.0.12'
+__version__ = '0.0.13'
 
 from electrumsv_sdk.config import Config
 
