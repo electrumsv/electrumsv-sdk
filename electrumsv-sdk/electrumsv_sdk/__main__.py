@@ -43,7 +43,7 @@ def handle_first_ever_run():
     except FileNotFoundError:
         with open(Config.electrumsv_sdk_config_path.__str__(), 'w') as f:
             config = {"is_first_run": True}
-            f.write(json.dumps(config))
+            f.write(json.dumps(config, indent=4))
 
     if config.get("is_first_run") or config.get("is_first_run") is None:
         logger.debug("running SDK for the first time. please wait for configuration to complete...")
@@ -51,7 +51,7 @@ def handle_first_ever_run():
         purge_prev_installs_if_exist()
         with open(Config.electrumsv_sdk_config_path.__str__(), 'w') as f:
             config = {"is_first_run": False}
-            f.write(json.dumps(config))
+            f.write(json.dumps(config, indent=4))
         logger.debug("purging completed successfully")
 
         electrumsv_node.reset()

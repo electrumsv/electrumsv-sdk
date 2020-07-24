@@ -51,10 +51,11 @@ def disable_rest_api_authentication():
 
 def start_and_stop_ESV(electrumsv_server_script):
     # Ugly hack (first time run through need to start then stop ESV wallet to make config files)
-    logger.debug("starting RegTest electrumsv daemon for the first time - initializing wallet ")
+    logger.debug("starting RegTest electrumsv daemon for the first time - initializing wallet - "
+                 "standby...")
     process = subprocess.Popen(f"{electrumsv_server_script}",
         creationflags=subprocess.CREATE_NEW_CONSOLE)
-    time.sleep(5)
+    time.sleep(7)
     subprocess.run(f"taskkill.exe /PID {process.pid} /T /F")
 
 
@@ -76,9 +77,9 @@ def run_electrumsv_daemon(is_first_run=False):
             f"{electrumsv_server_script}", creationflags=subprocess.CREATE_NEW_CONSOLE
         )
         if is_first_run:
-            time.sleep(5)
+            time.sleep(7)
             reset_electrumsv_wallet()  # create first-time wallet
-            time.sleep(2)
+            time.sleep(1)
             subprocess.run(f"taskkill.exe /PID {process.pid} /T /F")
             return run_electrumsv_daemon(is_first_run=False)
 
@@ -138,7 +139,8 @@ def reset():
     Config.required_dependencies_set.add(Config.ELECTRUMX)
     Config.required_dependencies_set.add(Config.ELECTRUMSV)
     start()
-    time.sleep(5)
+    logger.debug("allowing time for the electrumsv daemon to boot up - standby...")
+    time.sleep(7)
     reset_electrumsv_wallet()
     stop()
 

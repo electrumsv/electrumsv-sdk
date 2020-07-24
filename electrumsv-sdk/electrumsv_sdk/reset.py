@@ -93,6 +93,7 @@ def reset_electrumsv_wallet():
         print(result.json())
         print(f"topped up wallet with 25 coins")
 
+    logger.debug("resetting state of RegTest electrumsv server...")
     delete_wallet()
     create_wallet()
     topup_wallet()
