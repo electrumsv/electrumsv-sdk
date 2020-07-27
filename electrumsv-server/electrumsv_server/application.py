@@ -1,4 +1,5 @@
 from argparse import Namespace
+import json
 import os
 
 from .database import open_database
@@ -17,6 +18,7 @@ class Application:
         self.data_path = self._validate_path(config.data_path, create=True)
 
         self.db = open_database(self)
+        self._listeners = []
 
     def _validate_path(self, path: str, create: bool=False) -> str:
         path = os.path.realpath(path)
@@ -25,3 +27,14 @@ class Application:
                 raise StartupError(f"The path '{path}' does not exist.")
             os.makedirs(path)
         return path
+
+    def register_listener(self, ws) -> None:
+        self._listeners.append(ws)
+
+    def unregister_listener(self, ws) -> None:
+        self._listeners.remove(ws)
+
+    async def notify_listeners(self, value) -> None:
+        text = json.dumps(value)
+        for ws in self._listeners:
+            await ws.send(text)

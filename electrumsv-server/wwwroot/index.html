@@ -1,93 +1,578 @@
-<html>
+<html class="h-100">
   <head>
-    <title>Merchant Payment Server - ElectrumSV SDK</title>
+    <title>Merchant Payments - ElectrumSV SDK</title>
     <style>
-        body {
-            width: 800px;
-            margin: 0 auto;
+        .navbar .nav-link .fab {
+            font-size: 24pt;
         }
-        h1 {
-          margin-top: 20px;
+
+        i.fas {
+          min-width: 20px;
         }
-        h1, h2, h3 {
-          text-align: center;
+
+        /* Need to override 'd-flex' class, which 'd-none' or direct style of the element cannot. */
+        #past-invoice-items [name='past-invoice-item-template'] {
+          display: none !important;
         }
+
         div#qrcode {
           text-align: center;
         }
         div#qrcode img {
           display: inline !important;
         }
-        form .form-label {
-          min-width: 80;
-          display: inline-block;
-          text-align: right;
-        }
-        form .form-field {
-          min-width: 200;
-          text-align: left;
-          display: inline-block;
-        }
-        form .output-fields {
-          padding-bottom: 10px;
-          margin: 0 auto;
-          text-align: center;
-        }
-        .centered {
-          margin-top: 20px;
-          text-align: center;
-        }
     </style>
+    <link href="lib/fontawesome-free-5.14.0-web/css/all.css"  rel="stylesheet">
+    <link href="lib/bootstrap-4.5.0-dist/css/bootstrap.css" rel="stylesheet">
+    <link href="lib/bootstrap-table-1.17.1/dist/bootstrap-table.css" rel="stylesheet">
+    <link href="lib/bootstrap-table-1.17.1/dist/extensions/filter-control/bootstrap-table-filter-control.css" rel="stylesheet">
+    <!-- https://jquery.com/download/ -->
+    <script type="text/javascript" src="lib/jquery-3.5.1.js"></script>
+    <!-- https://getbootstrap.com/ -->
+    <script type="text/javascript" src="lib/bootstrap-4.5.0-dist/js/bootstrap.js"></script>
+    <!-- https://github.com/wenzhixin/bootstrap-table/releases -->
+    <script type="text/javascript" src="lib/bootstrap-table-1.17.1/dist/bootstrap-table.js"></script>
+    <script type="text/javascript" src="lib/bootstrap-table-1.17.1/dist/extensions/filter-control/bootstrap-table-filter-control.js"></script>
     <!-- https://github.com/davidshimjs/qrcodejs -->
-    <script type="text/javascript" src="qrcode.js"></script>
-    <script type="text/javascript" src="bip270.js"></script>
+    <script type="text/javascript" src="lib/qrcode.js"></script>
+    <script type="text/javascript" src="js/bip270.js"></script>
+  </head>
+  <body class="d-flex flex-column h-100 bg-light">
+    <main>
+      <div class="border-bottom bg-white">
+        <div class="container">
+          <nav class="navbar navbar-expand-lg">
+            <span class="navbar-brand"><img src="/img/ESV_logo_SDK.png" height="40px" title="ElectrumSV SDK"></span>
+            <span class="w-100 text-center text-muted" style="font-size: 1.5rem; font-weight: 500">Merchant Payments</span>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+              <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                  <a class="nav-link" href="https://github.com/electrumsv/electrumsv-sdk" target="_blank"><i class="fab fa-github-square text-secondary" title="ElectrumSV SDK on Github"></i></a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="https://twitter.com/electrumsv" target="_blank"><i class="fab fa-twitter-square text-secondary" title="ElectrumSV on Twitter"></i></a>
+                </li>
+              </ul>
+            </div>
+          </nav>
+        </div>
+      </div>
+
+      <div class="container d-none" id="page-dashboard"> <!-- dashboard container -->
+        <div class="row">
+          <div class="col-sm-12">
+            <h4 class="text-center mt-2 mb-2">Invoices</h4>
+
+            <div class="dashboard-filter-controls container mb-2">
+              <div class="row">
+                <div class="input-group col-md-3">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text">Filter by state</span>
+                  </div>
+                  <select class="custom-select bootstrap-table-filter-control-state"></select>
+                  <div class="input-group-append">
+                    <button class="btn btn-secondary filter-row-button" data-target="select.bootstrap-table-filter-control-state" data-values=""><i class="fas fa-times"></i></button>
+                  </div>
+                </div>
+                <div class="col-sm-9 text-right">
+                  <button class="btn btn-secondary" type="button" id="dashboard-invoices-button-add"><i class="fas fa-plus"></i> New</button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+                <div class="dashboard-invoices-container table-responsive">
+                    <table id="dashboard-invoices-table"
+                          data-toggle="table"
+                          data-url="/api/bip270"
+                          data-detail-view="false"
+                          data-filter-control="true"
+                          data-filter-control-container=".dashboard-filter-controls"
+                          data-pagination="true"
+                          data-side-pagination="server"
+                          data-server-sort="true"
+                          data-sort-name="creationTimestamp"
+                          data-sort-order="desc"
+                          data-page-size="10">
+                        <thead>
+                            <tr>
+                                <th data-field="creationTimestamp" data-formatter="formatTimestampAsDate" data-sortable="true" data-valign="top" class="text-nowrap">Created</th>
+                                <th data-field="state" data-formatter="getStateName" data-sortable="true" data-valign="top" data-filter-data="var:stateNameByValue">State</th>
+                                <th data-field="description" data-sortable="true" data-valign="top">Description</th>
+                                <th data-field="amount" xdata-formatter="edi.processingevents.formatEventType" data-sortable="true" data-align="right" data-valign="top">Amount</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+
+          </div>
+        </div>
+      </div> <!-- dashboard container -->
+      <div class="container d-none" id="subpage-container"> <!-- sub-page container -->
+        <div class="row">
+          <div class="col-md-4 order-md-2 mb-4 mt-4">
+            <h4 class="d-flex justify-content-between align-items-center mb-3 pl-1 pr-1">
+              <span class="text-muted">Past invoices</span>
+              <span class="badge badge-secondary badge-pill" name="past-invoice-count">0</span>
+            </h4>
+            <ul class="list-group mb-3" id="past-invoice-items">
+              <li class="list-group-item text-center" name="past-invoice-none-available">
+                <span class="text-muted">None available.</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between lh-condensed list-group-item-action" name="past-invoice-item-template">
+                <div>
+                  <h6 class="my-0"><i class="" title="Icon"></i> <span name="past-invoice-item-date"></span></h6>
+                  <small class="text-muted" name="past-invoice-item-description"></small>
+                </div>
+                <span class="text-muted" name="past-invoice-item-amount"></span>
+              </li>
+              <!-- <li class="list-group-item d-flex justify-content-between lh-condensed list-group-item-action" name="past-invoice-item">
+                <div class="text-truncate">
+                  <h6 class="my-0"><i class="fas fa-check text-success" title="Invoice paid"></i> [Date]</h6>
+                  <small class="text-muted">The optional description that the user may or may not have entered and it may be 100 characters or something.</small>
+                </div>
+                <span class="text-muted">1232</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between lh-condensed">
+                <div class="text-truncate">
+                  <h6 class="my-0"><i class="fas fa-eye text-muted" title="Waiting for payment"></i> [Date]</h6>
+                  <small class="text-muted">The optional description that the user may or may not have entered and it may be 100 characters or something.</small>
+                </div>
+                <span class="text-muted">1232</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between lh-condensed">
+                <div class="text-truncate">
+                  <h6 class="my-0"><i class="fas fa-user-clock text-secondary" title="Waiting for payment or expiry"></i> [Date]</h6>
+                  <small class="text-muted">The optional description that the user may or may not have entered and it may be 100 characters or something.</small>
+                </div>
+                <span class="text-muted">1232</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between lh-condensed">
+                <div class="text-truncate">
+                  <h6 class="my-0"><i class="fas fa-times-circle text-danger" title="Invoice inactive"></i> [Date]</h6>
+                  <small class="text-muted">The optional description that the user may or may not have entered and it may be 100 characters or something.</small>
+                </div>
+                <span class="text-muted">1232</span>
+              </li> -->
+              <li class="list-group-item text-center" id="past-invoice-item-footer">
+                <button class="btn btn-secondary btn-sm" id="recent-invoice-to-list"><i class="fas fa-list-alt text-light"></i> View all invoices</button>
+              </li>
+            </ul>
+          </div> <!-- column 1 -->
+          <div class="col-md-8 order-md-1"> <!-- column 2 -->
+
+            <div class="card-deck mt-3 mb-3">
+              <div class="card mb-4 box-shadow">
+                <div class="card-header text-center">
+                  <h4 class="my-0 text-muted" id="current-page-title">Invoice</h4>
+                </div>
+                <div class="card-body">
+                  <div class="col-md-12 order-md-1">
+
+                    <!-- Start of merchant payment pages -->
+                    <!-- New invoice page -->
+                    <div name="page" id="page-new-invoice" class="d-none">
+                      <form class="needs-validation" novalidate>
+
+                        <div class="container">
+                          <div class="form-group row">
+                            <label class="col-md-3 col-form-label" for="payment-description">Description</label>
+                            <div class="col-md-9">
+                              <input type="text" class="form-control" id="payment-description" placeholder="Optional note to payer..">
+                            </div>
+                          </div>
+                          <div class="form-group row">
+                            <label class="col-md-3 col-form-label" for="payment-expires">Expires</label>
+                            <div class="col-md-9">
+                              <select class="custom-select d-block w-100" id="payment-expires" required="">
+                                <option value="0">Never</option>
+                                <option value="5">5 minutes</option>
+                                <option value="10">10 minutes</option>
+                                <option value="30"><sup>1</sup>&frasl;<sub>2</sub> hour</option>
+                                <option value="60">1 hour</option>
+                                <option value="1440">1 day</option>
+                                <option value="10080">1 week</option>
+                                <!-- <option value="-1">Custom</option> -->
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <ul class="list-group mb-3" id="payment-line-items">
+                          <li class="list-group-item text-center">
+                            <h6 class="mb-1">Payment items</h6>
+                          </li>
+                          <li class="list-group-item d-none" name="payment-line-item-template">
+                            <div class="container">
+                              <div class="form-group row">
+                                <label class="col-md-3 col-form-label" for="payment-item-description">Description</label>
+                                <div class="col-md-9">
+                                  <input type="text" class="form-control" id="payment-item-description" name="payment-item-description" placeholder="Optional note for item.." value="">
+                                </div>
+                              </div>
+                              <div class="form-group row mb-0">
+                                <label class="col-md-3 col-form-label" for="payment-item-amount">Amount</label>
+                                <div class="col-md-4">
+                                  <input type="number" class="form-control" id="payment-item-amount" name="payment-item-amount" placeholder="" value="" required>
+                                  <div class="invalid-feedback">
+                                    Valid amount is required.
+                                  </div>
+                                </div>
+                                <div class="col-md-5 col-form-label" name="payment-units">satoshis</div>
+                              </div>
+                            </div>
+                          </li>
+                          <li class="list-group-item d-flex justify-content-between" id="payment-items-total">
+                            <span>Total</span>
+                            <span>
+                              <strong id="payment-total-value">0</strong>
+                              <span class="pl-3" name="payment-units">satoshis</span>
+                            </span>
+                          </li>
+                        </ul>
+
+                        <div class="container mb-3">
+                          <div class="row">
+                            <div class="col-sm-12 justify-content-between">
+                              <button class="btn btn-secondary btn-sm float-right" id="payment-item-add" type="button"><i class="fas fa-plus-square text-light"></i> Add another item</button>
+                              <button class="btn btn-secondary btn-sm float-right mr-2" id="payment-items-clear" type="button"><i class="fas fa-trash-restore text-light"></i> Clear</button>
+                            </div>
+                          </div>
+                        </div>
+                      </form>
+                    </div> <!-- page -->
+
+                    <!-- Invoice status page -->
+                    <div name="page" id="page-make-payment" class="d-none">
+                      <div class="container">
+                        <div class="row">
+                          <div class="col-sm-6">
+                            <div id="qrcode"></div>
+                            <div id="buttons" class="text-center justify-content-between mt-3">
+                              <button id="payment-link-copy" type="button" class="btn btn-secondary btn-sm"><i class="fas fa-copy text-light"></i> Copy link</button>
+                            </div>
+                          </div>
+                          <div class="col-sm-6">
+                            <div class="list-group list-group-flush" id="make-payment-detail-list">
+                              <div class="list-group-item" id="make-payment-description-entry">
+                                <h6 class="mb-1">Description</h6>
+                                <p class="mb-1" id="make-payment-description"></p>
+                              </div>
+                              <div class="list-group-item" id="make-payment-expiry-entry">
+                                <h6 class="mb-1">Expires</h6>
+                                <p class="mb-1"><div id="qrcode-expiry" class="text-center"></div></p>
+                              </div>
+                            </div>
+
+                            <ul class="list-group mb-3" id="make-payment-item-list">
+                              <li class="list-group-item d-flex justify-content-between lh-condensed" id="make-payment-item-template" style="display: none !important">
+                                <div>
+                                  <h6 class="my-0" name="make-payment-item-field">Item</h6>
+                                  <small class="text-muted" name="make-payment-item-field"></small>
+                                </div>
+                                <span class="text-muted" name="make-payment-item-field">Value</span>
+                              </li>
+                              <li class="list-group-item d-flex justify-content-between">
+                                <span>Total (satoshis)</span>
+                                <strong id="make-payment-total">0</strong>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div> <!-- .. the form container .. -->
+                </div> <!-- card body -->
+                <div class="card-footer d-none text-center justify-content-between" name="page-make-payment-show">
+                  <button class="btn btn-danger btn-md" id="payment-invoice-cancel" type="button"><i class="fas fa-times-circle text-light"></i> Cancel invoice</button>
+                </div>
+                <div class="card-footer d-none text-center justify-content-between" name="page-new-invoice-show">
+                  <button class="btn btn-primary btn-md" id="payment-invoice-create" type="button"><i class="fas fa-thumbs-up text-light"></i> Create</button>
+                </div>
+              </div> <!-- card -->
+            </div> <!-- card deck -->
+
+          </div> <!-- column 2 -->
+        </div> <!-- contents container row -->
+      </div> <!-- sub-page container -->
+    </main>
+    <footer class="footer site-footer bg-white py-2 mt-auto border-top">
+      XXX
+    </footer>
     <script type="text/javascript">
-      class DetailPage {
+      var stateNameByValue = Object.freeze({
+        1: "Unpaid",
+        2: "Paid",
+        3: "Closed",
+      });
+
+      var stateIdByValue = Object.freeze({
+        1: "UNPAID",
+        2: "PAID",
+        3: "CLOSED",
+      });
+
+      const invoiceIcons = Object.freeze({
+        PAID: [ "fas", "fa-check", "text-success" ],
+        UNPAID: [ "fas", "fa-eye", "text-info" ],
+        EXPIRING: [ "fas", "fa-user-clock", "text-warning" ],
+        EXPIRED: [ "fas", "fa-times"  ],
+        CLOSED: [ "fas", "fa-times" ],
+      });
+
+      function getStateIdForInvoice(data) {
+        let stateId = stateIdByValue[data.state];
+        if (stateId === undefined)
+          return null;
+
+        if (stateId == "UNPAID" && data.expirationTimestamp !== null) {
+          if (new Date().getTime() >= data.expirationTimestamp * 1000)
+            return "EXPIRED";
+          return "EXPIRING";
+        }
+
+        return stateId;
+      }
+
+      function getClassNamesForInvoice(data) {
+        const stateId = getStateIdForInvoice(data);
+        let classNames = invoiceIcons[stateId].slice();
+        return classNames;
+      }
+
+      function getStateName(state) {
+        return stateNameByValue[state];
+      }
+
+      function padZero(value) {
+        return value >= 10 ? String(value) : "0"+ value;
+      }
+
+      function formatTimestampAsDate(timestamp) {
+        const date = new Date(timestamp * 1000);
+        const month = date.getMonth() + 1;
+        const dateText = `${date.getFullYear()}-${padZero(month)}-${date.getDate()}`;
+        const timeText = `${padZero(date.getHours())}:${padZero(date.getMinutes())}:${padZero(date.getSeconds())}`;
+        return dateText +" "+ timeText;
+      }
+
+      function createPostData(data = {}) {
+        // Default options are marked with *
+        return {
+          method: 'POST', // *GET, POST, PUT, DELETE, etc.
+          mode: 'cors', // no-cors, *cors, same-origin
+          cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+          credentials: 'same-origin', // include, *same-origin, omit
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          redirect: 'error', // manual, *follow, error
+          referrerPolicy: 'no-referrer',
+          body: JSON.stringify(data) // body data type must match "Content-Type" header
+        };
+      }
+
+      class ServerConnection {
         constructor() {
-          this.page_element = document.getElementById("page-enter-details");
+          this.connect();
+        }
+
+        connect() {
+          console.debug("ServerConnection.connect");
+          this.isConnected = false;
+
+          this.socket = new WebSocket("ws://127.0.0.1:58200/events");
+          this.socket.onopen = this.onOpen.bind(this);
+          this.socket.onclose = this.onClose.bind(this);
+          this.socket.onmessage = this.onMessage.bind(this);
+        }
+
+        onOpen(event) {
+          this.isConnected = true;
+          console.debug("ServerConnection.onOpen");
+        }
+
+        onClose(event) {
+          console.debug("ServerConnection.onClose");
+          this.socket = null;
+
+          setTimeout(this.connect.bind(this), 5000);
+        }
+
+        onMessage(event) {
+          console.debug("ServerConnection.onMessage", event.data);
+
+          var data = JSON.parse(event.data);
+          if (data[0] == "InvoicePaid") {
+            if (makePaymentPage.invoiceId === data[1]) {
+              makePaymentPage.setInvoiceState(2);
+            }
+          }
+        }
+      }
+
+      class DashboardPage {
+        constructor() {
+          this.pageElement = document.getElementById("page-dashboard");
+
+          const addButton = this.pageElement.querySelector("#dashboard-invoices-button-add");
+          addButton.onclick = this.onAddInvoice.bind(this);
+
+          this.rowClickFunc = this.onRowClick.bind(this)
+
           this.reset();
         }
 
         show() {
-          this.page_element.style = "";
-          payment_page.hide();
+          this.refreshTable();
+
+          // Allowed jquery because bootstrap table API requires it.
+          var $table = $('#dashboard-invoices-table');
+          $table.off("click-row.bs.table", this.rowClickFunc);
+          $table.on("click-row.bs.table", this.rowClickFunc);
+
+          this.pageElement.classList.remove("d-none");
+          document.querySelector("#subpage-container").classList.add("d-none");
+
+          newInvoicePage.hide();
+          makePaymentPage.hide();
         }
 
         hide() {
-          this.page_element.style = "display: none";
-        }
-
-        addOutputLine() {
-          let outputTemplates = document.getElementsByName("output-template");
-          let outputTemplate = outputTemplates[0];
-
-          let outputContainer = document.getElementById("detail-outputs");
-          let outputSection = outputTemplate.cloneNode(true);
-          outputContainer.appendChild(outputSection);
+          this.pageElement.classList.add("d-none");
         }
 
         reset() {
-          let outputContainer = document.getElementById("detail-outputs");
-          while (outputContainer.firstElementChild) {
-            outputContainer.firstElementChild.remove();
+        }
+
+        refreshTable() {
+          // Allowed jquery because bootstrap table API requires it.
+          $('#dashboard-invoices-table').bootstrapTable('refresh');
+        }
+
+        onRowClick(event, row) {
+          makePaymentPage.populateInvoiceFromId(row.id);
+          makePaymentPage.show();
+        }
+
+        onAddInvoice() {
+          newInvoicePage.reset();
+          newInvoicePage.show();
+        }
+      }
+
+      class NewInvoicePage {
+        constructor() {
+          this.pageElement = document.getElementById("page-new-invoice");
+          this.setTitle();
+          this.reset();
+        }
+
+        show() {
+          this.setTitle();
+          for (const thisElement of this.getPageElements())
+            thisElement.classList.remove("d-none");
+
+          this.pageElement.classList.remove("d-none");
+          document.querySelector("#subpage-container").classList.remove("d-none");
+
+          dashboardPage.hide();
+          makePaymentPage.hide();
+          recentInvoicesList.refresh();
+        }
+
+        hide() {
+          for (const thisElement of this.getPageElements())
+            thisElement.classList.add("d-none");
+          this.pageElement.classList.add("d-none");
+        }
+
+        getPageElements() {
+          return document.getElementsByName("page-new-invoice-show");
+        }
+
+        setTitle() {
+          document.getElementById("current-page-title").innerText = "Create Invoice";
+        }
+
+        addOutputLine() {
+          const itemIndex = this.itemCount;
+
+          let outputTemplates = document.getElementsByName("payment-line-item-template");
+          let outputTemplate = outputTemplates[0];
+
+          let outputContainer = document.getElementById("payment-line-items");
+          let outputSection = outputTemplate.cloneNode(true);
+          outputSection.setAttribute("name", "payment-line-item")
+          outputSection.setAttribute("data-payment-line-item", itemIndex)
+          outputSection.classList.remove("d-none");
+
+          for (const fieldId of [ "payment-item-amount", "payment-item-description" ]) {
+            let amountLabel = outputSection.querySelector("[for='"+ fieldId +"']");
+            amountLabel.setAttribute("for", fieldId +"-"+ itemIndex);
+            let amountField = outputSection.querySelector("#"+ fieldId);
+            amountField.id = fieldId +"-"+ itemIndex;
           }
 
-          this.addOutputLine();
-          this.addOutputLine();
+          let totalSection = document.getElementById("payment-items-total");
+          totalSection.before(outputSection);
 
-          let this_ = this;
-          function on_click() {
-            this_.onSubmitClick();
+          let totalValue = outputSection.querySelector("#payment-item-amount-"+ itemIndex);
+          totalValue.oninput = this.onItemAmountChange.bind(this);
+
+          this.itemCount += 1;
+        }
+
+        getTotalValue() {
+          let totalValue = 0;
+          for (let amountField of document.getElementsByName("payment-item-amount")) {
+            totalValue += Number(amountField.value);
+          }
+          return totalValue;
+        }
+
+        onItemAmountChange(event) {
+          const total_element = document.getElementById("payment-total-value");
+          total_element.innerText = this.getTotalValue();
+        }
+
+        reset() {
+          const description_element = document.getElementById("payment-description");
+          description_element.value = "";
+
+          const expires_element = document.getElementById("payment-expires");
+          expires_element.value = 0;
+
+          const total_element = document.getElementById("payment-total-value");
+          total_element.innerText = "0";
+
+          let matches = Array.from(document.getElementsByName("payment-line-item"));
+          while (matches.length > 0) {
+            const match = matches.pop();
+            match.remove();
           }
 
-          var submit_button = document.getElementById("page-enter-details-submit");
-          submit_button.onclick = on_click;
+          this.itemCount = 0;
+          this.addOutputLine();
+
+          var add_item_button = document.getElementById("payment-item-add");
+          add_item_button.onclick = this.addOutputLine.bind(this);
+
+          var clear_items_button = document.getElementById("payment-items-clear");
+          clear_items_button.onclick = this.onResetClick.bind(this);
+
+          var submit_button = document.getElementById("payment-invoice-create");
+          submit_button.onclick = this.onSubmitClick.bind(this);
         }
 
         getOutputData() {
           let data = [];
-          let descriptions = document.getElementsByName("field-value-description");
-          let amounts = document.getElementsByName("field-value-amount");
+          let descriptions = document.getElementsByName("payment-item-description");
+          let amounts = document.getElementsByName("payment-item-amount");
           for (let i = 0; i < descriptions.length; i++) {
             let description = descriptions[i].value.trim() || null;
             let amount = Number(amounts[i].value);
@@ -95,6 +580,12 @@
                 data.push([ description, amount ]);
           }
           return data;
+        }
+
+        onResetClick() {
+          if (!confirm("Are you sure?"))
+            return;
+          this.reset();
         }
 
         onSubmitClick() {
@@ -105,7 +596,14 @@
           }
 
           let data = {}
+
           data["outputs"] = outputs;
+
+          const descriptionElement = document.querySelector("#payment-description");
+          data["description"] = descriptionElement.value;
+
+          const expires_element = document.getElementById("payment-expires");
+          data["expiration"] = Number(expires_element.value);
 
           let description_fields = document.getElementsByName("field-main-description");
           if (description_fields.length == 1) {
@@ -115,70 +613,285 @@
           }
 
           // Disable all form elements.
-          let parent_container = document.getElementById("page-enter-details");
+          let parent_container = document.getElementById("page-new-invoice");
           for (let input_element of parent_container.getElementsByTagName("input")) {
             input_element.disabled = true;
           }
 
-          fetch("api/bip270", this.createPostData(data)).then(function (response) {
-            response.json().then(function (data) {
-              payment_page.setRequestUri(data.request_uri);
-              payment_page.setExpiryTimestamp(data.expiry_timestamp);
-              payment_page.show();
+          fetch("api/bip270", createPostData(data)).then(function (response) {
+            response.json().then(function (invoiceId) {
+              makePaymentPage.populateInvoiceFromId(invoiceId)
+              makePaymentPage.show();
             });
           });
         }
+      }
 
-        createPostData(data = {}) {
-          // Default options are marked with *
-          return {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            credentials: 'same-origin', // include, *same-origin, omit
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'error', // manual, *follow, error
-            referrerPolicy: 'no-referrer',
-            body: JSON.stringify(data) // body data type must match "Content-Type" header
-          };
+      class RecentInvoiceList {
+        constructor(/*list_id*/) {
+          //this.list = document.getElementById(list_id);
+
+          const listButton = document.getElementById("recent-invoice-to-list");
+          listButton.onclick = this.onReturnToListClick.bind(this);
+        }
+
+        clear() {
+          let matches = Array.from(document.getElementsByName("past-invoice-item"));
+          while (matches.length > 0) {
+            const match = matches.pop();
+            match.remove();
+          }
+          this.itemCount = 0;
+        }
+
+        refresh() {
+          this.clear();
+
+          const callback = this.populateWithData.bind(this);
+          fetch("/api/bip270?sort=creationTimestamp&order=desc&offset=0&limit=5").then(function (response) {
+            response.json().then(callback);
+          });
+        }
+
+        populateWithData(data) {
+          const countElement = document.querySelector("[name='past-invoice-count']");
+          countElement.innerText = data.total;
+
+          const noneElement = document.querySelector("[name='past-invoice-none-available']");
+          if (data.total === 0) {
+            noneElement.classList.remove("d-none");
+            noneElement.classList.add("d-flex");
+          } else {
+            // Flex overrides 'd-none' so need to remove 'd-flex' for hide duration.
+            noneElement.classList.add("d-none")
+            noneElement.classList.remove("d-flex");
+          }
+
+          for (let entry of data.rows)
+            this.addEntry(entry);
+        }
+
+        addEntry(entry) {
+          const itemIndex = this.itemCount;
+
+          let outputContainer = document.getElementById("past-invoice-items");
+          let outputTemplates = document.getElementsByName("past-invoice-item-template");
+          let outputTemplate = outputTemplates[0];
+
+          let outputSection = outputTemplate.cloneNode(true);
+          outputSection.setAttribute("name", "past-invoice-item")
+          outputSection.setAttribute("data-past-invoice-item", itemIndex)
+          outputSection.classList.remove("d-none");
+
+          const iconElement = outputSection.querySelector("i");
+          for (const className of getClassNamesForInvoice(entry))
+            iconElement.classList.add(className);
+
+          const dateElement = outputSection.querySelector("[name='past-invoice-item-date']");
+          dateElement.innerText = formatTimestampAsDate(entry.creationTimestamp);
+          const descriptionElement = outputSection.querySelector("[name='past-invoice-item-description']");
+          descriptionElement.innerText = entry.description;
+          const amountElement = outputSection.querySelector("[name='past-invoice-item-amount']");
+          amountElement.innerText = entry.amount;
+
+          let totalSection = document.getElementById("past-invoice-item-footer");
+          totalSection.before(outputSection);
+
+          outputSection.setAttribute("data-id", entry.id);
+          outputSection.onclick = this.onEntryClick.bind(this);
+
+          this.itemCount += 1;
+        }
+
+        onEntryClick(event) {
+          let containerElement = event.target;
+          while (containerElement.getAttribute("data-id") === null) {
+            containerElement = containerElement.parentElement;
+          }
+          const invoiceId = containerElement.getAttribute("data-id");
+          makePaymentPage.populateInvoiceFromId(invoiceId);
+          makePaymentPage.show();
+        }
+
+        onReturnToListClick() {
+          dashboardPage.show();
         }
       }
 
-      class PaymentPage {
+      class MakePaymentPage {
         constructor() {
-          this.page_element = document.getElementById("page-make-payment");
+          this.pageElement = document.getElementById("page-make-payment");
           this.qrcode_element = document.getElementById("qrcode");
           this.qrcode_expiry_element = document.getElementById("qrcode-expiry");
           this.qrcode = new QRCode(this.qrcode_element, "https://electrumsv.io");
-          this.button = document.getElementById("page-make-payment-submit");
+          this.button = document.getElementById("payment-link-copy");
 
-          this.request_uri = null;
+          this.data = null;
+          this.invoiceId = null;
+          this.paymentUri = null;
           this.expiry_date = null;
           this.expiry_timer_id = null;
 
           var this_ = this;
           this.button.onclick = function() {
-            this_.copyToClipboard(this_.request_uri);
+            this_.copyToClipboard(this_.paymentUri);
           };
+
+          this.title = "Invoice Payment";
+          this.setTitle();
         }
 
         show() {
-          this.page_element.style = "";
-          detail_page.hide();
+          this.pageElement.classList.remove("d-none");
+          for (const thisElement of this.getPageElements())
+            thisElement.classList.remove("d-none");
+
+          document.querySelector("#subpage-container").classList.remove("d-none");
+
+          dashboardPage.hide();
+          newInvoicePage.hide();
+          recentInvoicesList.refresh();
 
           this.setupExpiryTimer();
         }
 
         hide() {
-          this.page_element.style = "display: none";
+          for (const thisElement of this.getPageElements())
+            thisElement.classList.add("d-none");
+          this.pageElement.classList.add("d-none");
+
           this.clearExpiryTimer();
         }
 
-        setRequestUri(request_uri) {
-          this.request_uri = request_uri;
-          this.qrcode.makeCode(request_uri);
+        getPageElements() {
+          return document.getElementsByName("page-make-payment-show");
+        }
+
+        clear() {
+          let matches = Array.from(document.getElementsByName("make-payment-item"));
+          while (matches.length > 0) {
+            const match = matches.pop();
+            match.remove();
+          }
+        }
+
+        setTitle() {
+          document.getElementById("current-page-title").innerText = this.title;
+        }
+
+        setTitleState(data) {
+          const stateId = getStateIdForInvoice(data);
+          const classList = getClassNamesForInvoice(data);
+          const classNameText = classList.join(" ");
+          document.getElementById("current-page-title").innerHTML = "<span><i class='"+ classNameText +"' title='"+ stateId +"'></i> "+ this.title +"</span>";
+        }
+
+        populateInvoiceFromId(invoiceId) {
+          this.clear();
+
+          const setData = this.setData.bind(this);
+          const setUri = this.setUri.bind(this);
+
+          fetch(`api/bip270/${invoiceId}/display`).then(function (response) {
+            response.json().then(function (data) {
+              setData(data.paymentRequest);
+              setUri(data.paymentUri)
+            });
+          });
+        }
+
+        setInvoiceState(state) {
+          this.data.state = state;
+          this.setData(this.data);
+        }
+
+        setUri(uri) {
+          this.paymentUri = uri;
+          this.qrcode.makeCode(uri);
+        }
+
+        setData(data) {
+          this.invoiceId = data.id;
+
+          this.setTitleState(data);
+
+          const container = this.pageElement.querySelector("#make-payment-item-list");
+          const template = container.querySelector("#make-payment-item-template");
+
+          let itemIndex = 0;
+          let totalValue = 0;
+          let precedingElement = container.firstChild;
+          for (const paymentItem of data.outputs) {
+            itemIndex += 1;
+            totalValue += paymentItem.amount;
+
+            let newEntry = template.cloneNode(true);
+            newEntry.setAttribute("name", "make-payment-item")
+            newEntry.setAttribute("data-make-payment-item", itemIndex)
+            newEntry.style = "";
+
+            for (let entry of newEntry.querySelectorAll("[name='make-payment-item-field']")) {
+              if (entry.tagName === "SMALL")
+                entry.innerText = paymentItem.description;
+              else if (entry.tagName === "SPAN")
+                entry.innerText = paymentItem.amount;
+              else if (entry.tagName === "H6")
+                entry.innerText = "Item #"+ itemIndex;
+            }
+
+            if (precedingElement === container.firstChild)
+              precedingElement.before(newEntry);
+            else
+              precedingElement.after(newEntry);
+            precedingElement = template;
+          }
+
+          const totalElement = container.querySelector("#make-payment-total");
+          totalElement.innerText = totalValue;
+
+          let descriptionText = data.memo === null ? "" : data.memo.trim();
+          if (descriptionText.length === 0) {
+            const descriptionElement = this.pageElement.querySelector("#make-payment-description-entry");
+            descriptionElement.classList.add("d-none");
+          } else {
+            const descriptionElement = this.pageElement.querySelector("#make-payment-description");
+            descriptionElement.innerText = descriptionText;
+          }
+
+          this.expiry_date = null;
+          if (data.expirationTimestamp !== null) {
+            this.expiry_date = new Date(data.expirationTimestamp * 1000);
+          } else {
+            const descriptionElement = this.pageElement.querySelector("#make-payment-expiry-entry");
+            descriptionElement.classList.add("d-none");
+          }
+
+          let cancelButton = document.querySelector("#payment-invoice-cancel");
+          cancelButton.onclick = this.onCancelInvoice.bind(this)
+          cancelButton.setAttribute("data-id", this.invoiceId);
+
+          const invoiceStateId = getStateIdForInvoice(data);
+          if (invoiceStateId === "PAID" || invoiceStateId == "CLOSED" || invoiceStateId === "EXPIRED") {
+            cancelButton.setAttribute("disabled", "disabled");
+          } else {
+            cancelButton.removeAttribute("disabled");
+          }
+
+          this.data = data;
+        }
+
+        onCancelInvoice() {
+          let cancelButton = document.querySelector("#payment-invoice-cancel");
+          const invoiceId = cancelButton.getAttribute("data-id");
+
+          if (confirm("Are you sure?")) {
+            const postData = {}
+            fetch(`api/bip270/${invoiceId}/cancel`, createPostData(postData)).then(function (response) {
+              response.json().then(function (data) {
+                dashboardPage.show();
+              });
+            });
+          }
         }
 
         setupExpiryTimer() {
@@ -199,11 +912,6 @@
             window.clearInterval(this.expiry_timer_id);
             this.expiry_timer_id = null;
           }
-        }
-
-        setExpiryTimestamp(expiry_timestamp) {
-          this.expiry_date = new Date(expiry_timestamp * 1000);
-          this.setupExpiryTimer();
         }
 
         handleExpiryTimerEvent() {
@@ -262,59 +970,16 @@
         }
       }
 
-      var detail_page = null;
-      var payment_page = null;
+      var dashboardPage = new DashboardPage();
+      var recentInvoicesList = new RecentInvoiceList();
+      var newInvoicePage = new NewInvoicePage();
+      var makePaymentPage = new MakePaymentPage();
+      var serverConnection = null;
 
       window.onload = function () {
-        detail_page = new DetailPage();
-        payment_page = new PaymentPage();
+        dashboardPage.show()
+        serverConnection = new ServerConnection();
       };
     </script>
-  </head>
-  <body>
-    <h1>ElectrumSV SDK - Merchant Payment Server</h1>
-
-    <div name="page" id="page-enter-details">
-      <h2>Payment Details</h2>
-      <form>
-        <div name="description-field" class="centered">
-          <span class="form-label">Description:</span>
-          <span class="form-field">
-            <input type="text" name="field-main-description" placeholder="Optional note" />
-          </span>
-        </div>
-        <h3>Payment items</h3>
-        <div id="detail-outputs"></div>
-        <div id="buttons" class="centered">
-          <input id="page-enter-details-submit" type="button" value="Start Payment" />
-        </div>
-      </form>
-    </div>
-
-    <div name="page" id="page-make-payment" style="display: none">
-      <h2>Make Payment</h2>
-      <div id="qrcode"></div>
-      <div id="qrcode-expiry" class="centered">&nbsp;</div>
-      <div id="buttons" class="centered">
-        <input id="page-make-payment-submit" type="button" value="Copy to clipboard" />
-      </div>
-    </div>
-
-    <div style="display: none">
-      <div name="output-template" class="output-fields">
-        <span name="description-field">
-          <span class="form-label">Description:</span>
-          <span class="form-field">
-            <input type="text" name="field-value-description" placeholder="Optional note" />
-          </span>
-        </span>
-        <span name="amount-field">
-          <span class="form-label">Amount:</span>
-          <span class="form-field">
-            <input type="number" name="field-value-amount" placeholder="Amount (in satoshis)" />
-          </span>
-        </span>
-      </div>
-    </div>
   </body>
 </html>

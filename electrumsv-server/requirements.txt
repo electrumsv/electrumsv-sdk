@@ -1,3 +1,4 @@
+asyncwebsockets==0.5.2
 bitcoinX>=0.2.4,<0.2.5
 peewee
 trinket==0.1.5

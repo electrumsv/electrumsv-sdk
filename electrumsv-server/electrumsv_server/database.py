@@ -3,7 +3,7 @@ import os
 
 import peewee
 
-from .constants import NAME_SQLITE
+from .constants import NAME_SQLITE, RequestState
 from .exceptions import StartupError
 
 if TYPE_CHECKING:
@@ -19,6 +19,7 @@ class BaseModel(peewee.Model):
 
 class PaymentRequest(BaseModel):
     uid = peewee.BinaryUUIDField(primary_key=True)
+    state = peewee.IntegerField(default=RequestState.UNKNOWN)
     description = peewee.TextField(null=True)
     date_expires = peewee.TimestampField(null=True, utc=True)
     date_created = peewee.TimestampField(utc=True)
