@@ -10,11 +10,6 @@ from electrumsv_node import electrumsv_node
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.install_tools import create_if_not_exist
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)s %(message)s",
-    level=logging.DEBUG,
-    datefmt="%Y-%m-%d %H-%M-%S",
-)
 logger = logging.getLogger("main")
 orm_logger = logging.getLogger('peewee')
 orm_logger.setLevel(logging.WARNING)

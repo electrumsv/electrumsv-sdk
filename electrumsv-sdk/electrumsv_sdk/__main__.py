@@ -13,12 +13,9 @@ from electrumsv_sdk.runners import start, stop, reset, node
 from electrumsv_sdk.argparsing import setup_argparser, manual_argparsing
 from electrumsv_sdk.handlers import handle
 
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',
+    level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)s %(message)s",
-    level=logging.DEBUG,
-    datefmt="%Y-%m-%d %H-%M-%S",
-)
 logger = logging.getLogger("main")
 
 

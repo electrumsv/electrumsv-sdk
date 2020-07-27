@@ -9,12 +9,6 @@ from electrumsv_sdk.reset import reset_node, reset_electrumx, reset_electrumsv_w
 
 from .config import Config
 
-
-logging.basicConfig(
-    format="%(asctime)s %(levelname)s %(message)s",
-    level=logging.DEBUG,
-    datefmt="%Y-%m-%d %H-%M-%S",
-)
 logger = logging.getLogger("runners")
 
 
