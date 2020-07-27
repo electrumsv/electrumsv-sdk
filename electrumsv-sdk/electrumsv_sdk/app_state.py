@@ -1,30 +1,49 @@
 import argparse
-import json
-import os
+import multiprocessing
 import textwrap
 from pathlib import Path
 from typing import Dict, List, Set
 from os.path import expanduser
+import json
+import logging
+import os
+
+from electrumsv_sdk.component_state import Component, ComponentName
+from electrumsv_sdk.status_server.server import StatusServer
+from filelock import FileLock
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+logger = logging.getLogger("status")
+filelock_logger = logging.getLogger("filelock")
+filelock_logger.setLevel(logging.WARNING)
 
-class Config:
+
+class AppState:
     """Only electrumsv paths are saved to config.json so that 'reset' works on correct wallet."""
-    NAMESPACE = ''  # 'start', 'stop' or 'reset'
+    # component state
+    file_path = "component_state.json"
+    lock_path = "component_state.json.lock"
+
+    file_lock = FileLock(lock_path, timeout=1)
+    status: List[Component] = []
+    component_state_path = Path(MODULE_DIR).joinpath("component_state.json")
 
     # namespaces
+    NAMESPACE = ''  # 'start', 'stop' or 'reset'
+
     TOP_LEVEL = "top_level"
     START = "start"
     STOP = "stop"
     RESET = "reset"
     NODE = "node"
+    STATUS = "status"
 
     # package names
-    ELECTRUMSV = "electrumsv"
-    ELECTRUMX = "electrumx"
-    ELECTRUMSV_INDEXER = "electrumsv_indexer"
-    ELECTRUMSV_NODE = "electrumsv_node"
+    ELECTRUMSV = ComponentName.ELECTRUMSV
+    ELECTRUMX = ComponentName.ELECTRUMX
+    ELECTRUMSV_INDEXER = ComponentName.INDEXER
+    ELECTRUMSV_NODE = ComponentName.NODE
 
     subcmd_map: Dict[str, argparse.ArgumentParser] = {}  # cmd_name: ArgumentParser
     subcmd_raw_args_map: Dict[str, List[str]] = {}  # cmd_name: raw arguments
@@ -64,6 +83,10 @@ class Config:
 
     node_args = None
 
+    status_server_queue = multiprocessing.Queue()
+    status_server = None
+
+
     @classmethod
     def set_electrumsv_path(cls, electrumsv_dir: Path):
         """This is set dynamically at startup. It is *only persisted for purposes of the 'reset'
@@ -96,7 +119,7 @@ class Config:
     @classmethod
     def save_repo_paths(cls):
         """overwrites config.json"""
-        config_path = Config.electrumsv_sdk_config_path
+        config_path = cls.electrumsv_sdk_config_path
         with open(config_path.__str__(), "r") as f:
             config = json.loads(f.read())
 
@@ -105,9 +128,9 @@ class Config:
             f.write(json.dumps(config, indent=4))
 
     @classmethod
-    def load_repo_paths(cls) -> "Config":
+    def load_repo_paths(cls) -> "AppState":
         """loads state from config.json"""
-        config_path = Config.electrumsv_sdk_config_path
+        config_path = cls.electrumsv_sdk_config_path
         with open(config_path.__str__(), "r") as f:
             config = json.loads(f.read())
             electrumsv_dir = config.get("electrumsv_dir")
@@ -116,6 +139,51 @@ class Config:
             else:
                 cls.set_electrumsv_path(Path(cls.depends_dir.joinpath("electrumsv")))
 
+    @classmethod
+    def get_status(cls):
+        filelock_logger = logging.getLogger("filelock")
+        filelock_logger.setLevel(logging.WARNING)
+
+        with cls.file_lock:
+            with open(AppState.component_state_path, "r") as f:
+                component_state = json.loads(f.read())
+
+        logger.debug(component_state)
+
+    @classmethod
+    def find_component_if_exists(cls, component: Component, component_state: List[dict]):
+        for index, comp in enumerate(component_state):
+            if comp['process_name'] == component.process_name:
+                return (index, component)
+        return False
+
+    @classmethod
+    def notify_status_server(cls, component):
+        cls.status_server_queue.put(f"status changed: {component}")
+
+    @classmethod
+    def update_status(cls, component: Component):
+        with cls.file_lock:
+            with open(cls.component_state_path, "r") as f:
+                data = f.read()
+                if not data:
+                    component_state = []  # assume file was empty
+                else:
+                    component_state = json.loads(data)
+
+        result = cls.find_component_if_exists(component, component_state)
+        if not result:
+            component_state.append(component.to_dict())
+        else:
+            index, component = result
+            component_state[index] = component.to_dict()
+
+        logger.debug(f"component_state={component_state}")
+
+        with open(AppState.component_state_path, "w") as f:
+            f.write(json.dumps(component_state, indent=4))
+
+        cls.notify_status_server(component)
 
 TOP_LEVEL_HELP_TEXT = textwrap.dedent("""
     top-level

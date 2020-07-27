@@ -7,11 +7,11 @@ import sys
 import platform
 
 from electrumsv_node import electrumsv_node
-from electrumsv_sdk.config import Config
+from electrumsv_sdk.app_state import AppState
 from electrumsv_sdk.install_tools import create_if_not_exist
-from electrumsv_sdk.runners import start, stop, reset, node
+from electrumsv_sdk.runners import start, stop, reset, node, status
 from electrumsv_sdk.argparsing import setup_argparser, manual_argparsing
-from electrumsv_sdk.handlers import handle
+from electrumsv_sdk.install_handlers import handle_install
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',
     level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
@@ -24,21 +24,21 @@ def purge_prev_installs_if_exist():
         os.chmod(path, stat.S_IWRITE)
         func(path)
 
-    if Config.depends_dir.exists():
-        shutil.rmtree(Config.depends_dir.__str__(), onerror=remove_readonly)
-        create_if_not_exist(Config.depends_dir.__str__())
-    if Config.run_scripts_dir.exists():
-        shutil.rmtree(Config.run_scripts_dir.__str__(), onerror=remove_readonly)
-        create_if_not_exist(Config.run_scripts_dir.__str__())
+    if AppState.depends_dir.exists():
+        shutil.rmtree(AppState.depends_dir.__str__(), onerror=remove_readonly)
+        create_if_not_exist(AppState.depends_dir.__str__())
+    if AppState.run_scripts_dir.exists():
+        shutil.rmtree(AppState.run_scripts_dir.__str__(), onerror=remove_readonly)
+        create_if_not_exist(AppState.run_scripts_dir.__str__())
 
 def handle_first_ever_run():
     """nukes previously installed dependencies and .bat/.sh scripts for the first ever run of the
     electrumsv-sdk."""
     try:
-        with open(Config.electrumsv_sdk_config_path.__str__(), 'r') as f:
+        with open(AppState.electrumsv_sdk_config_path.__str__(), 'r') as f:
             config = json.loads(f.read())
     except FileNotFoundError:
-        with open(Config.electrumsv_sdk_config_path.__str__(), 'w') as f:
+        with open(AppState.electrumsv_sdk_config_path.__str__(), 'w') as f:
             config = {"is_first_run": True}
             f.write(json.dumps(config, indent=4))
 
@@ -46,7 +46,7 @@ def handle_first_ever_run():
         logger.debug("running SDK for the first time. please wait for configuration to complete...")
         logger.debug("purging previous server installations (if any)...")
         purge_prev_installs_if_exist()
-        with open(Config.electrumsv_sdk_config_path.__str__(), 'w') as f:
+        with open(AppState.electrumsv_sdk_config_path.__str__(), 'w') as f:
             config = {"is_first_run": False}
             f.write(json.dumps(config, indent=4))
         logger.debug("purging completed successfully")
@@ -72,24 +72,32 @@ def main():
     )
     print()
 
-    create_if_not_exist(Config.depends_dir.__str__())
-    create_if_not_exist(Config.run_scripts_dir.__str__())
+    create_if_not_exist(AppState.depends_dir.__str__())
+    create_if_not_exist(AppState.run_scripts_dir.__str__())
     handle_first_ever_run()
 
+    # Parse args
     setup_argparser()
     manual_argparsing(sys.argv)
-    handle()
-    if Config.NAMESPACE == Config.START:
+
+    # Handle & Install dependencies / or Configure state for 'Runner'
+    handle_install()
+
+    # Call Relevant 'Runner'
+    if AppState.NAMESPACE == AppState.START:
         start()
 
-    if Config.NAMESPACE == Config.STOP:
+    if AppState.NAMESPACE == AppState.STOP:
         stop()
 
-    if Config.NAMESPACE == Config.RESET:
+    if AppState.NAMESPACE == AppState.RESET:
         reset()
 
-    if Config.NAMESPACE == Config.NODE:
+    if AppState.NAMESPACE == AppState.NODE:
         node()
+
+    if AppState.NAMESPACE == AppState.STATUS:
+        status()
 
 if __name__ == "__main__":
     main()

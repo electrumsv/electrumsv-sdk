@@ -1,3 +1,4 @@
 electrumsv-node>= 0.02
 requests
 plyvel>=1.2.1
+filelock

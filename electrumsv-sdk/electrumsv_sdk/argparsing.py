@@ -9,51 +9,65 @@ Fortunately the help menu displays as expected so does not deviate from the stan
 import argparse
 from argparse import RawTextHelpFormatter
 
-from .config import Config, TOP_LEVEL_HELP_TEXT
+from .app_state import AppState, TOP_LEVEL_HELP_TEXT
 
 
 class InvalidInput(Exception):
     pass
 
 
+def parse_first_arg(arg, cur_cmd_name, subcommand_indices):
+    if arg == "start":
+        cur_cmd_name = AppState.START
+        AppState.NAMESPACE = AppState.START
+        subcommand_indices[AppState.START] = []
+    elif arg == AppState.STOP:
+        cur_cmd_name = AppState.STOP
+        AppState.NAMESPACE = AppState.STOP
+        subcommand_indices[AppState.STOP] = []
+    elif arg == AppState.RESET:
+        cur_cmd_name = AppState.RESET
+        AppState.NAMESPACE = AppState.RESET
+        subcommand_indices[AppState.RESET] = []
+    elif arg == AppState.NODE:
+        cur_cmd_name = AppState.NODE
+        AppState.NAMESPACE = AppState.NODE
+        subcommand_indices[AppState.NODE] = []
+    elif arg == AppState.STATUS:
+        cur_cmd_name = AppState.STATUS
+        AppState.NAMESPACE = AppState.STATUS
+        subcommand_indices[AppState.STATUS] = []
+    elif arg == "--help":
+        pass
+    else:
+        raise InvalidInput(
+            "First argument must be one of: [start, stop, reset, node, " "status, --help]"
+        )
+    return cur_cmd_name, subcommand_indices
+
+
 def manual_argparsing(args):
     """manually iterate through sys.argv and feed arguments to either:
     a) parent ArgumentParser
     b) child ArgumentParsers (aka subcommands)"""
+
     args.pop(0)
 
     subcommand_indices = {}  # cmd_name: [index_arg1, index_arg2]
 
-    cur_cmd_name = Config.TOP_LEVEL
-    Config.NAMESPACE = Config.TOP_LEVEL
-    subcommand_indices[Config.TOP_LEVEL] = []
+    cur_cmd_name = AppState.TOP_LEVEL
+    AppState.NAMESPACE = AppState.TOP_LEVEL
+    subcommand_indices[AppState.TOP_LEVEL] = []
     for index, arg in enumerate(args):
         if index == 0:
-            if arg == 'start':
-                cur_cmd_name = Config.START
-                Config.NAMESPACE = Config.START
-                subcommand_indices[Config.START] = []
-            elif arg == Config.STOP:
-                cur_cmd_name = Config.STOP
-                Config.NAMESPACE = Config.STOP
-                subcommand_indices[Config.STOP] = []
-            elif arg == Config.RESET:
-                cur_cmd_name = Config.RESET
-                Config.NAMESPACE = Config.RESET
-                subcommand_indices[Config.RESET] = []
-            elif arg == Config.NODE:
-                cur_cmd_name = Config.NODE
-                Config.NAMESPACE = Config.NODE
-                subcommand_indices[Config.NODE] = []
-            elif arg == '--help':
-                pass
-            else:
-                raise InvalidInput("First argument must be one of: [start, stop, reset, --help]")
+            cur_cmd_name, subcommand_indices = parse_first_arg(
+                arg, cur_cmd_name, subcommand_indices
+            )
 
-        if Config.NAMESPACE == Config.TOP_LEVEL:
-            subcommand_indices[Config.TOP_LEVEL].append(index)
+        if AppState.NAMESPACE == AppState.TOP_LEVEL:
+            subcommand_indices[AppState.TOP_LEVEL].append(index)
 
-        if Config.NAMESPACE == Config.START:
+        if AppState.NAMESPACE == AppState.START:
             # 'start' top-level arguments
             if arg.startswith("--"):
                 subcommand_indices[cur_cmd_name].append(index)
@@ -67,15 +81,18 @@ def manual_argparsing(args):
             if arg.startswith("-") and not arg.startswith("--"):
                 subcommand_indices[cur_cmd_name].append(index)
 
-        if Config.NAMESPACE == Config.STOP:
+        if AppState.NAMESPACE == AppState.STOP:
             pass
 
-        if Config.NAMESPACE == Config.RESET:
+        if AppState.NAMESPACE == AppState.RESET:
             pass
 
-        if Config.NAMESPACE == Config.NODE:
+        if AppState.NAMESPACE == AppState.NODE:
             if index != 0:
                 subcommand_indices[cur_cmd_name].append(index)
+
+        if AppState.NAMESPACE == AppState.STATUS:
+            pass
 
         # print(f"subcommand_indices={subcommand_indices}, index={index}, arg={arg}")
 
@@ -83,7 +100,7 @@ def manual_argparsing(args):
 
 
 def update_subcommands_args_map(args, subcommand_indices):
-    config = Config
+    config = AppState
     for cmd_name in subcommand_indices:
         for index in subcommand_indices[cmd_name]:
             config.subcmd_raw_args_map[cmd_name].append(args[index])
@@ -91,11 +108,11 @@ def update_subcommands_args_map(args, subcommand_indices):
 
 def feed_to_argparsers(args, subcommand_indices):
     """feeds relevant arguments to each child (or parent) ArgumentParser"""
-    config = Config
+    config = AppState
     update_subcommands_args_map(args, subcommand_indices)
 
     for cmd_name in config.subcmd_map:
-        if cmd_name == Config.NODE:
+        if cmd_name == AppState.NODE:
             parsed_args = config.subcmd_raw_args_map[cmd_name]
         else:
             parsed_args = config.subcmd_map[cmd_name].parse_args(
@@ -129,15 +146,13 @@ def add_start_argparser(namespaces):
         dest="extapp_path",
         type=str,
         help="path to 3rd party applications. The 'extapp' flag can be specified multiple times. "
-             "For electrumsv 'daemon apps' please see electrumsv subcommand help menu",
+        "For electrumsv 'daemon apps' please see electrumsv subcommand help menu",
     )
 
     subparsers = start_parser.add_subparsers(help="subcommand", required=False)
 
     # ELECTRUMSV
-    electrumsv = subparsers.add_parser(
-        Config.ELECTRUMSV, help="specify repo and branch"
-    )
+    electrumsv = subparsers.add_parser(AppState.ELECTRUMSV, help="specify repo and branch")
     electrumsv.add_argument(
         "-repo",
         type=str,
@@ -157,7 +172,7 @@ def add_start_argparser(namespaces):
     )
 
     # ELECTRUMX
-    electrumx = subparsers.add_parser(Config.ELECTRUMX, help="specify repo and branch")
+    electrumx = subparsers.add_parser(AppState.ELECTRUMX, help="specify repo and branch")
     electrumx.add_argument(
         "-repo",
         type=str,
@@ -171,7 +186,7 @@ def add_start_argparser(namespaces):
 
     # ELECTRUMSV-INDEXER
     electrumsv_indexer = subparsers.add_parser(
-        Config.ELECTRUMSV_INDEXER, help="specify repo and branch"
+        AppState.ELECTRUMSV_INDEXER, help="specify repo and branch"
     )
     electrumsv_indexer.add_argument(
         "-repo",
@@ -181,16 +196,11 @@ def add_start_argparser(namespaces):
         "local git repo path e.g. G:/electrumsv_indexer",
     )
     electrumsv_indexer.add_argument(
-        "-branch",
-        type=str,
-        default="",
-        help="electrumsv_indexer git repo branch (optional)",
+        "-branch", type=str, default="", help="electrumsv_indexer git repo branch (optional)",
     )
 
     # ELECTRUMSV-NODE
-    electrumsv_node = subparsers.add_parser(
-        Config.ELECTRUMSV_NODE, help="specify repo and branch"
-    )
+    electrumsv_node = subparsers.add_parser(AppState.ELECTRUMSV_NODE, help="specify repo and branch")
     electrumsv_node.add_argument(
         "-repo",
         type=str,
@@ -199,13 +209,11 @@ def add_start_argparser(namespaces):
         "local git repo path e.g. G:/electrumsv_node",
     )
     electrumsv_node.add_argument(
-        "-branch",
-        type=str,
-        default="",
-        help="electrumsv_node git repo branch (optional)",
+        "-branch", type=str, default="", help="electrumsv_node git repo branch (optional)",
     )
     start_namespace_subcommands = [electrumsv, electrumsv_node, electrumx, electrumsv_indexer]
     return start_parser, start_namespace_subcommands
+
 
 def add_stop_argparser(namespaces):
     stop_parser = namespaces.add_parser("stop", help="stop all spawned processes")
@@ -216,13 +224,23 @@ def add_reset_argparser(namespaces):
     reset_parser = namespaces.add_parser("reset", help="reset state of relevant servers to genesis")
     return reset_parser
 
+
 def add_node_argparser(namespaces):
-    node_parser = namespaces.add_parser("node", help="direct access to the built-in bitcoin "
-        "daemon RPC commands", usage="use as you would use bitcoin-cli")
+    node_parser = namespaces.add_parser(
+        "node",
+        help="direct access to the built-in bitcoin " "daemon RPC commands",
+        usage="use as you would use bitcoin-cli",
+    )
 
     # NOTE: this is a facade - all args are actually directed at the bitcoin RPC over http
     # including the help menu
     return node_parser
+
+
+def add_status_argparser(namespaces):
+    status_parser = namespaces.add_parser("node", help="get a status update of SDK applications")
+    return status_parser
+
 
 def setup_argparser():
     """
@@ -232,6 +250,7 @@ def setup_argparser():
         start
             --full-stack
             --node
+            --status-server
             --ex-node
             --esv-ex-node
             --esv-idx-node
@@ -242,6 +261,8 @@ def setup_argparser():
             electrumsv-node     (subcmd of 'start' namespace for config options)
         stop
         reset
+        node
+        status
 
     """
     top_level_parser = argparse.ArgumentParser(
@@ -253,18 +274,20 @@ def setup_argparser():
     stop_parser = add_stop_argparser(namespaces)
     reset_parser = add_reset_argparser(namespaces)
     node_parser = add_node_argparser(namespaces)
+    status_parser = add_status_argparser(namespaces)
 
     # register top-level ArgumentParsers
-    Config.subcmd_map[Config.TOP_LEVEL] = top_level_parser
-    Config.subcmd_map[Config.START] = start_parser
-    Config.subcmd_map[Config.STOP] = stop_parser
-    Config.subcmd_map[Config.RESET] = reset_parser
-    Config.subcmd_map[Config.NODE] = node_parser
+    AppState.subcmd_map[AppState.TOP_LEVEL] = top_level_parser
+    AppState.subcmd_map[AppState.START] = start_parser
+    AppState.subcmd_map[AppState.STOP] = stop_parser
+    AppState.subcmd_map[AppState.RESET] = reset_parser
+    AppState.subcmd_map[AppState.NODE] = node_parser
+    AppState.subcmd_map[AppState.STATUS] = status_parser
 
     # register subcommands second so that handlers are called in desired ordering
     for cmd in start_namespace_subcommands:
         cmd_name = cmd.prog.split(sep=" ")[2]
-        Config.subcmd_map[cmd_name] = cmd
+        AppState.subcmd_map[cmd_name] = cmd
 
-    for cmd_name in Config.subcmd_map.keys():
-        Config.subcmd_raw_args_map[cmd_name] = []
+    for cmd_name in AppState.subcmd_map.keys():
+        AppState.subcmd_raw_args_map[cmd_name] = []

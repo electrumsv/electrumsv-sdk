@@ -27,21 +27,21 @@ py -3.8 -m pip install electrumsv-sdk
 
 __version__ = '0.0.13'
 
-from electrumsv_sdk.config import Config
+from electrumsv_sdk.app_state import AppState
 
 
 if sys.version_info[:3] < (3, 7, 0):
     sys.exit("Error: ElectrumSV requires Python version >= 3.7.0...")
 
 if sys.platform == 'win32':
-    with open(Config.sdk_requirements_win32, 'r') as f:
+    with open(AppState.sdk_requirements_win32, 'r') as f:
         requirements = f.read().splitlines()
 
 elif sys.platform == 'linux':
-    with open(Config.sdk_requirements_linux, 'r') as f:
+    with open(AppState.sdk_requirements_linux, 'r') as f:
         requirements = f.read().splitlines()
 
-with open(Config.sdk_requirements_electrumx, 'r') as f:
+with open(AppState.sdk_requirements_electrumx, 'r') as f:
     # use modified requirements to exclude the plyvel install (problematic on windows)
     requirement_electrumx = f.read().splitlines()
     requirements.append(requirement_electrumx)

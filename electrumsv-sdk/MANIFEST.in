@@ -1,1 +1,2 @@
 include electrumsv_sdk/config.json
+include electrumsv_sdk/component_state.json

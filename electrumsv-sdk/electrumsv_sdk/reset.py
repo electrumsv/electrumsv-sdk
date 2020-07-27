@@ -7,7 +7,7 @@ from pathlib import Path
 
 import requests
 from electrumsv_node import electrumsv_node
-from electrumsv_sdk.config import Config
+from electrumsv_sdk.app_state import AppState
 from electrumsv_sdk.install_tools import create_if_not_exist
 
 logger = logging.getLogger("main")
@@ -21,7 +21,7 @@ def reset_node():
 
 def reset_electrumx():
     logger.debug("resetting state of RegTest electrumx server...")
-    electrumx_data_dir = Config.electrumx_data_dir
+    electrumx_data_dir = AppState.electrumx_data_dir
     if electrumx_data_dir.exists():
         shutil.rmtree(electrumx_data_dir.__str__())
         os.mkdir(electrumx_data_dir.__str__())
@@ -32,7 +32,7 @@ def reset_electrumx():
 def reset_electrumsv_wallet():
     """depends on having node and electrumx already running"""
     def delete_wallet():
-        esv_wallet_db_directory = Config.electrumsv_regtest_wallets_dir
+        esv_wallet_db_directory = AppState.electrumsv_regtest_wallets_dir
         create_if_not_exist(esv_wallet_db_directory.__str__())
 
         try:
