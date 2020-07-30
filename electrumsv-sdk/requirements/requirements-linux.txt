@@ -2,3 +2,5 @@ electrumsv-node>= 0.02
 requests
 plyvel>=1.2.1
 filelock
+curio>=1.2
+trinket>=0.2.1

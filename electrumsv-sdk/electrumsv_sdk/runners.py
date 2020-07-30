@@ -45,7 +45,7 @@ class Runners:
             time.sleep(sleep_time)
         return False
 
-    def run_electrumsv_node(self):
+    def start_node(self):
         process = electrumsv_node.start()
 
         component = Component(
@@ -173,14 +173,16 @@ class Runners:
         self.app_state.update_status(component)
         return process
 
-    def startup(self):
+    def start(self):
         print()
         print()
         print("running stack...")
 
         procs = []
+        self.start_status_server()
+
         if self.app_state.NODE in self.app_state.required_dependencies_set:
-            self.run_electrumsv_node()
+            self.start_node()
             time.sleep(2)
 
         if self.app_state.ELECTRUMX in self.app_state.required_dependencies_set:
@@ -191,18 +193,19 @@ class Runners:
             esv_process = self.run_electrumsv_daemon()
             procs.append(esv_process.pid)
 
-        return procs
-
-    def start(self):
-        procs = self.startup()
         with open(self.app_state.proc_ids_path, "w") as f:
             f.write(json.dumps(procs))
+
         self.app_state.save_repo_paths()
 
     def stop(self):
+        # Todo - need to make this more specific and know at all times which pid belongs
+        #  to which server so servers can be selectively killed from the command-line
+
         with open(self.app_state.proc_ids_path, "r") as f:
             procs = json.loads(f.read())
-        electrumsv_node.stop()
+
+        self.stop_node()
 
         if len(procs) != 0:
             for proc_id in procs:
@@ -210,6 +213,8 @@ class Runners:
 
         with open(self.app_state.proc_ids_path, "w") as f:
             f.write(json.dumps({}))
+
+        self.stop_status_server()
         print("stack terminated")
 
     def node(self):
@@ -251,3 +256,12 @@ class Runners:
         time.sleep(7)
         self.app_state.resetters.reset_electrumsv_wallet()
         self.stop()
+
+    def stop_node(self):
+        electrumsv_node.stop()
+
+    def start_status_server(self):
+        self.app_state.status_server.start()
+
+    def stop_status_server(self):
+        self.app_state.status_server_queue.put(None)

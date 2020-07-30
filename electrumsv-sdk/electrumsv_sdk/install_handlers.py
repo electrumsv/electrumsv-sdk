@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import subprocess
@@ -5,6 +6,7 @@ from pathlib import Path
 
 from .utils import checkout_branch, create_if_not_exist
 
+logger = logging.getLogger("install-handlers")
 
 def validate_only_one_mode(parsed_args):
     modes_selected = []

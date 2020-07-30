@@ -2,3 +2,5 @@ electrumsv-node
 plyvel-win32>=1.2.1
 requests
 filelock
+curio>=1.2
+trinket>=0.2.1

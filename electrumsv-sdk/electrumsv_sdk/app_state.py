@@ -16,6 +16,7 @@ from electrumsv_sdk.install_handlers import InstallHandlers
 from electrumsv_sdk.install_tools import InstallTools
 from electrumsv_sdk.reset import Resetters
 from electrumsv_sdk.runners import Runners
+from electrumsv_sdk.status_server.server import StatusServer
 from electrumsv_sdk.utils import create_if_not_exist
 from filelock import FileLock
 
@@ -35,6 +36,8 @@ class AppState:
         self.runners = Runners(self)
         self.install_tools = InstallTools(self)
         self.resetters = Resetters(self)
+        self.status_server_queue = multiprocessing.Queue()
+        self.status_server = StatusServer(self.status_server_queue)
 
         # component state
         self.file_path = "component_state.json"
@@ -97,9 +100,6 @@ class AppState:
         self.required_dependencies_set: Set[str] = set()
 
         self.node_args = None
-
-        self.status_server_queue = multiprocessing.Queue()
-        self.status_server = None
 
     def set_electrumsv_path(self, electrumsv_dir: Path):
         """This is set dynamically at startup. It is *only persisted for purposes of the 'reset'
@@ -187,7 +187,7 @@ class AppState:
                 return (index, component)
         return False
     
-    def notify_status_server(self, component):
+    def notify_status_server(self, component: Component):
         self.status_server_queue.put(f"status changed: {component}")
 
     def update_status(self, component: Component):

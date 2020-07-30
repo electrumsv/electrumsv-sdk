@@ -1,13 +1,28 @@
 import logging
 
-from electrumsv_sdk.status_server.logs import trinket_logging_setup
-from trinket import Trinket
-
-bauble = trinket_logging_setup(Trinket())
 logger = logging.getLogger("trinket-routes")
 
-@bauble.websocket('/websocket')
-async def serve_websocket(request, websocket):
+
+async def get_status(app, request):
+    await request.parse_body()
+    if request.body == b'stop':
+        pass
+
+
+async def update_status(app, request):
+    await request.parse_body()
+    app.update_status()
+
+
+async def unsubscribe(app, request):
+    """unsubscribe from status updates"""
+    await request.parse_body()
+    if request.body == b'stop':
+        pass
+
+
+async def subscribe(app, request, websocket):
+    """subscribe for status updates"""
     host = request.socket._socket.getpeername()[0]
     port = request.socket._socket.getpeername()[1]
     logger.debug(f"got websocket connection: host={host}, port={port}")
