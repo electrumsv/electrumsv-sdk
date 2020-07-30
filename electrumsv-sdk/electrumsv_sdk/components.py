@@ -27,8 +27,9 @@ state=Running.
 - terminated components without using the SDK interface      state=Failed
 """
 import enum
-import logging
 from typing import Optional
+
+from electrumsv_sdk.utils import get_str_datetime
 
 
 class ComponentName:
@@ -80,6 +81,7 @@ class Component:
         self.location = location
         self.metadata = metadata
         self.logging_path = logging_path
+        self.last_updated = get_str_datetime()
 
     def __repr__(self):
         return (
@@ -88,7 +90,7 @@ class Component:
             f"endpoint={self.endpoint}, "
             f"component_state={(self.component_state.__str__().split('.')[1])}, "
             f"location={self.location}, metadata={self.metadata}, "
-            f"logging_path={self.logging_path})"
+            f"logging_path={self.logging_path}, last_updated={self.last_updated})"
         )
 
     def to_dict(self):

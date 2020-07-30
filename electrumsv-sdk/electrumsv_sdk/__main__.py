@@ -1,57 +1,14 @@
-import json
 import logging
-import os
-import shutil
-import stat
 import sys
 import platform
 
-from electrumsv_node import electrumsv_node
 from electrumsv_sdk.app_state import AppState
-from electrumsv_sdk.install_tools import create_if_not_exist
-from electrumsv_sdk.runners import start, stop, reset, node, status
-from electrumsv_sdk.argparsing import setup_argparser, manual_argparsing
-from electrumsv_sdk.install_handlers import handle_install
+from electrumsv_sdk.utils import create_if_not_exist
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',
     level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
 
 logger = logging.getLogger("main")
-
-
-def purge_prev_installs_if_exist():
-    def remove_readonly(func, path, excinfo):  # .git is read-only
-        os.chmod(path, stat.S_IWRITE)
-        func(path)
-
-    if AppState.depends_dir.exists():
-        shutil.rmtree(AppState.depends_dir.__str__(), onerror=remove_readonly)
-        create_if_not_exist(AppState.depends_dir.__str__())
-    if AppState.run_scripts_dir.exists():
-        shutil.rmtree(AppState.run_scripts_dir.__str__(), onerror=remove_readonly)
-        create_if_not_exist(AppState.run_scripts_dir.__str__())
-
-def handle_first_ever_run():
-    """nukes previously installed dependencies and .bat/.sh scripts for the first ever run of the
-    electrumsv-sdk."""
-    try:
-        with open(AppState.electrumsv_sdk_config_path.__str__(), 'r') as f:
-            config = json.loads(f.read())
-    except FileNotFoundError:
-        with open(AppState.electrumsv_sdk_config_path.__str__(), 'w') as f:
-            config = {"is_first_run": True}
-            f.write(json.dumps(config, indent=4))
-
-    if config.get("is_first_run") or config.get("is_first_run") is None:
-        logger.debug("running SDK for the first time. please wait for configuration to complete...")
-        logger.debug("purging previous server installations (if any)...")
-        purge_prev_installs_if_exist()
-        with open(AppState.electrumsv_sdk_config_path.__str__(), 'w') as f:
-            config = {"is_first_run": False}
-            f.write(json.dumps(config, indent=4))
-        logger.debug("purging completed successfully")
-
-        electrumsv_node.reset()
 
 def main():
     """
@@ -71,33 +28,33 @@ def main():
         f"{sys.version_info.micro}-{platform.architecture()[0]}"
     )
     print()
-
-    create_if_not_exist(AppState.depends_dir.__str__())
-    create_if_not_exist(AppState.run_scripts_dir.__str__())
-    handle_first_ever_run()
+    app_state = AppState()
+    create_if_not_exist(app_state.depends_dir.__str__())
+    create_if_not_exist(app_state.run_scripts_dir.__str__())
+    app_state.handle_first_ever_run()
 
     # Parse args
-    setup_argparser()
-    manual_argparsing(sys.argv)
+    app_state.arparser.setup_argparser()
+    app_state.arparser.manual_argparsing(sys.argv)
 
     # Handle & Install dependencies / or Configure state for 'Runner'
-    handle_install()
+    app_state.install_handlers.handle_install()
 
     # Call Relevant 'Runner'
-    if AppState.NAMESPACE == AppState.START:
-        start()
+    if app_state.NAMESPACE == app_state.START:
+        app_state.runners.start()
 
-    if AppState.NAMESPACE == AppState.STOP:
-        stop()
+    if app_state.NAMESPACE == app_state.STOP:
+        app_state.runners.stop()
 
-    if AppState.NAMESPACE == AppState.RESET:
-        reset()
+    if app_state.NAMESPACE == app_state.RESET:
+        app_state.runners.reset()
 
-    if AppState.NAMESPACE == AppState.NODE:
-        node()
+    if app_state.NAMESPACE == app_state.NODE:
+        app_state.runners.node()
 
-    if AppState.NAMESPACE == AppState.STATUS:
-        status()
+    if app_state.NAMESPACE == app_state.STATUS:
+        app_state.runners.status()
 
 if __name__ == "__main__":
     main()

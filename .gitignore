@@ -10,5 +10,6 @@ electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumx_data
 electrumsv-server/data
 electrumsv-sdk/electrumsv_sdk/run_scripts/proc_ids.json
 electrumsv-sdk/electrumsv_sdk/config.json
+electrumsv-sdk/electrumsv_sdk/component_state.json
 electrumsv-sdk/build/*
 electrumsv-sdk/dist/*

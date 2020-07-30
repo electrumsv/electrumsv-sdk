@@ -2,146 +2,79 @@ import os
 import shlex
 import subprocess
 import sys
-from pathlib import Path
-from .app_state import AppState
-from .utils import checkout_branch
+from .utils import checkout_branch, create_if_not_exist, make_esv_daemon_script, \
+    make_esv_gui_script, make_bat_file, make_bash_file
 
 
-def create_if_not_exist(path):
-    path = Path(path)
-    root = Path(path.parts[0])  # Root
-    cur_dir = Path(root)
-    for part in path.parts:
-        if Path(part) != root:
-            cur_dir = cur_dir.joinpath(part)
-        if cur_dir.exists():
-            continue
-        else:
-            os.mkdir(cur_dir)
-            print(f"created '{cur_dir}' successfully")
+class InstallTools:
+
+    def __init__(self, app_state: "AppState"):
+        self.app_state = app_state
+
+    def generate_run_scripts_electrumsv(self):
+        """makes both the daemon script and a script for running the GUI"""
+        create_if_not_exist(self.app_state.run_scripts_dir)
+        os.chdir(self.app_state.run_scripts_dir)
+        path_to_dapp_example_apps = self.app_state.electrumsv_dir.joinpath("examples").joinpath("applications")
+        electrumsv_env_vars = {
+            "PYTHONPATH": path_to_dapp_example_apps.__str__(),
+        }
+        esv_script = self.app_state.electrumsv_dir.joinpath("electrum-sv").__str__()
+        make_esv_daemon_script(esv_script, electrumsv_env_vars)
+        make_esv_gui_script(esv_script, electrumsv_env_vars)
 
 
-def make_bat_file(filename, commandline_string_split, env_vars):
-    open(filename, "w").close()
-    with open(filename, "a") as f:
-        f.write("@echo off\n")
-        for key, val in env_vars.items():
-            f.write(f"set {key}={val}\n")
-        for subcmd in commandline_string_split:
-            f.write(f"{subcmd}" + " ")
-        f.write("\n")
-        f.write("pause\n")
+    def generate_run_script_electrumx(self):
+        create_if_not_exist(self.app_state.run_scripts_dir)
+        os.chdir(self.app_state.run_scripts_dir)
+        electrumx_env_vars = {
+            "DB_DIRECTORY": self.app_state.electrumx_data_dir.__str__(),
+            "DAEMON_URL": "http://rpcuser:rpcpassword@127.0.0.1:18332",
+            "DB_ENGINE": "leveldb",
+            "SERVICES": "tcp://:51001,rpc://",
+            "COIN": "BitcoinSV",
+            "COST_SOFT_LIMIT": "0",
+            "COST_HARD_LIMIT": "0",
+            "MAX_SEND": "10000000",
+            "LOG_LEVEL": "debug",
+            "NET": "regtest",
+        }
+
+        commandline_string = f"{sys.executable} {self.app_state.electrumx_dir.joinpath('electrumx_server')}"
+
+        if sys.platform == "win32":
+            commandline_string_split = shlex.split(commandline_string, posix=0)
+            make_bat_file("electrumx.bat", commandline_string_split, electrumx_env_vars)
+        elif sys.platform in ["linux", "darwin"]:
+            commandline_string_split = shlex.split(commandline_string, posix=1)
+            make_bash_file("electrumx.bat", commandline_string_split, electrumx_env_vars)
 
 
-def make_bash_file(filename, commandline_string_split, env_vars):
-    open(filename, "w").close()
-    with open(filename, "a") as f:
-        f.write("#!/bin/bash\n")
-        f.write("set echo off\n")
-        for key, val in env_vars.items():
-            f.write(f"export {key}={val}\n")
-        for subcmd in commandline_string_split:
-            f.write(f"{subcmd}" + " ")
-        f.write("\n")
-        f.write('read -s -n 1 -p "Press any key to continue" . . .\n')
-        f.write("exit")
+    def install_electrumsv(self, url, branch):
+        # Note - this is only so that it works "out-of-the-box". But for development
+        # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
+
+        if not self.app_state.electrumsv_dir.exists():
+            os.chdir(self.app_state.depends_dir.__str__())
+            subprocess.run(f"git clone {url}", shell=True, check=True)
+            checkout_branch(branch)
+            subprocess.run(f"{sys.executable} -m pip install -r {self.app_state.electrumsv_requirements_path}")
+            subprocess.run(
+                f"{sys.executable} -m pip install -r {self.app_state.electrumsv_binary_requirements_path}"
+            )
+        self.generate_run_scripts_electrumsv()
 
 
-def make_esv_daemon_script(esv_script, electrumsv_env_vars):
-    commandline_string = (
-        f"{sys.executable} {esv_script} --regtest daemon -dapp restapi "
-        f"--v=debug --file-logging --restapi --server=127.0.0.1:51001:t "
-        f"--portable"
-    )
+    def install_electrumx(self, url, branch):
 
-    if sys.platform == "win32":
-        commandline_string_split = shlex.split(commandline_string, posix=0)
-        make_bat_file("electrumsv.bat", commandline_string_split, electrumsv_env_vars)
-
-    elif sys.platform in ["linux", "darwin"]:
-        commandline_string_split = shlex.split(commandline_string, posix=1)
-        make_bash_file("electrumsv.sh", commandline_string_split, electrumsv_env_vars)
+        if not self.app_state.electrumx_dir.exists():
+            create_if_not_exist(self.app_state.electrumx_dir.__str__())
+            create_if_not_exist(self.app_state.electrumx_data_dir.__str__())
+            os.chdir(self.app_state.depends_dir.__str__())
+            subprocess.run(f"git clone {url}", shell=True, check=True)
+            checkout_branch(branch)
+        self.generate_run_script_electrumx()
 
 
-def make_esv_gui_script(esv_script, electrumsv_env_vars):
-    commandline_string = (
-        f"{sys.executable} {esv_script} --regtest --v=debug --file-logging "
-        f"--server=127.0.0.1:51001:t --portable"
-    )
-
-    if sys.platform == "win32":
-        commandline_string_split = shlex.split(commandline_string, posix=0)
-        make_bat_file("electrumsv-gui.bat", commandline_string_split, electrumsv_env_vars)
-
-    elif sys.platform in ["linux", "darwin"]:
-        commandline_string_split = shlex.split(commandline_string, posix=1)
-        make_bash_file("electrumsv-gui.sh", commandline_string_split, electrumsv_env_vars)
-
-
-def generate_run_scripts_electrumsv():
-    """makes both the daemon script and a script for running the GUI"""
-    create_if_not_exist(AppState.run_scripts_dir)
-    os.chdir(AppState.run_scripts_dir)
-    path_to_dapp_example_apps = AppState.electrumsv_dir.joinpath("examples").joinpath("applications")
-    electrumsv_env_vars = {
-        "PYTHONPATH": path_to_dapp_example_apps.__str__(),
-    }
-    esv_script = AppState.electrumsv_dir.joinpath("electrum-sv").__str__()
-    make_esv_daemon_script(esv_script, electrumsv_env_vars)
-    make_esv_gui_script(esv_script, electrumsv_env_vars)
-
-
-def generate_run_script_electrumx():
-    create_if_not_exist(AppState.run_scripts_dir)
-    os.chdir(AppState.run_scripts_dir)
-    electrumx_env_vars = {
-        "DB_DIRECTORY": AppState.electrumx_data_dir.__str__(),
-        "DAEMON_URL": "http://rpcuser:rpcpassword@127.0.0.1:18332",
-        "DB_ENGINE": "leveldb",
-        "SERVICES": "tcp://:51001,rpc://",
-        "COIN": "BitcoinSV",
-        "COST_SOFT_LIMIT": "0",
-        "COST_HARD_LIMIT": "0",
-        "MAX_SEND": "10000000",
-        "LOG_LEVEL": "debug",
-        "NET": "regtest",
-    }
-
-    commandline_string = f"{sys.executable} {AppState.electrumx_dir.joinpath('electrumx_server')}"
-
-    if sys.platform == "win32":
-        commandline_string_split = shlex.split(commandline_string, posix=0)
-        make_bat_file("electrumx.bat", commandline_string_split, electrumx_env_vars)
-    elif sys.platform in ["linux", "darwin"]:
-        commandline_string_split = shlex.split(commandline_string, posix=1)
-        make_bash_file("electrumx.bat", commandline_string_split, electrumx_env_vars)
-
-
-def install_electrumsv(url, branch):
-    # Note - this is only so that it works "out-of-the-box". But for development
-    # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
-
-    if not AppState.electrumsv_dir.exists():
-        os.chdir(AppState.depends_dir.__str__())
-        subprocess.run(f"git clone {url}", shell=True, check=True)
-        checkout_branch(branch)
-        subprocess.run(f"{sys.executable} -m pip install -r {AppState.electrumsv_requirements_path}")
-        subprocess.run(
-            f"{sys.executable} -m pip install -r {AppState.electrumsv_binary_requirements_path}"
-        )
-    generate_run_scripts_electrumsv()
-
-
-def install_electrumx(url, branch):
-
-    if not AppState.electrumx_dir.exists():
-        create_if_not_exist(AppState.electrumx_dir.__str__())
-        create_if_not_exist(AppState.electrumx_data_dir.__str__())
-        os.chdir(AppState.depends_dir.__str__())
-        subprocess.run(f"git clone {url}", shell=True, check=True)
-        checkout_branch(branch)
-    generate_run_script_electrumx()
-
-
-def install_electrumsv_node():
-    subprocess.run(f"{sys.executable} -m pip install electrumsv-node", shell=True, check=True)
+    def install_electrumsv_node(self):
+        subprocess.run(f"{sys.executable} -m pip install electrumsv-node", shell=True, check=True)
