@@ -1,4 +1,7 @@
+import json
 from functools import partial
+from typing import Optional
+
 import curio
 import logging
 import signal
@@ -43,7 +46,7 @@ class StatusServer:
 
     def __init__(self):
         super(StatusServer, self).__init__()
-        self.curio_status_queue = None
+        self.curio_status_queue: Optional[curio.UniversalQueue] = None
         self.intentional_task_cancellation = False
         self.kernel = curio.Kernel(debug=False)
         m = Monitor(self.kernel)
@@ -84,12 +87,15 @@ class StatusServer:
         connected clients."""
         while True:
             for ws in self.server.websockets:
-                status = await self.curio_status_queue.get()
-                await ws.send(status)
+                component = await self.curio_status_queue.get()
+                self.logger.debug(f"publishing status update for component:"
+                                  f" {component['process_name']}")
+                await ws.send(json.dumps(component))
             await curio.sleep(0.2)
 
     def update_status(self, component):
-        logger.debug(f"got status update for component={component['process_name']}")
+        self.curio_status_queue.put(component)
+        logger.debug(f"got status update for component: {component['process_name']}")
 
 
 if __name__ == "__main__":
