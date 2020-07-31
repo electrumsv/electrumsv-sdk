@@ -6,7 +6,9 @@ import curio
 import logging
 import signal
 
+from constants import FILE_LOCK_PATH
 from curio.monitor import Monitor
+from filelock import FileLock
 from trinket import Trinket
 from trinket.proto import Application
 from trinket.server import Server
@@ -14,8 +16,9 @@ from trinket.server import Server
 import routes
 from logs import trinket_logging_setup
 
-
 logger = logging.getLogger("status-server")
+filelock_logger = logging.getLogger("filelock")
+filelock_logger.setLevel(logging.WARNING)
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(name)-24s %(message)s",
     level=logging.DEBUG,
@@ -46,6 +49,7 @@ class StatusServer:
 
     def __init__(self):
         super(StatusServer, self).__init__()
+        self.file_lock = FileLock(FILE_LOCK_PATH, timeout=1)
         self.curio_status_queue: Optional[curio.UniversalQueue] = None
         self.intentional_task_cancellation = False
         self.kernel = curio.Kernel(debug=False)
@@ -86,11 +90,15 @@ class StatusServer:
         """immediately emits the status notification (from the multiprocessing queue) to all
         connected clients."""
         while True:
-            for ws in self.server.websockets:
-                component = await self.curio_status_queue.get()
-                self.logger.debug(f"publishing status update for component:"
-                                  f" {component['process_name']}")
-                await ws.send(json.dumps(component))
+            if len(self.server.websockets):
+                for ws in self.server.websockets:
+                    component = await self.curio_status_queue.get()
+                    self.logger.debug(
+                        f"publishing status update for component:" f" {component['process_name']}"
+                    )
+                    await ws.send(json.dumps(component))
+            else:  # drain queue
+                _component = await self.curio_status_queue.get()
             await curio.sleep(0.2)
 
     def update_status(self, component):

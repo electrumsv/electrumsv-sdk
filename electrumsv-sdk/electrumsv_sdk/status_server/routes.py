@@ -1,6 +1,7 @@
 import json
 import logging
 
+from constants import COMPONENT_STATE_PATH
 from trinket import Request, Response
 
 logger = logging.getLogger("trinket-routes")
@@ -8,7 +9,10 @@ logger = logging.getLogger("trinket-routes")
 
 # /api/status/get_status
 async def get_status(app, request):
-    raise NotImplementedError
+    with app.file_lock:
+        with open(COMPONENT_STATE_PATH, "r") as f:
+            component_state = json.loads(f.read())
+    return Response.json(json.dumps(component_state))
 
 
 # /api/status/update_status
