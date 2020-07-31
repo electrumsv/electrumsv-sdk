@@ -73,7 +73,7 @@ class StatusServer:
     def add_api_routes(self, server: Trinket) -> Trinket:
         """add routes such that application state is accessable in context of handlers"""
         server.route("/api/status/get_status")(partial(routes.get_status, self))
-        server.route("/api/status/update_status")(partial(routes.update_status, self))
+        server.route("/api/status/update_status", ["POST"])(partial(routes.update_status, self))
         server.route("/api/status/unsubscribe", ["POST"])(partial(routes.unsubscribe, self))
 
         server.websocket("/api/status/subscribe")(partial(routes.subscribe, self))
@@ -87,6 +87,10 @@ class StatusServer:
                 status = await self.curio_status_queue.get()
                 await ws.send(status)
             await curio.sleep(0.2)
+
+    def update_status(self, component):
+        logger.debug(f"got status update for component={component['process_name']}")
+
 
 if __name__ == "__main__":
     status_server = StatusServer()

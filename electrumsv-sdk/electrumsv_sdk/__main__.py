@@ -37,7 +37,7 @@ def main():
     app_state.arparser.setup_argparser()
     app_state.arparser.manual_argparsing(sys.argv)
 
-    # Handle & Install dependencies / or Configure state for 'Runner'
+    # Check & Install dependencies / or Configure state for 'Runners'
     app_state.install_handlers.handle_install()
 
     # Call Relevant 'Runner'

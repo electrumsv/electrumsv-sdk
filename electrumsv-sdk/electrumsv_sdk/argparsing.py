@@ -104,25 +104,23 @@ class ArgParser:
 
 
     def update_subcommands_args_map(self, args, subcommand_indices):
-        config = self.app_state
         for cmd_name in subcommand_indices:
             for index in subcommand_indices[cmd_name]:
-                config.subcmd_raw_args_map[cmd_name].append(args[index])
+                self.app_state.subcmd_raw_args_map[cmd_name].append(args[index])
 
 
     def feed_to_argparsers(self, args, subcommand_indices):
         """feeds relevant arguments to each child (or parent) ArgumentParser"""
-        config = self.app_state
         self.update_subcommands_args_map(args, subcommand_indices)
 
-        for cmd_name in config.subcmd_map:
+        for cmd_name in self.app_state.subcmd_map:
             if cmd_name == self.app_state.NODE:
-                parsed_args = config.subcmd_raw_args_map[cmd_name]
+                parsed_args = self.app_state.subcmd_raw_args_map[cmd_name]
             else:
-                parsed_args = config.subcmd_map[cmd_name].parse_args(
-                    args=config.subcmd_raw_args_map[cmd_name]
+                parsed_args = self.app_state.subcmd_map[cmd_name].parse_args(
+                    args=self.app_state.subcmd_raw_args_map[cmd_name]
                 )
-            config.subcmd_parsed_args_map[cmd_name] = parsed_args
+            self.app_state.subcmd_parsed_args_map[cmd_name] = parsed_args
 
 
     def add_start_argparser(self, namespaces):

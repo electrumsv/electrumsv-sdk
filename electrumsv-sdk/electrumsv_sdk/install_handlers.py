@@ -20,7 +20,7 @@ def validate_only_one_mode(parsed_args):
     return True, modes_selected
 
 
-class InstallCheckers:
+class Installers:
 
     def __init__(self, app_state):
         self.app_sate = app_state
@@ -117,9 +117,13 @@ class InstallCheckers:
     def check_local_electrumx_install(self, path, branch):
         self.app_sate.install_tools.generate_run_script_electrumx()
 
-    def check_remote_electrumsv_node_install(self, branch):
+    def check_node_install(self, branch):
         """this one has a pip installer at https://pypi.org/project/electrumsv-node/"""
-        self.app_sate.install_tools.install_electrumsv_node()
+        self.app_sate.install_tools.install_bitcoin_node()
+
+    def check_status_monitor_install(self):
+        """purely for generating the .bat / .sh script"""
+        self.app_sate.install_tools.install_status_monitor()
 
 
 class InstallHandlers:
@@ -140,7 +144,7 @@ class InstallHandlers:
     """
     def __init__(self, app_state):
         self.app_sate = app_state
-        self.install_checker = InstallCheckers(self.app_sate)
+        self.install_checker = Installers(self.app_sate)
 
     def handle_remote_repo(self, package_name, url, branch):
         print(f"- installing remote dependency for {package_name} at {url}")
@@ -152,7 +156,7 @@ class InstallHandlers:
             self.install_checker.check_remote_electrumx_install(url, branch)
 
         if package_name == self.app_sate.ELECTRUMSV_NODE:
-            self.install_checker.check_remote_electrumsv_node_install(branch)
+            self.install_checker.check_node_install(branch)
 
     def handle_local_repo(self, package_name, path, branch):
         try:
@@ -246,8 +250,10 @@ class InstallHandlers:
 
     def handle_status_args(self, parsed_args):
         """takes no arguments"""
-        if not self.app_sate.NAMESPACE == self.app_sate.STATUS:
+        if not self.app_sate.NAMESPACE == self.app_sate.START:
             return
+
+        self.install_checker.check_status_monitor_install()
 
     def handle_electrumsv_args(self, parsed_args):
         if not self.app_sate.NAMESPACE == self.app_sate.START:

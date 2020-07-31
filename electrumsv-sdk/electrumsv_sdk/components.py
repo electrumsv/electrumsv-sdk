@@ -27,12 +27,13 @@ state=Running.
 - terminated components without using the SDK interface      state=Failed
 """
 import enum
-from typing import Optional
+from typing import Optional, List, Dict, Tuple
 
 from electrumsv_sdk.utils import get_str_datetime
 
 
 class ComponentName:
+    STATUS_MONITOR = "status_monitor"
     NODE = "node"
     ELECTRUMX = "electrumx"
     ELECTRUMSV = "electrumsv"
@@ -100,3 +101,17 @@ class Component:
                 val = self.component_state.__str__().split('.')[1]
             config_dict[key] = val
         return config_dict
+
+class ComponentStore:
+    """exists for purposes of selectively stopping components by ComponentType (or optionally by
+    ComponentName or some other criteria as needed"""
+
+    def __init__(self, app_state: "AppState"):
+        self.app_state = app_state
+        self.active_components: Dict[ComponentType, List[int]] = {}
+
+    def stop_components_by_type(self, component_type: ComponentType):
+        raise NotImplementedError
+
+    def stop_components_by_pid(self, pid: int):
+        raise NotImplementedError

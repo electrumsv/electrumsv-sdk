@@ -1,26 +1,30 @@
+import json
 import logging
+
+from trinket import Request, Response
 
 logger = logging.getLogger("trinket-routes")
 
 
+# /api/status/get_status
 async def get_status(app, request):
-    await request.parse_body()
-    if request.body == b'stop':
-        pass
+    raise NotImplementedError
 
 
-async def update_status(app, request):
-    await request.parse_body()
-    app.update_status()
+# /api/status/update_status
+async def update_status(app, request: Request):
+    app.update_status(json.loads(request.body))
+    payload = {"status": "success", "error": None}
+    return Response.json(json.dumps(payload))
 
 
+# /api/status/unsubscribe
 async def unsubscribe(app, request):
     """unsubscribe from status updates"""
-    await request.parse_body()
-    if request.body == b'stop':
-        pass
+    raise NotImplementedError
 
 
+# /api/status/subscribe
 async def subscribe(app, request, websocket):
     """subscribe for status updates"""
     host = request.socket._socket.getpeername()[0]

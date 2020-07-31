@@ -65,7 +65,8 @@ class Runners:
         else:
             component.component_state = ComponentState.Running
             logger.debug("bitcoin daemon online")
-        self.app_state.update_status(component)
+        self.app_state.update_status_file(self.app_state.component_state_path, component)
+        self.app_state.status_monitor_client.update_status(component)
 
         # process handle not returned because node is stopped via rpc
 
@@ -98,7 +99,8 @@ class Runners:
         else:
             component.component_state = ComponentState.Running
             logger.debug("electrumx online")
-        self.app_state.update_status(component)
+        self.app_state.update_status_file(self.app_state.component_state_path, component)
+        self.app_state.status_monitor_client.update_status(component)
         return process
 
     def disable_rest_api_authentication(self):
@@ -170,8 +172,24 @@ class Runners:
         else:
             component.component_state = ComponentState.Running
             logger.debug("electrumsv online")
-        self.app_state.update_status(component)
+
+        self.app_state.update_status_file(self.app_state.component_state_path, component)
+        self.app_state.status_monitor_client.update_status(component)
         return process
+
+    def start_status_monitor(self):
+        if sys.platform == "win32":
+            status_monitor_script = self.app_state.run_scripts_dir.joinpath("status_monitor.bat")
+        else:
+            status_monitor_script = self.app_state.run_scripts_dir.joinpath("status_monitor.sh")
+
+        logger.debug(f"starting status monitor daemon...")
+        process = subprocess.Popen(f"{status_monitor_script}",
+            creationflags=subprocess.CREATE_NEW_CONSOLE)
+        return process
+
+    def stop_status_monitor(self):
+        raise NotImplementedError  # kill signal via subprocess
 
     def start(self):
         print()
@@ -179,7 +197,9 @@ class Runners:
         print("running stack...")
 
         procs = []
-        self.start_status_server()
+        status_monitor_process = self.start_status_monitor()
+        procs.append(status_monitor_process.pid)
+        time.sleep(1)
 
         if self.app_state.NODE in self.app_state.required_dependencies_set:
             self.start_node()
@@ -214,7 +234,7 @@ class Runners:
         with open(self.app_state.proc_ids_path, "w") as f:
             f.write(json.dumps({}))
 
-        self.stop_status_server()
+        # self.stop_status_monitor()
         print("stack terminated")
 
     def node(self):
@@ -240,7 +260,7 @@ class Runners:
         print(result.json()["result"])
 
     def status(self):
-        status = self.app_state.get_status()
+        status = self.app_state.get_status(self.app_state.component_state_path)
         logger.debug(f"status={status}")
 
     def reset(self):
@@ -260,8 +280,3 @@ class Runners:
     def stop_node(self):
         electrumsv_node.stop()
 
-    def start_status_server(self):
-        self.app_state.status_server.start()
-
-    def stop_status_server(self):
-        self.app_state.status_server_queue.put(None)

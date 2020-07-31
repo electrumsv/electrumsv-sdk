@@ -47,7 +47,21 @@ class InstallTools:
             make_bat_file("electrumx.bat", commandline_string_split, electrumx_env_vars)
         elif sys.platform in ["linux", "darwin"]:
             commandline_string_split = shlex.split(commandline_string, posix=1)
-            make_bash_file("electrumx.bat", commandline_string_split, electrumx_env_vars)
+            make_bash_file("electrumx.sh", commandline_string_split, electrumx_env_vars)
+
+    def generate_run_script_status_monitor(self):
+        create_if_not_exist(self.app_state.run_scripts_dir)
+        os.chdir(self.app_state.run_scripts_dir)
+
+        commandline_string = f"{sys.executable} " \
+                             f"{self.app_state.status_monitor_dir.joinpath('server.py')}"
+
+        if sys.platform == "win32":
+            commandline_string_split = shlex.split(commandline_string, posix=0)
+            make_bat_file("status_monitor.bat", commandline_string_split, {})
+        elif sys.platform in ["linux", "darwin"]:
+            commandline_string_split = shlex.split(commandline_string, posix=1)
+            make_bash_file("status_monitor.sh", commandline_string_split, {})
 
 
     def install_electrumsv(self, url, branch):
@@ -75,6 +89,8 @@ class InstallTools:
             checkout_branch(branch)
         self.generate_run_script_electrumx()
 
+    def install_status_monitor(self):
+        self.generate_run_script_status_monitor()
 
-    def install_electrumsv_node(self):
+    def install_bitcoin_node(self):
         subprocess.run(f"{sys.executable} -m pip install electrumsv-node", shell=True, check=True)
