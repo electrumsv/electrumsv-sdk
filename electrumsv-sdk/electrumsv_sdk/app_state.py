@@ -7,17 +7,18 @@ from os.path import expanduser
 import json
 import logging
 import os
+from filelock import FileLock
 
 from electrumsv_node import electrumsv_node
+
 from .argparsing import ArgParser
-from .components import Component, ComponentName, ComponentStore
+from .components import ComponentName
 from .handlers import Handlers
 from .install_tools import InstallTools
 from .reset import Resetters
 from .controller import Controller
 from .status_monitor_client import StatusMonitorClient
 from .utils import create_if_not_exist
-from filelock import FileLock
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -36,14 +37,6 @@ class AppState:
         self.install_tools = InstallTools(self)
         self.resetters = Resetters(self)
         self.status_monitor_client = StatusMonitorClient(self)
-        self.component_store = ComponentStore(self)
-
-        # component state
-        self.file_path = "component_state.json"
-        self.lock_path = "component_state.json.lock"
-
-        self.file_lock = FileLock(self.lock_path, timeout=1)
-        self.component_state_path = Path(MODULE_DIR).joinpath("component_state.json")
 
         # namespaces
         self.NAMESPACE = ""  # 'start', 'stop' or 'reset'
@@ -54,13 +47,6 @@ class AppState:
         self.RESET = "reset"
         self.NODE = "node"
         self.STATUS = "status"
-
-        # package names
-        self.ELECTRUMSV = ComponentName.ELECTRUMSV
-        self.ELECTRUMX = ComponentName.ELECTRUMX
-        self.ELECTRUMSV_INDEXER = ComponentName.INDEXER
-        self.ELECTRUMSV_NODE = ComponentName.NODE
-        self.STATUS_MONITOR = ComponentName.STATUS_MONITOR
 
         self.subcmd_map: Dict[str, argparse.ArgumentParser] = {}  # cmd_name: ArgumentParser
         self.subcmd_raw_args_map: Dict[str, List[str]] = {}  # cmd_name: raw arguments
@@ -85,7 +71,6 @@ class AppState:
         self.electrumsv_sdk_data_dir = self.home.joinpath("ElectrumSV-SDK")
         self.depends_dir = self.electrumsv_sdk_data_dir.joinpath("sdk_depends")
         self.run_scripts_dir = self.electrumsv_sdk_data_dir.joinpath("run_scripts")
-        self.proc_ids_path = self.run_scripts_dir.joinpath("proc_ids.json")
 
         # electrumsv paths are set dynamically at startup - see: set_electrumsv_path()
         self.electrumsv_dir = None
@@ -102,6 +87,7 @@ class AppState:
         self.status_monitor_dir = self.sdk_package_dir.joinpath("status_server")
 
         self.required_dependencies_set: Set[str] = set()
+        self.processes_for_stopping_set: Set[ComponentName] = set()
 
         self.node_args = None
 
@@ -181,39 +167,3 @@ class AppState:
             logger.debug("purging completed successfully")
 
             electrumsv_node.reset()
-
-    def get_status(self, component_state_path):
-        filelock_logger = logging.getLogger("filelock")
-        filelock_logger.setLevel(logging.WARNING)
-
-        with self.file_lock:
-            with open(component_state_path, "r") as f:
-                component_state = json.loads(f.read())
-        return component_state
-
-    def find_component_if_exists(self, component: Component, component_state: List[dict]):
-        for index, comp in enumerate(component_state):
-            if comp["process_name"] == component.process_name:
-                return (index, component)
-        return False
-
-    def update_status_file(self, component_state_path, component):
-        """updates to the *file* (component.json) - does *not* update the server"""
-
-        with self.file_lock:
-            with open(component_state_path, "r") as f:
-                data = f.read()
-                if not data:
-                    component_state = []  # assume file was empty
-                else:
-                    component_state = json.loads(data)
-
-        result = self.find_component_if_exists(component, component_state)
-        if not result:
-            component_state.append(component.to_dict())
-        else:
-            index, component = result
-            component_state[index] = component.to_dict()
-
-        with open(component_state_path, "w") as f:
-            f.write(json.dumps(component_state, indent=4))

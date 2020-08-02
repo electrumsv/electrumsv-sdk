@@ -1,6 +1,6 @@
 """
 As a workaround to lack of support for argparse to take multiple subcommands (+/- args)
-simultaneously I manually parse sys.argv and find the relevant args to feed to the appropriate
+simultaneously sys.argv is manually parsed to find the relevant args to feed to the appropriate
 ArgumentParser instance.
 
 Fortunately the help menu displays as expected so does not deviate from the standard docuementation.
@@ -11,6 +11,8 @@ import logging
 import textwrap
 from argparse import RawTextHelpFormatter
 
+from electrumsv_sdk.components import ComponentName
+
 logger = logging.getLogger("argparsing")
 
 
@@ -19,7 +21,6 @@ class InvalidInput(Exception):
 
 
 class ArgParser:
-
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
         self.set_help_text()
@@ -52,7 +53,6 @@ class ArgParser:
                 "First argument must be one of: [start, stop, reset, node, " "status, --help]"
             )
         return cur_cmd_name, subcommand_indices
-
 
     def manual_argparsing(self, args):
         """manually iterate through sys.argv and feed arguments to either:
@@ -92,8 +92,6 @@ class ArgParser:
             if self.app_state.NAMESPACE == self.app_state.STOP:
                 if arg.startswith("--"):
                     subcommand_indices[cur_cmd_name].append(index)
-                else:
-                    logger.debug("stop namespace only accepts flags with '--' prefix.")
 
             if self.app_state.NAMESPACE == self.app_state.RESET:
                 pass
@@ -109,12 +107,10 @@ class ArgParser:
 
         self.feed_to_argparsers(args, subcommand_indices)
 
-
     def update_subcommands_args_map(self, args, subcommand_indices):
         for cmd_name in subcommand_indices:
             for index in subcommand_indices[cmd_name]:
                 self.app_state.subcmd_raw_args_map[cmd_name].append(args[index])
-
 
     def feed_to_argparsers(self, args, subcommand_indices):
         """feeds relevant arguments to each child (or parent) ArgumentParser"""
@@ -129,39 +125,8 @@ class ArgParser:
                 )
             self.app_state.subcmd_parsed_args_map[cmd_name] = parsed_args
 
-
-    def add_start_argparser(self, namespaces):
-        start_parser = namespaces.add_parser("start", help="specify which servers to run")
-
-        start_parser.add_argument(
-            "--full-stack", action="store_true", help="",
-        )
-        start_parser.add_argument(
-            "--node", action="store_true", help="",
-        )
-        start_parser.add_argument(
-            "--ex-node", action="store_true", help="",
-        )
-        start_parser.add_argument(
-            "--esv-ex-node", action="store_true", help="",
-        )
-        start_parser.add_argument(
-            "--esv-idx-node", action="store_true", help="",
-        )
-
-        start_parser.add_argument(
-            "--extapp",
-            default="",
-            dest="extapp_path",
-            type=str,
-            help="path to 3rd party applications. The 'extapp' flag can be specified multiple times. "
-            "For electrumsv 'daemon apps' please see electrumsv subcommand help menu",
-        )
-
-        subparsers = start_parser.add_subparsers(help="subcommand", required=False)
-
-        # ELECTRUMSV
-        electrumsv = subparsers.add_parser(self.app_state.ELECTRUMSV, help="specify repo and branch")
+    def add_subparser_electrumsv(self, subparsers):
+        electrumsv = subparsers.add_parser(ComponentName.ELECTRUMSV, help="specify repo and branch")
         electrumsv.add_argument(
             "-repo",
             type=str,
@@ -179,9 +144,10 @@ class ArgParser:
             type=str,
             help="load and launch a daemon app plugin on the electrumsv daemon",
         )
+        return subparsers, electrumsv
 
-        # ELECTRUMX
-        electrumx = subparsers.add_parser(self.app_state.ELECTRUMX, help="specify repo and branch")
+    def add_subparser_electrumx(self, subparsers):
+        electrumx = subparsers.add_parser(ComponentName.ELECTRUMX, help="specify repo and branch")
         electrumx.add_argument(
             "-repo",
             type=str,
@@ -190,12 +156,13 @@ class ArgParser:
             "local git repo path e.g. G:/electrumx",
         )
         electrumx.add_argument(
-            "-branch", type=str, default="", help="electrumx git repo branch (optional)",
+            "-branch", type=str, default="", help="electrumx git repo branch (optional)"
         )
+        return subparsers, electrumx
 
-        # ELECTRUMSV-INDEXER
+    def add_subparser_indexer(self, subparsers):
         electrumsv_indexer = subparsers.add_parser(
-            self.app_state.ELECTRUMSV_INDEXER, help="specify repo and branch"
+            ComponentName.INDEXER, help="specify repo and branch"
         )
         electrumsv_indexer.add_argument(
             "-repo",
@@ -205,11 +172,12 @@ class ArgParser:
             "local git repo path e.g. G:/electrumsv_indexer",
         )
         electrumsv_indexer.add_argument(
-            "-branch", type=str, default="", help="electrumsv_indexer git repo branch (optional)",
+            "-branch", type=str, default="", help="electrumsv_indexer git repo branch (optional)"
         )
+        return subparsers, electrumsv_indexer
 
-        # ELECTRUMSV-NODE
-        electrumsv_node = subparsers.add_parser(self.app_state.ELECTRUMSV_NODE, help="specify repo and branch")
+    def add_subparser_node(self, subparsers):
+        electrumsv_node = subparsers.add_parser(ComponentName.NODE, help="specify repo and branch")
         electrumsv_node.add_argument(
             "-repo",
             type=str,
@@ -220,35 +188,56 @@ class ArgParser:
         electrumsv_node.add_argument(
             "-branch", type=str, default="", help="electrumsv_node git repo branch (optional)",
         )
-        start_namespace_subcommands = [electrumsv, electrumsv_node, electrumx, electrumsv_indexer]
-        return start_parser, start_namespace_subcommands
+        return subparsers, electrumsv_node
 
+    def add_start_parser_args(self, start_parser):
+        start_parser.add_argument("--full-stack", action="store_true", help="")
+        start_parser.add_argument("--node", action="store_true", help="")
+        start_parser.add_argument("--ex-node", action="store_true", help="")
+        start_parser.add_argument("--esv-ex-node", action="store_true", help="")
+        start_parser.add_argument("--esv-idx-node", action="store_true", help="")
+        start_parser.add_argument(
+            "--extapp",
+            default="",
+            dest="extapp_path",
+            type=str,
+            help="path to 3rd party applications. Can be specified multiple times. "
+            "For electrumsv 'daemon apps' please see electrumsv subcommand help menu",
+        )
+        return start_parser
+
+    def add_start_argparser(self, namespaces):
+        start_parser = namespaces.add_parser("start", help="specify which servers to run")
+        start_parser = self.add_start_parser_args(start_parser)
+
+        subparsers = start_parser.add_subparsers(help="subcommand", required=False)
+        subparsers, electrumsv = self.add_subparser_electrumsv(subparsers)
+        subparsers, electrumx = self.add_subparser_electrumx(subparsers)
+        subparsers, electrumsv_indexer = self.add_subparser_indexer(subparsers)
+        subparsers, electrumsv_node = self.add_subparser_node(subparsers)
+
+        start_namespace_subcommands = [
+            electrumsv,
+            electrumsv_node,
+            electrumx,
+            electrumsv_indexer,
+        ]
+        return start_parser, start_namespace_subcommands
 
     def add_stop_argparser(self, namespaces):
         stop_parser = namespaces.add_parser("stop", help="stop all spawned processes")
-        stop_parser.add_argument(
-            "--node", action="store_true", help="stop node",
-        )
-        stop_parser.add_argument(
-            "--ex", action="store_true", help="stop electrumx",
-        )
-        stop_parser.add_argument(
-            "--esv", action="store_true", help="stop electrumsv",
-        )
-        stop_parser.add_argument(
-            "--idx", action="store_true", help="stop indexer",
-        )
-        stop_parser.add_argument(
-            "--extapp", action="store_true", help="stop extension app",
-        )
-
+        stop_parser.add_argument("--node", action="store_true", help="stop node")
+        stop_parser.add_argument("--ex", action="store_true", help="stop electrumx")
+        stop_parser.add_argument("--esv", action="store_true", help="stop electrumsv")
+        stop_parser.add_argument("--idx", action="store_true", help="stop indexer")
+        stop_parser.add_argument("--extapp", action="store_true", help="stop extension app")
         return stop_parser
 
-
     def add_reset_argparser(self, namespaces):
-        reset_parser = namespaces.add_parser("reset", help="reset state of relevant servers to genesis")
+        reset_parser = namespaces.add_parser(
+            "reset", help="reset state of relevant servers to genesis"
+        )
         return reset_parser
-
 
     def add_node_argparser(self, namespaces):
         node_parser = namespaces.add_parser(
@@ -256,41 +245,16 @@ class ArgParser:
             help="direct access to the built-in bitcoin " "daemon RPC commands",
             usage="use as you would use bitcoin-cli",
         )
-
-        # NOTE: this is a facade - all args are actually directed at the bitcoin RPC over http
-        # including the help menu
+        # NOTE: all args are actually directed at the bitcoin RPC over http
         return node_parser
 
-
     def add_status_argparser(self, namespaces):
-        status_parser = namespaces.add_parser("node", help="get a status update of SDK applications")
+        status_parser = namespaces.add_parser(
+            "node", help="get a status update of SDK applications"
+        )
         return status_parser
 
-
     def setup_argparser(self):
-        """
-        Structure of CLI interface:
-
-        top_level_parser
-            start
-                --full-stack
-                --node
-                --status-server
-                --ex-node
-                --esv-ex-node
-                --esv-idx-node
-                --extapp
-                electrumsv          (subcmd of 'start' namespace for config options)
-                electrumx           (subcmd of 'start' namespace for config options)
-                electrumsv-indexer  (subcmd of 'start' namespace for config options)
-                electrumsv-node     (subcmd of 'start' namespace for config options)
-            stop
-                --node --ex --esv --idx --extapp PATH
-            reset
-            node
-            status
-
-        """
         top_level_parser = argparse.ArgumentParser(
             description=self.help_text, formatter_class=RawTextHelpFormatter
         )
@@ -319,7 +283,8 @@ class ArgParser:
             self.app_state.subcmd_raw_args_map[cmd_name] = []
 
     def set_help_text(self):
-        self.help_text = textwrap.dedent("""
+        self.help_text = textwrap.dedent(
+            """
             top-level
             =========
             electrumsv-sdk has four top-level namespaces (and works similarly to systemctl):
@@ -384,4 +349,5 @@ class ArgParser:
             ======
             returns a status report of applications previously started by the SDK
 
-            """)
+            """
+        )

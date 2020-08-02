@@ -7,17 +7,18 @@ import time
 import aiorpcx
 import requests
 from electrumsv_node import electrumsv_node
+from electrumsv_sdk.status_monitor_client import StatusMonitorClient
 
-from .components import Component, ComponentName, ComponentType, ComponentState
-
+from .components import Component, ComponentName, ComponentType, ComponentState, ComponentStore
 
 logger = logging.getLogger("starters")
 
 
 class Starters:
-
     def __init__(self, app_state):
         self.app_state = app_state
+        self.component_store = ComponentStore(self.app_state)
+        self.status_monitor_client = StatusMonitorClient(self.app_state)
 
     async def is_electrumx_running(self):
         for sleep_time in (1, 2, 3):
@@ -39,7 +40,7 @@ class Starters:
                 logger.debug("polling electrumsv...")
                 result = requests.get("http://127.0.0.1:9999/")
                 result.raise_for_status()
-                assert result.json()['status'] == 'success'
+                assert result.json()["status"] == "success"
                 return True
             except Exception as e:
                 pass
@@ -67,8 +68,8 @@ class Starters:
         else:
             component.component_state = ComponentState.Running
             logger.debug("bitcoin daemon online")
-        self.app_state.update_status_file(self.app_state.component_state_path, component)
-        self.app_state.status_monitor_client.update_status(component)
+        self.component_store.update_status_file(component)
+        self.status_monitor_client.update_status(component)
 
         # process handle not returned because node is stopped via rpc
 
@@ -101,8 +102,8 @@ class Starters:
         else:
             component.component_state = ComponentState.Running
             logger.debug("electrumx online")
-        self.app_state.update_status_file(self.app_state.component_state_path, component)
-        self.app_state.status_monitor_client.update_status(component)
+        self.component_store.update_status_file(component)
+        self.status_monitor_client.update_status(component)
         return process
 
     def disable_rest_api_authentication(self):
@@ -129,7 +130,8 @@ class Starters:
         subprocess.run(f"taskkill.exe /PID {process.pid} /T /F")
 
     def run_electrumsv_daemon(self, is_first_run=False):
-        """Todo - this currently uses ugly hacks with starting and stopping the ESV wallet in order to:
+        """Todo - this currently uses ugly hacks with starting and stopping the ESV wallet
+         in order to:
         1) generate the config files (so that it can be directly edited) - would be obviated by
         fixing this: https://github.com/electrumsv/electrumsv/issues/111
         2) newly created wallet doesn't seem to be fully useable until after stopping the daemon."""
@@ -175,8 +177,8 @@ class Starters:
             component.component_state = ComponentState.Running
             logger.debug("electrumsv online")
 
-        self.app_state.update_status_file(self.app_state.component_state_path, component)
-        self.app_state.status_monitor_client.update_status(component)
+        self.component_store.update_status_file(component)
+        self.status_monitor_client.update_status(component)
         return process
 
     def start_status_monitor(self):
@@ -186,8 +188,21 @@ class Starters:
             status_monitor_script = self.app_state.run_scripts_dir.joinpath("status_monitor.sh")
 
         logger.debug(f"starting status monitor daemon...")
-        process = subprocess.Popen(f"{status_monitor_script}",
-            creationflags=subprocess.CREATE_NEW_CONSOLE)
+        process = subprocess.Popen(
+            f"{status_monitor_script}", creationflags=subprocess.CREATE_NEW_CONSOLE
+        )
+
+        component = Component(
+            pid=process.pid,
+            process_name=ComponentName.STATUS_MONITOR,
+            process_type=ComponentType.STATUS_MONITOR,
+            endpoint="http://127.0.0.1:api",
+            component_state=ComponentState.NONE,
+            location=self.app_state.status_monitor_dir.__str__(),
+            metadata={},
+            logging_path=None,
+        )
+        self.component_store.update_status_file(component)
         return process
 
     def start(self):
@@ -200,19 +215,16 @@ class Starters:
         procs.append(status_monitor_process.pid)
         time.sleep(1)
 
-        if self.app_state.NODE in self.app_state.required_dependencies_set:
+        if ComponentName.NODE in self.app_state.required_dependencies_set:
             self.start_node()
             time.sleep(2)
 
-        if self.app_state.ELECTRUMX in self.app_state.required_dependencies_set:
+        if ComponentName.ELECTRUMX in self.app_state.required_dependencies_set:
             electrumx_process = self.run_electrumx_server()
             procs.append(electrumx_process.pid)
 
-        if self.app_state.ELECTRUMSV in self.app_state.required_dependencies_set:
+        if ComponentName.ELECTRUMSV in self.app_state.required_dependencies_set:
             esv_process = self.run_electrumsv_daemon()
             procs.append(esv_process.pid)
-
-        with open(self.app_state.proc_ids_path, "w") as f:
-            f.write(json.dumps(procs))
 
         self.app_state.save_repo_paths()

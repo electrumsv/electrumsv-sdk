@@ -11,7 +11,7 @@ import requests
 
 
 logger = logging.getLogger("utils")
-TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def checkout_branch(branch: str):
@@ -96,8 +96,14 @@ def get_str_datetime():
 
 def topup_wallet():
     logger.debug("topping up wallet...")
-    payload = json.dumps({"jsonrpc": "2.0", "method": "sendtoaddress",
-        "params": ["mwv1WZTsrtKf3S9mRQABEeMaNefLbQbKpg", 25], "id": 0, })
+    payload = json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "method": "sendtoaddress",
+            "params": ["mwv1WZTsrtKf3S9mRQABEeMaNefLbQbKpg", 25],
+            "id": 0,
+        }
+    )
     result = requests.post("http://rpcuser:rpcpassword@127.0.0.1:18332", data=payload)
     result.raise_for_status()
     logger.debug(result.json())
@@ -115,9 +121,7 @@ def create_wallet():
         payload = {"password": "test"}
         response = requests.post(url, data=json.dumps(payload))
         response.raise_for_status()
-        logger.debug(
-            f"new wallet created in {response.json()['value']['new_wallet']}"
-        )
+        logger.debug(f"new wallet created in {response.json()['value']['new_wallet']}")
     except Exception as e:
         logger.exception(e)
 
@@ -130,9 +134,7 @@ def delete_wallet(app_state):
         time.sleep(1)
         logger.debug("deleting wallet...")
         logger.debug(
-            "wallet directory before: %s",
-            os.listdir(esv_wallet_db_directory.__str__()),
-
+            "wallet directory before: %s", os.listdir(esv_wallet_db_directory.__str__()),
         )
         wallet_name = "worker1"
         file_names = [
@@ -145,8 +147,7 @@ def delete_wallet(app_state):
             if Path.exists(file_path):
                 os.remove(file_path)
         logger.debug(
-            "wallet directory after: %s",
-            os.listdir(esv_wallet_db_directory.__str__()),
+            "wallet directory after: %s", os.listdir(esv_wallet_db_directory.__str__()),
         )
     except Exception as e:
         logger.exception(e)

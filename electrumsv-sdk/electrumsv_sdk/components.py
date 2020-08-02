@@ -27,9 +27,17 @@ state=Running.
 - terminated components without using the SDK interface      state=Failed
 """
 import enum
-from typing import Optional, List, Dict, Tuple
+import json
+import logging
+import os
+from pathlib import Path
+from typing import Optional, List
 
 from electrumsv_sdk.utils import get_str_datetime
+from filelock import FileLock
+
+
+MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class ComponentName:
@@ -45,16 +53,12 @@ class ComponentType(enum.IntEnum):
     ELECTRUMX = 2
     ELECTRUMSV = 3
     INDEXER = 4
+    STATUS_MONITOR = 5
 
 
 class ComponentState(enum.IntEnum):
-    """
-    'Running' and 'Stopped' are reserved for apps started/stopped via the SDK
-    command-line interface.
-
-    If the user terminates an application by other means, the SDK will assume something went
-    wrong and will register it as 'Failed' status.
-    """
+    """If the user terminates an application without using the SDK, it will be registered as 
+    'Failed' status."""
 
     NONE = 0
     Running = 1
@@ -97,22 +101,52 @@ class Component:
     def to_dict(self):
         config_dict = {}
         for key, val in self.__dict__.items():
-            if key == 'component_state':
-                val = self.component_state.__str__().split('.')[1]
+            if key == "component_state":
+                val = self.component_state.__str__().split(".")[1]
             config_dict[key] = val
         return config_dict
 
 
 class ComponentStore:
-    """exists for purposes of selectively stopping components by ComponentType (or optionally by
-    ComponentName or some other criteria as needed"""
-
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
-        self.active_components: Dict[ComponentType, List[int]] = {}
+        self.file_path = "component_state.json"
+        self.lock_path = "component_state.json.lock"
+        self.file_lock = FileLock(self.lock_path, timeout=1)
+        self.component_state_path = Path(MODULE_DIR).joinpath("component_state.json")
 
-    def stop_components_by_type(self, component_type: ComponentType):
-        raise NotImplementedError
+    def get_status(self):
+        filelock_logger = logging.getLogger("filelock")
+        filelock_logger.setLevel(logging.WARNING)
 
-    def stop_components_by_pid(self, pid: int):
-        raise NotImplementedError
+        with self.file_lock:
+            with open(self.component_state_path, "r") as f:
+                component_state = json.loads(f.read())
+        return component_state
+
+    def find_component_if_exists(self, component: Component, component_state: List[dict]):
+        for index, comp in enumerate(component_state):
+            if comp["process_name"] == component.process_name:
+                return (index, component)
+        return False
+
+    def update_status_file(self, component):
+        """updates to the *file* (component.json) - does *not* update the server"""
+
+        with self.file_lock:
+            with open(self.component_state_path, "r") as f:
+                data = f.read()
+                if not data:
+                    component_state = []  # assume file was empty
+                else:
+                    component_state = json.loads(data)
+
+        result = self.find_component_if_exists(component, component_state)
+        if not result:
+            component_state.append(component.to_dict())
+        else:
+            index, component = result
+            component_state[index] = component.to_dict()
+
+        with open(self.component_state_path, "w") as f:
+            f.write(json.dumps(component_state, indent=4))

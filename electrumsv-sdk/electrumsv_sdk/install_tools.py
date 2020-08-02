@@ -2,12 +2,17 @@ import os
 import shlex
 import subprocess
 import sys
-from .utils import checkout_branch, create_if_not_exist, make_esv_daemon_script, \
-    make_esv_gui_script, make_bat_file, make_bash_file
+from .utils import (
+    checkout_branch,
+    create_if_not_exist,
+    make_esv_daemon_script,
+    make_esv_gui_script,
+    make_bat_file,
+    make_bash_file,
+)
 
 
 class InstallTools:
-
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
 
@@ -15,7 +20,9 @@ class InstallTools:
         """makes both the daemon script and a script for running the GUI"""
         create_if_not_exist(self.app_state.run_scripts_dir)
         os.chdir(self.app_state.run_scripts_dir)
-        path_to_dapp_example_apps = self.app_state.electrumsv_dir.joinpath("examples").joinpath("applications")
+        path_to_dapp_example_apps = self.app_state.electrumsv_dir.joinpath("examples").joinpath(
+            "applications"
+        )
         electrumsv_env_vars = {
             "PYTHONPATH": path_to_dapp_example_apps.__str__(),
         }
@@ -39,7 +46,9 @@ class InstallTools:
             "NET": "regtest",
         }
 
-        commandline_string = f"{sys.executable} {self.app_state.electrumx_dir.joinpath('electrumx_server')}"
+        commandline_string = (
+            f"{sys.executable} {self.app_state.electrumx_dir.joinpath('electrumx_server')}"
+        )
 
         if sys.platform == "win32":
             commandline_string_split = shlex.split(commandline_string, posix=0)
@@ -52,8 +61,9 @@ class InstallTools:
         create_if_not_exist(self.app_state.run_scripts_dir)
         os.chdir(self.app_state.run_scripts_dir)
 
-        commandline_string = f"{sys.executable} " \
-                             f"{self.app_state.status_monitor_dir.joinpath('server.py')}"
+        commandline_string = (
+            f"{sys.executable} " f"{self.app_state.status_monitor_dir.joinpath('server.py')}"
+        )
 
         if sys.platform == "win32":
             commandline_string_split = shlex.split(commandline_string, posix=0)
@@ -70,9 +80,12 @@ class InstallTools:
             os.chdir(self.app_state.depends_dir.__str__())
             subprocess.run(f"git clone {url}", shell=True, check=True)
             checkout_branch(branch)
-            subprocess.run(f"{sys.executable} -m pip install -r {self.app_state.electrumsv_requirements_path}")
             subprocess.run(
-                f"{sys.executable} -m pip install -r {self.app_state.electrumsv_binary_requirements_path}"
+                f"{sys.executable} -m pip install -r {self.app_state.electrumsv_requirements_path}"
+            )
+            subprocess.run(
+                f"{sys.executable} -m pip install -r "
+                f"{self.app_state.electrumsv_binary_requirements_path} "
             )
         self.generate_run_scripts_electrumsv()
 

@@ -3,6 +3,8 @@ import pprint
 import logging
 import time
 from electrumsv_node import electrumsv_node
+from electrumsv_sdk.components import ComponentName, ComponentStore
+
 from .starters import Starters
 from .stoppers import Stoppers
 from .utils import cast_str_int_args_to_int
@@ -11,11 +13,11 @@ logger = logging.getLogger("runners")
 
 
 class Controller:
-
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
         self.starters = Starters(self.app_state)
         self.stoppers = Stoppers(self.app_state)
+        self.component_store = ComponentStore(self.app_state)
 
     def start(self):
         self.starters.start()
@@ -33,11 +35,13 @@ class Controller:
         if self.app_state.node_args[0] in ["--help", "-h"]:
             self.app_state.node_args[0] = "help"
 
-        result = electrumsv_node.call_any(self.app_state.node_args[0], *self.app_state.node_args[1:])
+        result = electrumsv_node.call_any(
+            self.app_state.node_args[0], *self.app_state.node_args[1:]
+        )
         print(result.json()["result"])
 
     def status(self):
-        status = self.app_state.get_status(self.app_state.component_state_path)
+        status = self.component_store.get_status()
         pprint.pprint(status, indent=4)
 
     def reset(self):
@@ -47,9 +51,9 @@ class Controller:
         self.app_state.resetters.reset_node()
         self.app_state.resetters.reset_electrumx()
 
-        self.app_state.required_dependencies_set.add(self.app_state.ELECTRUMSV_NODE)
-        self.app_state.required_dependencies_set.add(self.app_state.ELECTRUMX)
-        self.app_state.required_dependencies_set.add(self.app_state.ELECTRUMSV)
+        self.app_state.required_dependencies_set.add(ComponentName.NODE)
+        self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMX)
+        self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMSV)
         self.start()
         logger.debug("allowing time for the electrumsv daemon to boot up - standby...")
         time.sleep(7)

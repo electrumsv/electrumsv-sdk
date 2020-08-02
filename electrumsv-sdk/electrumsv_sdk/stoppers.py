@@ -4,45 +4,32 @@ import subprocess
 
 from electrumsv_node import electrumsv_node
 
+from .components import ComponentType, ComponentStore
 
 logger = logging.getLogger("stoppers")
 
 
 class Stoppers:
-
     def __init__(self, app_state):
         self.app_state = app_state
+        self.component_store = ComponentStore(self.app_state)
 
-    def stop_node(self):
-        electrumsv_node.stop()
+    def stop_components_by_type(self, component_type: ComponentType):
+        component_state = self.component_store.get_status()
 
-    def stop_status_monitor(self):
-        raise NotImplementedError  # kill signal via subprocess
+        if component_type == ComponentType.NODE:
+            electrumsv_node.stop()
 
-    def stop_electrumsv(self):
-        raise NotImplementedError  # kill signal via subprocess
+        for component in component_state:
+            if component_type == ComponentType.NODE:
+                continue
 
-    def stop_electrumx(self):
-        raise NotImplementedError  # kill signal via subprocess
-
-    def stop_indexer(self):
-        raise NotImplementedError  # kill signal via subprocess
+            elif component["process_type"] == component_type:
+                subprocess.run(f"taskkill.exe /PID {component['pid']} /T /F")
 
     def stop(self):
-        # Todo - need to make this more specific and know at all times which pid belongs
-        #  to which server so servers can be selectively killed from the command-line
-
-        with open(self.app_state.proc_ids_path, "r") as f:
-            procs = json.loads(f.read())
-
-        self.stop_node()
-
-        if len(procs) != 0:
-            for proc_id in procs:
-                subprocess.run(f"taskkill.exe /PID {proc_id} /T /F")
-
-        with open(self.app_state.proc_ids_path, "w") as f:
-            f.write(json.dumps({}))
-
-        # self.stop_status_monitor()
+        self.stop_components_by_type(ComponentType.NODE)
+        self.stop_components_by_type(ComponentType.ELECTRUMSV)
+        self.stop_components_by_type(ComponentType.ELECTRUMX)
+        self.stop_components_by_type(ComponentType.STATUS_MONITOR)
         print("stack terminated")

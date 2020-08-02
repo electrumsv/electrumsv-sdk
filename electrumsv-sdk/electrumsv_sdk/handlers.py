@@ -1,129 +1,11 @@
 import logging
-import os
-import sys
 import subprocess
 from pathlib import Path
 
-from .utils import checkout_branch, create_if_not_exist
+from .components import ComponentName
+from .installers import Installers
 
 logger = logging.getLogger("install-handlers")
-
-def validate_only_one_mode(parsed_args):
-    modes_selected = []
-    count_true = 0
-    for cmd, mode in parsed_args.__dict__.items():
-        if mode:
-            modes_selected.append(cmd)
-            count_true += 1
-    if count_true not in [0, 1]:
-        return False, modes_selected
-    return True, modes_selected
-
-
-class Installers:
-
-    def __init__(self, app_state):
-        self.app_sate = app_state
-
-    def check_remote_electrumsv_install(self, url, branch):
-        """3 possibilities:
-        (dir doesn't exists) -> install
-        (dir exists, url matches)
-        (dir exists, url does not match - it's a forked repo)
-        """
-        if not self.app_sate.electrumsv_dir.exists():
-            print(f"- installing electrumsv (url={url})")
-            self.app_sate.install_tools.install_electrumsv(url, branch)
-
-        elif self.app_sate.electrumsv_dir.exists():
-            os.chdir(self.app_sate.electrumsv_dir.__str__())
-            result = subprocess.run(
-                f"git config --get remote.origin.url",
-                shell=True,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            if result.stdout.strip() == url:
-                print(f"- electrumsv is already installed (url={url})")
-                checkout_branch(branch)
-                subprocess.run(f"git pull", shell=True, check=True)
-                subprocess.run(
-                    f"{sys.executable} -m pip install -r {self.app_sate.electrumsv_requirements_path}",
-                    shell=True,
-                    check=True,
-                )
-                subprocess.run(
-                    f"{sys.executable} -m pip install -r "
-                    f"{self.app_sate.electrumsv_binary_requirements_path}",
-                    shell=True,
-                    check=True,
-                )
-            if result.stdout.strip() != url:
-                existing_fork = self.app_sate.electrumsv_dir.__str__()
-                print(f"- alternate fork of electrumsv is already installed")
-                print(f"- moving existing fork (to {existing_fork.__str__() + '.bak'}")
-                print(f"- installing electrumsv (url={url})")
-                os.rename(
-                    self.app_sate.electrumsv_dir.__str__(),
-                    self.app_sate.electrumsv_dir.__str__() + ".bak",
-                )
-                self.app_sate.install_tools.install_electrumsv(url, branch)
-
-        create_if_not_exist(self.app_sate.electrumsv_regtest_wallets_dir)
-
-    def check_local_electrumsv_install(self, url, branch):
-        create_if_not_exist(self.app_sate.electrumsv_regtest_wallets_dir)
-        self.app_sate.install_tools.generate_run_scripts_electrumsv()
-
-    def check_remote_electrumx_install(self, url, branch):
-        """3 possibilities:
-        (dir doesn't exists) -> install
-        (dir exists, url matches)
-        (dir exists, url does not match - it's a forked repo)
-        """
-        if not self.app_sate.electrumx_dir.exists():
-            print(f"- installing electrumx (url={url})")
-            self.app_sate.install_tools.install_electrumx(url, branch)
-        elif self.app_sate.electrumx_dir.exists():
-            os.chdir(self.app_sate.electrumx_dir.__str__())
-            result = subprocess.run(
-                f"git config --get remote.origin.url",
-                shell=True,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            if result.stdout.strip() == url:
-                print(f"- electrumx is already installed (url={url})")
-                checkout_branch(branch)
-                subprocess.run(f"git pull", shell=True, check=True)
-                # Todo - cannot re-install requirements dynamically because of plyvel
-                #  awaiting a PR for electrumx
-
-            if result.stdout.strip() != url:
-                existing_fork = self.app_sate.electrumx_dir.__str__()
-                print(f"- alternate fork of electrumx is already installed")
-                print(f"- moving existing fork (to {existing_fork.__str__() + '.bak'}")
-                print(f"- installing electrumsv (url={url})")
-                os.rename(
-                    self.app_sate.electrumx_dir.__str__(),
-                    self.app_sate.electrumx_dir.__str__() + ".bak",
-                )
-                self.app_sate.install_tools.install_electrumx(url, branch)
-
-    def check_local_electrumx_install(self, path, branch):
-        self.app_sate.install_tools.generate_run_script_electrumx()
-
-    def check_node_install(self, branch):
-        """this one has a pip installer at https://pypi.org/project/electrumsv-node/"""
-        self.app_sate.install_tools.install_bitcoin_node()
-
-    def check_status_monitor_install(self):
-        """purely for generating the .bat / .sh script"""
-        self.app_sate.install_tools.install_status_monitor()
 
 
 class Handlers:
@@ -141,22 +23,34 @@ class Handlers:
     relevant namespace is not 'active' (i.e. 'start', 'stop' or 'reset') then they do not action
     anything -> return
     """
+
     def __init__(self, app_state: "AppState"):
-        self.app_sate = app_state
-        self.install_checker = Installers(self.app_sate)
-        self.controller = self.app_sate.controller
+        self.app_state = app_state
+        self.installer = Installers(self.app_state)
+        self.controller = self.app_state.controller
+
+    def validate_only_one_mode(self, parsed_args):
+        modes_selected = []
+        count_true = 0
+        for cmd, mode in parsed_args.__dict__.items():
+            if mode:
+                modes_selected.append(cmd)
+                count_true += 1
+        if count_true not in [0, 1]:
+            return False, modes_selected
+        return True, modes_selected
 
     def handle_remote_repo(self, package_name, url, branch):
         print(f"- installing remote dependency for {package_name} at {url}")
 
-        if package_name == self.app_sate.ELECTRUMSV:
-            self.install_checker.check_remote_electrumsv_install(url, branch)
+        if package_name == ComponentName.ELECTRUMSV:
+            self.installer.remote_electrumsv(url, branch)
 
-        if package_name == self.app_sate.ELECTRUMX:
-            self.install_checker.check_remote_electrumx_install(url, branch)
+        if package_name == ComponentName.ELECTRUMX:
+            self.installer.remote_electrumx(url, branch)
 
-        if package_name == self.app_sate.ELECTRUMSV_NODE:
-            self.install_checker.check_node_install(branch)
+        if package_name == ComponentName.NODE:
+            self.installer.node(branch)
 
     def handle_local_repo(self, package_name, path, branch):
         try:
@@ -165,18 +59,18 @@ class Handlers:
             if branch != "":
                 subprocess.run(f"git checkout {branch}", shell=True, check=True)
 
-            if package_name == self.app_sate.ELECTRUMSV:
-                self.install_checker.check_local_electrumsv_install(path, branch)
+            if package_name == ComponentName.ELECTRUMSV:
+                self.installer.local_electrumsv(path, branch)
 
-            if package_name == self.app_sate.ELECTRUMX:
-                self.install_checker.check_local_electrumx_install(path, branch)
+            if package_name == ComponentName.ELECTRUMX:
+                self.installer.local_electrumx(path, branch)
 
         except Exception as e:
             raise e
 
     # ----- MAIN ARGUMENT HANDLERS ----- #
     def handle_top_level_args(self, parsed_args):
-        if not self.app_sate.NAMESPACE == self.app_sate.TOP_LEVEL:
+        if not self.app_state.NAMESPACE == self.app_state.TOP_LEVEL:
             return
 
         # print("TOP LEVEL ARGS HANDLER")
@@ -194,38 +88,38 @@ class Handlers:
         For (2), extension app support is not supported yet (but will allow for any non-python
         servers to be run (e.g. a localhost blockexplorer perhaps)
         """
-        if not self.app_sate.NAMESPACE == self.app_sate.START:
+        if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        valid_input, modes_selected = validate_only_one_mode(parsed_args)
+        valid_input, modes_selected = self.validate_only_one_mode(parsed_args)
         if not valid_input:
             print(f"You must only select ONE mode of operation. You selected '{modes_selected}'")
             return
 
         if parsed_args.full_stack:
-            self.app_sate.required_dependencies_set.add(self.app_sate.ELECTRUMSV)
-            self.app_sate.required_dependencies_set.add(self.app_sate.ELECTRUMX)
-            self.app_sate.required_dependencies_set.add(self.app_sate.ELECTRUMSV_NODE)
+            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMSV)
+            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMX)
+            self.app_state.required_dependencies_set.add(ComponentName.NODE)
 
         elif parsed_args.esv_ex_node:
-            self.app_sate.required_dependencies_set.add(self.app_sate.ELECTRUMSV)
-            self.app_sate.required_dependencies_set.add(self.app_sate.ELECTRUMX)
-            self.app_sate.required_dependencies_set.add(self.app_sate.ELECTRUMSV_NODE)
+            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMSV)
+            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMX)
+            self.app_state.required_dependencies_set.add(ComponentName.NODE)
 
         elif parsed_args.esv_idx_node:
             raise NotImplementedError("esv_idx_node mode is not supported yet")
 
         elif parsed_args.ex_node:
-            self.app_sate.required_dependencies_set.add(self.app_sate.ELECTRUMX)
-            self.app_sate.required_dependencies_set.add(self.app_sate.ELECTRUMSV_NODE)
+            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMX)
+            self.app_state.required_dependencies_set.add(ComponentName.NODE)
 
         elif parsed_args.node:
-            self.app_sate.required_dependencies_set.add(self.app_sate.ELECTRUMSV_NODE)
+            self.app_state.required_dependencies_set.add(ComponentName.NODE)
 
         else:  # no args defaults to '--full_stack'
-            self.app_sate.required_dependencies_set.add(self.app_sate.ELECTRUMSV)
-            self.app_sate.required_dependencies_set.add(self.app_sate.ELECTRUMX)
-            self.app_sate.required_dependencies_set.add(self.app_sate.ELECTRUMSV_NODE)
+            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMSV)
+            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMX)
+            self.app_state.required_dependencies_set.add(ComponentName.NODE)
 
         if parsed_args.extapp_path != "":
             raise NotImplementedError(
@@ -234,40 +128,38 @@ class Handlers:
 
     def handle_stop_args(self, parsed_args):
         """takes no arguments"""
-        if not self.app_sate.NAMESPACE == self.app_sate.STOP:
+        if not self.app_state.NAMESPACE == self.app_state.STOP:
             return
-
-        # self.controller.stop()
 
     def handle_reset_args(self, parsed_args):
         """takes no arguments"""
-        if not self.app_sate.NAMESPACE == self.app_sate.RESET:
+        if not self.app_state.NAMESPACE == self.app_state.RESET:
             return
 
     def handle_node_args(self, parsed_args):
         """parsed_args are actually raw args. feeds runners.node() via Config.node_args"""
-        if not self.app_sate.NAMESPACE == self.app_sate.NODE:
+        if not self.app_state.NAMESPACE == ComponentName.NODE:
             return
-        self.app_sate.node_args = parsed_args
+        self.app_state.node_args = parsed_args
 
     def handle_status_args(self, parsed_args):
         """takes no arguments"""
-        if not self.app_sate.NAMESPACE == self.app_sate.START:
+        if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        self.install_checker.check_status_monitor_install()
+        self.installer.status_monitor()
 
     def handle_electrumsv_args(self, parsed_args):
-        if not self.app_sate.NAMESPACE == self.app_sate.START:
+        if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        if not self.app_sate.ELECTRUMSV in self.app_sate.required_dependencies_set:
+        if not ComponentName.ELECTRUMSV in self.app_state.required_dependencies_set:
             print()
-            print(f"{self.app_sate.ELECTRUMSV} not required")
-            print(f"- skipping installation of {self.app_sate.ELECTRUMSV}")
+            print(f"{ComponentName.ELECTRUMSV} not required")
+            print(f"- skipping installation of {ComponentName.ELECTRUMSV}")
             return
         print()
-        print(f"{self.app_sate.ELECTRUMSV} is required")
+        print(f"{ComponentName.ELECTRUMSV} is required")
         print(f"-------------------------------")
 
         # dapp_path
@@ -276,37 +168,37 @@ class Handlers:
 
         if parsed_args.repo == "":  # default
             parsed_args.repo = "https://github.com/electrumsv/electrumsv.git"
-            self.app_sate.set_electrumsv_path(self.app_sate.depends_dir.joinpath("electrumsv"))
-            self.handle_remote_repo(self.app_sate.ELECTRUMSV, parsed_args.repo, parsed_args.branch)
+            self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
+            self.handle_remote_repo(ComponentName.ELECTRUMSV, parsed_args.repo, parsed_args.branch)
         elif parsed_args.repo.startswith("https://"):
-            self.app_sate.set_electrumsv_path(self.app_sate.depends_dir.joinpath("electrumsv"))
-            self.handle_remote_repo(self.app_sate.ELECTRUMSV, parsed_args.repo, parsed_args.branch)
+            self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
+            self.handle_remote_repo(ComponentName.ELECTRUMSV, parsed_args.repo, parsed_args.branch)
         else:
-            self.app_sate.set_electrumsv_path(Path(parsed_args.repo))
-            self.handle_local_repo(self.app_sate.ELECTRUMSV, parsed_args.repo, parsed_args.branch)
+            self.app_state.set_electrumsv_path(Path(parsed_args.repo))
+            self.handle_local_repo(ComponentName.ELECTRUMSV, parsed_args.repo, parsed_args.branch)
 
     def handle_electrumx_args(self, parsed_args):
-        if not self.app_sate.NAMESPACE == self.app_sate.START:
+        if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        if not self.app_sate.ELECTRUMX in self.app_sate.required_dependencies_set:
+        if not ComponentName.ELECTRUMX in self.app_state.required_dependencies_set:
             print()
-            print(f"{self.app_sate.ELECTRUMX} not required")
+            print(f"{ComponentName.ELECTRUMX} not required")
             print(f"-------------------------------")
-            print(f"- skipping installation of {self.app_sate.ELECTRUMSV_NODE}")
+            print(f"- skipping installation of {ComponentName.NODE}")
             return
 
         print()
-        print(f"{self.app_sate.ELECTRUMX} is required")
+        print(f"{ComponentName.ELECTRUMX} is required")
         print(f"-------------------------------")
 
         if parsed_args.repo == "":  # default
             parsed_args.repo = "https://github.com/kyuupichan/electrumx.git"
-            self.handle_remote_repo(self.app_sate.ELECTRUMX, parsed_args.repo, parsed_args.branch)
+            self.handle_remote_repo(ComponentName.ELECTRUMX, parsed_args.repo, parsed_args.branch)
         elif parsed_args.repo.startswith("https://"):
-            self.handle_remote_repo(self.app_sate.ELECTRUMX, parsed_args.repo, parsed_args.branch)
+            self.handle_remote_repo(ComponentName.ELECTRUMX, parsed_args.repo, parsed_args.branch)
         else:
-            self.handle_local_repo(self.app_sate.ELECTRUMX, parsed_args.repo, parsed_args.branch)
+            self.handle_local_repo(ComponentName.ELECTRUMX, parsed_args.repo, parsed_args.branch)
 
     def handle_electrumsv_node_args(self, parsed_args):
         """not to be confused with node namespace:
@@ -314,54 +206,52 @@ class Handlers:
         This is for the subcommand of the 'start' namespace:
         > 'electrumsv-sdk start electrumsv_node repo=<repo> branch=<branch>'
         """
-        if not self.app_sate.NAMESPACE == self.app_sate.START:
+        if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
         # print("handle_electrumsv_node_args")
-        if not self.app_sate.ELECTRUMSV_NODE in self.app_sate.required_dependencies_set:
+        if not ComponentName.NODE in self.app_state.required_dependencies_set:
             print()
-            print(f"{self.app_sate.ELECTRUMSV_NODE} not required")
-            print(f"- skipping installation of {self.app_sate.ELECTRUMSV_NODE}")
+            print(f"{ComponentName.NODE} not required")
+            print(f"- skipping installation of {ComponentName.NODE}")
             return
         print()
-        print(f"{self.app_sate.ELECTRUMSV_NODE} is required")
+        print(f"{ComponentName.NODE} is required")
         print(f"-------------------------------")
 
         if parsed_args.repo == "":  # default
             parsed_args.repo = "https://github.com/electrumsv/electrumsv_node.git"
-            self.handle_remote_repo(self.app_sate.ELECTRUMSV_NODE, parsed_args.repo, parsed_args.branch)
+            self.handle_remote_repo(ComponentName.NODE, parsed_args.repo, parsed_args.branch)
         elif parsed_args.repo.startswith("https://"):
-            self.handle_remote_repo(self.app_sate.ELECTRUMSV_NODE, parsed_args.repo, parsed_args.branch)
+            self.handle_remote_repo(ComponentName.NODE, parsed_args.repo, parsed_args.branch)
         else:
-            self.handle_local_repo(self.app_sate.ELECTRUMSV_NODE, parsed_args.repo, parsed_args.branch)
+            self.handle_local_repo(ComponentName.NODE, parsed_args.repo, parsed_args.branch)
 
     def handle_indexer_args(self, parsed_args):
-        if not self.app_sate.NAMESPACE == self.app_sate.START:
+        if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        # print("handle_electrumsv_indexer_args")
-        if not self.app_sate.ELECTRUMSV_INDEXER in self.app_sate.required_dependencies_set:
+        if not ComponentName.INDEXER in self.app_state.required_dependencies_set:
             print()
-            print(f"{self.app_sate.ELECTRUMSV_INDEXER} not required")
+            print(f"{ComponentName.INDEXER} not required")
             print(f"-------------------------------")
-            print(f"- skipping installation of {self.app_sate.ELECTRUMSV_INDEXER}")
+            print(f"- skipping installation of {ComponentName.INDEXER}")
             return
         print()
-        print(f"{self.app_sate.ELECTRUMSV_INDEXER} is required")
+        print(f"{ComponentName.INDEXER} is required")
         raise NotImplementedError("electrumsv_indexer installation is not supported yet.")
 
         if parsed_args.repo == "":  # default
             parsed_args.repo = "????"
-            self.handle_remote_repo(self.app_sate.ELECTRUMSV_INDEXER, parsed_args.repo, parsed_args.branch)
+            self.handle_remote_repo(ComponentName.INDEXER, parsed_args.repo, parsed_args.branch)
         elif parsed_args.repo.startswith("https://"):
-            self.handle_remote_repo(self.app_sate.ELECTRUMSV_INDEXER, parsed_args.repo, parsed_args.branch)
+            self.handle_remote_repo(ComponentName.INDEXER, parsed_args.repo, parsed_args.branch)
         else:
-            self.handle_local_repo(self.app_sate.ELECTRUMSV_INDEXER, parsed_args.repo, parsed_args.branch)
-
+            self.handle_local_repo(ComponentName.INDEXER, parsed_args.repo, parsed_args.branch)
 
     # ----- HANDLERS ENTRY POINT ----- #
 
     def handle_install(self):
-        for cmd, parsed_args in self.app_sate.subcmd_parsed_args_map.items():
+        for cmd, parsed_args in self.app_state.subcmd_parsed_args_map.items():
             func = getattr(self, "handle_" + cmd + "_args")
             func(parsed_args)

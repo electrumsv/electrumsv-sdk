@@ -6,15 +6,14 @@ from electrumsv_node import electrumsv_node
 from .utils import create_if_not_exist, topup_wallet, create_wallet, delete_wallet
 
 logger = logging.getLogger("main")
-orm_logger = logging.getLogger('peewee')
+orm_logger = logging.getLogger("peewee")
 orm_logger.setLevel(logging.WARNING)
 
 
 class Resetters:
-
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
-    
+
     def reset_node(self):
         electrumsv_node.reset()
         logger.debug("reset of RegTest bitcoin daemon completed successfully.")
