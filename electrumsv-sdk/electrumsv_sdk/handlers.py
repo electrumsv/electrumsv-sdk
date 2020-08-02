@@ -126,15 +126,14 @@ class Installers:
         self.app_sate.install_tools.install_status_monitor()
 
 
-class InstallHandlers:
-    """handlers check to see what is already installed compared to the cli inputs and
-    if not installed and it is required will proceed to install the missing dependency.
+class Handlers:
+    """The handlers associated with the 'start' command check to see what is already installed
+    compared to the cli inputs and if not installed and it is required will proceed to install
+    the missing dependency.
 
     NOTE: if there is a conflict (e.g. installing a remote forked github repo would over-write
     the existing install of the official github repo) then a ".bak: backup will be created for
-    the existing version of the repo (just in case the user was using that repo for local
-    development
-    - would hate to destroy all of their hard work!
+    the existing version of the repo.
 
     No arg ("") will default to the 'official' github repo.
 
@@ -236,6 +235,9 @@ class InstallHandlers:
         """takes no arguments"""
         if not self.app_sate.NAMESPACE == self.app_sate.STOP:
             return
+
+
+
 
     def handle_reset_args(self, parsed_args):
         """takes no arguments"""

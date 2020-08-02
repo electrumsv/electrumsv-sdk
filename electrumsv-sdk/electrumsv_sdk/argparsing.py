@@ -7,9 +7,11 @@ Fortunately the help menu displays as expected so does not deviate from the stan
 """
 
 import argparse
+import logging
 import textwrap
 from argparse import RawTextHelpFormatter
 
+logger = logging.getLogger("argparsing")
 
 class InvalidInput(Exception):
     pass
@@ -86,7 +88,10 @@ class ArgParser:
                     subcommand_indices[cur_cmd_name].append(index)
 
             if self.app_state.NAMESPACE == self.app_state.STOP:
-                pass
+                if arg.startswith("--"):
+                    subcommand_indices[cur_cmd_name].append(index)
+                else:
+                    logger.debug("stop namespace only accepts flags with '--' prefix.")
 
             if self.app_state.NAMESPACE == self.app_state.RESET:
                 pass
@@ -219,6 +224,22 @@ class ArgParser:
 
     def add_stop_argparser(self, namespaces):
         stop_parser = namespaces.add_parser("stop", help="stop all spawned processes")
+        stop_parser.add_argument(
+            "--node", action="store_true", help="stop node",
+        )
+        stop_parser.add_argument(
+            "--ex", action="store_true", help="stop electrumx",
+        )
+        stop_parser.add_argument(
+            "--esv", action="store_true", help="stop electrumsv",
+        )
+        stop_parser.add_argument(
+            "--idx", action="store_true", help="stop indexer",
+        )
+        stop_parser.add_argument(
+            "--extapp", action="store_true", help="stop extension app",
+        )
+
         return stop_parser
 
 
@@ -262,6 +283,7 @@ class ArgParser:
                 electrumsv-indexer  (subcmd of 'start' namespace for config options)
                 electrumsv-node     (subcmd of 'start' namespace for config options)
             stop
+                --node --ex --esv --idx --extapp PATH
             reset
             node
             status

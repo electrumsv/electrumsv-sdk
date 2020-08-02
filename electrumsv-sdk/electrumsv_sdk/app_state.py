@@ -11,10 +11,10 @@ import os
 from electrumsv_node import electrumsv_node
 from electrumsv_sdk.argparsing import ArgParser
 from electrumsv_sdk.components import Component, ComponentName
-from electrumsv_sdk.install_handlers import InstallHandlers
+from electrumsv_sdk.handlers import Handlers
 from electrumsv_sdk.install_tools import InstallTools
 from electrumsv_sdk.reset import Resetters
-from electrumsv_sdk.runners import Runners
+from electrumsv_sdk.controller import Controller
 from electrumsv_sdk.status_monitor_client import StatusMonitorClient
 from electrumsv_sdk.utils import create_if_not_exist
 from filelock import FileLock
@@ -31,8 +31,8 @@ class AppState:
 
     def __init__(self):
         self.arparser = ArgParser(self)
-        self.install_handlers = InstallHandlers(self)
-        self.runners = Runners(self)
+        self.handlers = Handlers(self)
+        self.controller = Controller(self)
         self.install_tools = InstallTools(self)
         self.resetters = Resetters(self)
         self.status_monitor_client = StatusMonitorClient(self)

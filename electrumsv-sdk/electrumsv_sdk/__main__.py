@@ -38,23 +38,23 @@ def main():
     app_state.arparser.manual_argparsing(sys.argv)
 
     # Check & Install dependencies / or Configure state for 'Runners'
-    app_state.install_handlers.handle_install()
+    app_state.handlers.handle_install()
 
     # Call Relevant 'Runner'
     if app_state.NAMESPACE == app_state.START:
-        app_state.runners.start()
+        app_state.controller.start()
 
     if app_state.NAMESPACE == app_state.STOP:
-        app_state.runners.stop()
+        app_state.controller.stop()
 
     if app_state.NAMESPACE == app_state.RESET:
-        app_state.runners.reset()
+        app_state.controller.reset()
 
     if app_state.NAMESPACE == app_state.NODE:
-        app_state.runners.node()
+        app_state.controller.node()
 
     if app_state.NAMESPACE == app_state.STATUS:
-        app_state.runners.status()
+        app_state.controller.status()
 
 if __name__ == "__main__":
     main()

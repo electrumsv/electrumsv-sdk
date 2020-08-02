@@ -12,7 +12,8 @@ from .components import Component, ComponentType, ComponentName, ComponentState
 
 logger = logging.getLogger("runners")
 
-class Runners:
+
+class Controller:
 
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
@@ -279,4 +280,3 @@ class Runners:
 
     def stop_node(self):
         electrumsv_node.stop()
-
