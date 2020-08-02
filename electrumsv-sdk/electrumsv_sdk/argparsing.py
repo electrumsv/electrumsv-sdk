@@ -13,8 +13,10 @@ from argparse import RawTextHelpFormatter
 
 logger = logging.getLogger("argparsing")
 
+
 class InvalidInput(Exception):
     pass
+
 
 class ArgParser:
 

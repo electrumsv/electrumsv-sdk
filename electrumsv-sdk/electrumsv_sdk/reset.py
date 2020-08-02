@@ -1,13 +1,14 @@
 import logging
 import os
 import shutil
-
 from electrumsv_node import electrumsv_node
-from electrumsv_sdk.utils import create_if_not_exist, topup_wallet, create_wallet, delete_wallet
+
+from .utils import create_if_not_exist, topup_wallet, create_wallet, delete_wallet
 
 logger = logging.getLogger("main")
 orm_logger = logging.getLogger('peewee')
 orm_logger.setLevel(logging.WARNING)
+
 
 class Resetters:
 

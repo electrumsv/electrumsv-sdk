@@ -23,7 +23,6 @@ class InstallTools:
         make_esv_daemon_script(esv_script, electrumsv_env_vars)
         make_esv_gui_script(esv_script, electrumsv_env_vars)
 
-
     def generate_run_script_electrumx(self):
         create_if_not_exist(self.app_state.run_scripts_dir)
         os.chdir(self.app_state.run_scripts_dir)
@@ -63,7 +62,6 @@ class InstallTools:
             commandline_string_split = shlex.split(commandline_string, posix=1)
             make_bash_file("status_monitor.sh", commandline_string_split, {})
 
-
     def install_electrumsv(self, url, branch):
         # Note - this is only so that it works "out-of-the-box". But for development
         # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
@@ -77,7 +75,6 @@ class InstallTools:
                 f"{sys.executable} -m pip install -r {self.app_state.electrumsv_binary_requirements_path}"
             )
         self.generate_run_scripts_electrumsv()
-
 
     def install_electrumx(self, url, branch):
 

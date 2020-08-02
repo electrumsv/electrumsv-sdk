@@ -1,9 +1,8 @@
-import json
 import logging
 
 import requests
-from electrumsv_sdk.constants import STATUS_MONITOR_API
 
+from .constants import STATUS_MONITOR_API
 from .components import Component
 
 

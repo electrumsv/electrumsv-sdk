@@ -141,9 +141,10 @@ class Handlers:
     relevant namespace is not 'active' (i.e. 'start', 'stop' or 'reset') then they do not action
     anything -> return
     """
-    def __init__(self, app_state):
+    def __init__(self, app_state: "AppState"):
         self.app_sate = app_state
         self.install_checker = Installers(self.app_sate)
+        self.controller = self.app_sate.controller
 
     def handle_remote_repo(self, package_name, url, branch):
         print(f"- installing remote dependency for {package_name} at {url}")
@@ -236,8 +237,7 @@ class Handlers:
         if not self.app_sate.NAMESPACE == self.app_sate.STOP:
             return
 
-
-
+        # self.controller.stop()
 
     def handle_reset_args(self, parsed_args):
         """takes no arguments"""

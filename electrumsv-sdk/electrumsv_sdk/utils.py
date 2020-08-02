@@ -152,3 +152,14 @@ def delete_wallet(app_state):
         logger.exception(e)
     else:
         return
+
+
+def cast_str_int_args_to_int(node_args):
+    int_indices = []
+    for index, arg in enumerate(node_args):
+        if arg.isdigit():
+            int_indices.append(index)
+
+    for i in int_indices:
+        node_args[i] = int(node_args[i])
+    return node_args

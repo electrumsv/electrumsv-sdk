@@ -9,14 +9,14 @@ import logging
 import os
 
 from electrumsv_node import electrumsv_node
-from electrumsv_sdk.argparsing import ArgParser
-from electrumsv_sdk.components import Component, ComponentName
-from electrumsv_sdk.handlers import Handlers
-from electrumsv_sdk.install_tools import InstallTools
-from electrumsv_sdk.reset import Resetters
-from electrumsv_sdk.controller import Controller
-from electrumsv_sdk.status_monitor_client import StatusMonitorClient
-from electrumsv_sdk.utils import create_if_not_exist
+from .argparsing import ArgParser
+from .components import Component, ComponentName, ComponentStore
+from .handlers import Handlers
+from .install_tools import InstallTools
+from .reset import Resetters
+from .controller import Controller
+from .status_monitor_client import StatusMonitorClient
+from .utils import create_if_not_exist
 from filelock import FileLock
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,18 +31,18 @@ class AppState:
 
     def __init__(self):
         self.arparser = ArgParser(self)
-        self.handlers = Handlers(self)
         self.controller = Controller(self)
+        self.handlers = Handlers(self)
         self.install_tools = InstallTools(self)
         self.resetters = Resetters(self)
         self.status_monitor_client = StatusMonitorClient(self)
+        self.component_store = ComponentStore(self)
 
         # component state
         self.file_path = "component_state.json"
         self.lock_path = "component_state.json.lock"
 
         self.file_lock = FileLock(self.lock_path, timeout=1)
-        self.status: List[Component] = []
         self.component_state_path = Path(MODULE_DIR).joinpath("component_state.json")
 
         # namespaces
@@ -189,15 +189,13 @@ class AppState:
         with self.file_lock:
             with open(component_state_path, "r") as f:
                 component_state = json.loads(f.read())
-
-        logger.debug(component_state)
+        return component_state
 
     def find_component_if_exists(self, component: Component, component_state: List[dict]):
         for index, comp in enumerate(component_state):
             if comp["process_name"] == component.process_name:
                 return (index, component)
         return False
-
 
     def update_status_file(self, component_state_path, component):
         """updates to the *file* (component.json) - does *not* update the server"""
