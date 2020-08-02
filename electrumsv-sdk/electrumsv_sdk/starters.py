@@ -7,7 +7,8 @@ import time
 import aiorpcx
 import requests
 from electrumsv_node import electrumsv_node
-from electrumsv_sdk.status_monitor_client import StatusMonitorClient
+from .constants import STATUS_MONITOR_API
+from .status_monitor_client import StatusMonitorClient
 
 from .components import Component, ComponentName, ComponentType, ComponentState, ComponentStore
 
@@ -47,6 +48,15 @@ class Starters:
 
             time.sleep(sleep_time)
         return False
+
+    def is_status_monitor_running(self) -> bool:
+        try:
+            result = requests.get(STATUS_MONITOR_API + "/get_status")
+            result.raise_for_status()
+            return True
+        except Exception as e:
+            logger.error("problem fetching status: reason: " + str(e))
+            return False
 
     def start_node(self):
         process = electrumsv_node.start()
@@ -196,12 +206,20 @@ class Starters:
             pid=process.pid,
             process_name=ComponentName.STATUS_MONITOR,
             process_type=ComponentType.STATUS_MONITOR,
-            endpoint="http://127.0.0.1:api",
-            component_state=ComponentState.NONE,
+            endpoint="http://127.0.0.1:api/status",
+            component_state=ComponentState.Running,
             location=self.app_state.status_monitor_dir.__str__(),
             metadata={},
             logging_path=None,
         )
+
+        is_running = self.is_status_monitor_running()
+        if not is_running:
+            component.component_state = ComponentState.Failed
+            logger.error("status_monitor failed to start")
+        else:
+            component.component_state = ComponentState.Running
+            logger.debug("status_monitor online")
         self.component_store.update_status_file(component)
         return process
 
