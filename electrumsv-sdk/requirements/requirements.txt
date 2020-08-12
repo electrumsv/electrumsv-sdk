@@ -1,0 +1,5 @@
+electrumsv-node>=0.0.8
+requests
+filelock
+curio>=1.2
+trinket>=0.2.1

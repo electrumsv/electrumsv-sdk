@@ -52,6 +52,9 @@ class AppState:
         self.subcmd_raw_args_map: Dict[str, List[str]] = {}  # cmd_name: raw arguments
         self.subcmd_parsed_args_map = {}  # cmd_name: parsed arguments
 
+        self.sdk_requirements = (
+            Path(MODULE_DIR).parent.joinpath("requirements").joinpath("requirements.txt")
+        )
         self.sdk_requirements_linux = (
             Path(MODULE_DIR).parent.joinpath("requirements").joinpath("requirements-linux.txt")
         )
