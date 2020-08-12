@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-import sys
-
+import os
 from setuptools import find_packages, setup
+import sys
+from typing import List
+
 
 """
 # on a win32 machine...
@@ -27,31 +29,30 @@ py -3.8 -m pip install electrumsv-sdk
 
 __version__ = '0.0.13'
 
-from electrumsv_sdk.app_state import AppState
-
 
 if sys.version_info[:3] < (3, 7, 8):
     sys.exit("Error: ElectrumSV requires Python version >= 3.7.8...")
 
-with open(AppState.sdk_requirements, 'r') as f:
-    requirements = f.read().splitlines()
 
-if sys.platform == 'win32':
-    with open(AppState.sdk_requirements_win32, 'r') as f:
-        requirements.extend(f.read().splitlines())
+def _locate_requirements() -> List[str]:
+    requirement_files = [ "requirements.txt" ]
+    if sys.platform == 'win32':
+        requirement_files.append("requirements-win32.txt")
+    elif sys.platform in ('linux', 'darwin'):
+        requirement_files.append("requirements-linux.txt")
+    requirement_files.append("requirements-electrumx.txt")
 
-elif sys.platform in ('linux', 'darwin'):
-    with open(AppState.sdk_requirements_linux, 'r') as f:
-        requirements.extend(f.read().splitlines())
+    requirements = []
+    for file_name in requirement_files:
+        with open(os.path.join("requirements", file_name), 'r') as f:
+            requirements.extend(f.read().splitlines())
+    return requirements
 
-with open(AppState.sdk_requirements_electrumx, 'r') as f:
-    # use modified requirements to exclude the plyvel install (problematic on windows)
-    requirements.extend(f.read().splitlines())
 
 setup(
     name='electrumsv-sdk',
     version=__version__,
-    install_requires=requirements,
+    install_requires=_locate_requirements(),
     description='ElectrumSV SDK',
     long_description=open('README.rst', 'r').read(),
     long_description_content_type='text/markdown',
@@ -79,9 +80,11 @@ setup(
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: End Users/Desktop',
-        'License :: OSI Approved :: MIT License',
+        'License :: Open BSV',
         'Natural Language :: English',
-        'Operating System :: OS Independent',
+        'Operating System :: POSIX :: Linux',
+        'Operating System :: MacOS :: MacOS X',
+        'Operating System :: Microsoft :: Windows :: Windows 10',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython',

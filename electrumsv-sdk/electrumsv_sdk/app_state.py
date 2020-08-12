@@ -52,21 +52,6 @@ class AppState:
         self.subcmd_raw_args_map: Dict[str, List[str]] = {}  # cmd_name: raw arguments
         self.subcmd_parsed_args_map = {}  # cmd_name: parsed arguments
 
-        self.sdk_requirements = (
-            Path(MODULE_DIR).parent.joinpath("requirements").joinpath("requirements.txt")
-        )
-        self.sdk_requirements_linux = (
-            Path(MODULE_DIR).parent.joinpath("requirements").joinpath("requirements-linux.txt")
-        )
-        self.sdk_requirements_win32 = (
-            Path(MODULE_DIR).parent.joinpath("requirements").joinpath("requirements-win32.txt")
-        )
-
-        # exclude plyvel from electrumx requirements.txt (windows workaround)
-        self.sdk_requirements_electrumx = (
-            Path(MODULE_DIR).parent.joinpath("requirements").joinpath("requirements-electrumx.txt")
-        )
-
         self.sdk_package_dir = Path(MODULE_DIR)
         self.electrumsv_sdk_config_path = self.sdk_package_dir.joinpath("config.json")
 
