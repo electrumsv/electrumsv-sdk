@@ -1,9 +1,9 @@
 import logging
-import sys
+import os
 import platform
+import sys
 
 from electrumsv_sdk.app_state import AppState
-from electrumsv_sdk.utils import create_if_not_exist
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',
     level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
@@ -24,13 +24,12 @@ def main():
     """
     print("ElectrumSV Software Development Kit")
     print(
-        f"-Python version {sys.version_info.major}.{sys.version_info.minor}."
-        f"{sys.version_info.micro}-{platform.architecture()[0]}"
+        f"-Python version {platform.python_version()}-{platform.architecture()[0]}"
     )
     print()
     app_state = AppState()
-    create_if_not_exist(app_state.depends_dir.__str__())
-    create_if_not_exist(app_state.run_scripts_dir.__str__())
+    os.makedirs(app_state.depends_dir, exist_ok=True)
+    os.makedirs(app_state.run_scripts_dir, exist_ok=True)
     app_state.handle_first_ever_run()
 
     # Parse args

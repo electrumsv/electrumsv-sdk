@@ -100,8 +100,8 @@ class Starters:
             process_type=ComponentType.ELECTRUMX,
             endpoint="http://127.0.0.1:51001",
             component_state=ComponentState.NONE,
-            location=self.app_state.electrumx_dir.__str__(),
-            metadata={"data_dir": self.app_state.electrumx_data_dir.__str__()},
+            location=str(self.app_state.electrumx_dir),
+            metadata={"data_dir": str(self.app_state.electrumx_data_dir)},
             logging_path=None,
         )
 
@@ -117,7 +117,7 @@ class Starters:
         return process
 
     def disable_rest_api_authentication(self):
-        path_to_config = self.app_state.electrumsv_regtest_config_dir.__str__()
+        path_to_config = self.app_state.electrumsv_regtest_config_dir
 
         with open(path_to_config, "r") as f:
             config = json.load(f)
@@ -174,9 +174,9 @@ class Starters:
             process_type=ComponentType.ELECTRUMSV,
             endpoint="http://127.0.0.1:9999",
             component_state=ComponentState.NONE,
-            location=self.app_state.electrumsv_regtest_dir.__str__(),
-            metadata={"config": self.app_state.electrumsv_regtest_config_dir.__str__()},
-            logging_path=self.app_state.electrumsv_data_dir.joinpath("logs").__str__(),
+            location=str(self.app_state.electrumsv_regtest_dir),
+            metadata={"config": str(self.app_state.electrumsv_regtest_config_dir)},
+            logging_path=str(self.app_state.electrumsv_data_dir.joinpath("logs")),
         )
 
         is_running = self.is_electrumsv_running()
@@ -208,7 +208,7 @@ class Starters:
             process_type=ComponentType.STATUS_MONITOR,
             endpoint="http://127.0.0.1:api/status",
             component_state=ComponentState.Running,
-            location=self.app_state.status_monitor_dir.__str__(),
+            location=str(self.app_state.status_monitor_dir),
             metadata={},
             logging_path=None,
         )

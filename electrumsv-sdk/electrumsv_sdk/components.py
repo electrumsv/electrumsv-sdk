@@ -57,9 +57,8 @@ class ComponentType(enum.IntEnum):
 
 
 class ComponentState(enum.IntEnum):
-    """If the user terminates an application without using the SDK, it will be registered as 
+    """If the user terminates an application without using the SDK, it will be registered as
     'Failed' status."""
-
     NONE = 0
     Running = 1
     Stopped = 2
@@ -93,7 +92,7 @@ class Component:
             f"Component(pid={self.pid}, process_name={self.process_name}, "
             f"process_type={self.process_type}, "
             f"endpoint={self.endpoint}, "
-            f"component_state={(self.component_state.__str__().split('.')[1])}, "
+            f"component_state={self.component_state.name}, "
             f"location={self.location}, metadata={self.metadata}, "
             f"logging_path={self.logging_path}, last_updated={self.last_updated})"
         )
@@ -102,7 +101,7 @@ class Component:
         config_dict = {}
         for key, val in self.__dict__.items():
             if key == "component_state":
-                val = self.component_state.__str__().split(".")[1]
+                val = self.component_state.name
             config_dict[key] = val
         return config_dict
 

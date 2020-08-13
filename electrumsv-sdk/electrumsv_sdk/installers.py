@@ -2,12 +2,12 @@ import os
 import subprocess
 import sys
 
-from electrumsv_sdk.utils import checkout_branch, create_if_not_exist
+from electrumsv_sdk.utils import checkout_branch
 
 
 class Installers:
     def __init__(self, app_state):
-        self.app_sate = app_state
+        self.app_state = app_state
 
     def remote_electrumsv(self, url, branch):
         """3 possibilities:
@@ -15,12 +15,12 @@ class Installers:
         (dir exists, url matches)
         (dir exists, url does not match - it's a forked repo)
         """
-        if not self.app_sate.electrumsv_dir.exists():
+        if not self.app_state.electrumsv_dir.exists():
             print(f"- installing electrumsv (url={url})")
-            self.app_sate.install_tools.install_electrumsv(url, branch)
+            self.app_state.install_tools.install_electrumsv(url, branch)
 
-        elif self.app_sate.electrumsv_dir.exists():
-            os.chdir(self.app_sate.electrumsv_dir.__str__())
+        elif self.app_state.electrumsv_dir.exists():
+            os.chdir(self.app_state.electrumsv_dir)
             result = subprocess.run(
                 f"git config --get remote.origin.url",
                 shell=True,
@@ -35,32 +35,32 @@ class Installers:
                 subprocess.run(f"git pull", shell=True, check=True)
                 subprocess.run(
                     f"{sys.executable} -m pip install -r "
-                    f"{self.app_sate.electrumsv_requirements_path}",
+                    f"{self.app_state.electrumsv_requirements_path}",
                     shell=True,
                     check=True,
                 )
                 subprocess.run(
                     f"{sys.executable} -m pip install -r "
-                    f"{self.app_sate.electrumsv_binary_requirements_path}",
+                    f"{self.app_state.electrumsv_binary_requirements_path}",
                     shell=True,
                     check=True,
                 )
             if result.stdout.strip() != url:
-                existing_fork = self.app_sate.electrumsv_dir.__str__()
+                existing_fork = self.app_state.electrumsv_dir
                 print(f"- alternate fork of electrumsv is already installed")
-                print(f"- moving existing fork (to {existing_fork.__str__() + '.bak'}")
+                print(f"- moving existing fork (to '{existing_fork}.bak')")
                 print(f"- installing electrumsv (url={url})")
                 os.rename(
-                    self.app_sate.electrumsv_dir.__str__(),
-                    self.app_sate.electrumsv_dir.__str__() + ".bak",
+                    self.app_state.electrumsv_dir,
+                    self.app_state.electrumsv_dir.with_suffix(".bak"),
                 )
-                self.app_sate.install_tools.install_electrumsv(url, branch)
+                self.app_state.install_tools.install_electrumsv(url, branch)
 
-        create_if_not_exist(self.app_sate.electrumsv_regtest_wallets_dir)
+        os.makedirs(self.app_state.electrumsv_regtest_wallets_dir, exist_ok=True)
 
     def local_electrumsv(self, url, branch):
-        create_if_not_exist(self.app_sate.electrumsv_regtest_wallets_dir)
-        self.app_sate.install_tools.generate_run_scripts_electrumsv()
+        os.makedirs(self.app_state.electrumsv_regtest_wallets_dir, exist_ok=True)
+        self.app_state.install_tools.generate_run_scripts_electrumsv()
 
     def remote_electrumx(self, url, branch):
         """3 possibilities:
@@ -68,11 +68,11 @@ class Installers:
         (dir exists, url matches)
         (dir exists, url does not match - it's a forked repo)
         """
-        if not self.app_sate.electrumx_dir.exists():
+        if not self.app_state.electrumx_dir.exists():
             print(f"- installing electrumx (url={url})")
-            self.app_sate.install_tools.install_electrumx(url, branch)
-        elif self.app_sate.electrumx_dir.exists():
-            os.chdir(self.app_sate.electrumx_dir.__str__())
+            self.app_state.install_tools.install_electrumx(url, branch)
+        elif self.app_state.electrumx_dir.exists():
+            os.chdir(self.app_state.electrumx_dir)
             result = subprocess.run(
                 f"git config --get remote.origin.url",
                 shell=True,
@@ -89,23 +89,23 @@ class Installers:
                 #  awaiting a PR for electrumx
 
             if result.stdout.strip() != url:
-                existing_fork = self.app_sate.electrumx_dir.__str__()
+                existing_fork = self.app_state.electrumx_dir
                 print(f"- alternate fork of electrumx is already installed")
-                print(f"- moving existing fork (to {existing_fork.__str__() + '.bak'}")
+                print(f"- moving existing fork (to '{existing_fork}.bak')")
                 print(f"- installing electrumsv (url={url})")
                 os.rename(
-                    self.app_sate.electrumx_dir.__str__(),
-                    self.app_sate.electrumx_dir.__str__() + ".bak",
+                    self.app_state.electrumx_dir,
+                    self.app_state.electrumx_dir.with_suffix(".bak"),
                 )
-                self.app_sate.install_tools.install_electrumx(url, branch)
+                self.app_state.install_tools.install_electrumx(url, branch)
 
     def local_electrumx(self, path, branch):
-        self.app_sate.install_tools.generate_run_script_electrumx()
+        self.app_state.install_tools.generate_run_script_electrumx()
 
     def node(self, branch):
         """this one has a pip installer at https://pypi.org/project/electrumsv-node/"""
-        self.app_sate.install_tools.install_bitcoin_node()
+        self.app_state.install_tools.install_bitcoin_node()
 
     def status_monitor(self):
         """purely for generating the .bat / .sh script"""
-        self.app_sate.install_tools.install_status_monitor()
+        self.app_state.install_tools.install_status_monitor()

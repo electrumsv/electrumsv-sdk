@@ -4,7 +4,6 @@ import subprocess
 import sys
 from .utils import (
     checkout_branch,
-    create_if_not_exist,
     make_esv_daemon_script,
     make_esv_gui_script,
     make_bat_file,
@@ -18,23 +17,23 @@ class InstallTools:
 
     def generate_run_scripts_electrumsv(self):
         """makes both the daemon script and a script for running the GUI"""
-        create_if_not_exist(self.app_state.run_scripts_dir)
+        os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
         os.chdir(self.app_state.run_scripts_dir)
         path_to_dapp_example_apps = self.app_state.electrumsv_dir.joinpath("examples").joinpath(
             "applications"
         )
         electrumsv_env_vars = {
-            "PYTHONPATH": path_to_dapp_example_apps.__str__(),
+            "PYTHONPATH": str(path_to_dapp_example_apps),
         }
-        esv_script = self.app_state.electrumsv_dir.joinpath("electrum-sv").__str__()
+        esv_script = str(self.app_state.electrumsv_dir.joinpath("electrum-sv"))
         make_esv_daemon_script(esv_script, electrumsv_env_vars)
         make_esv_gui_script(esv_script, electrumsv_env_vars)
 
     def generate_run_script_electrumx(self):
-        create_if_not_exist(self.app_state.run_scripts_dir)
+        os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
         os.chdir(self.app_state.run_scripts_dir)
         electrumx_env_vars = {
-            "DB_DIRECTORY": self.app_state.electrumx_data_dir.__str__(),
+            "DB_DIRECTORY": str(self.app_state.electrumx_data_dir),
             "DAEMON_URL": "http://rpcuser:rpcpassword@127.0.0.1:18332",
             "DB_ENGINE": "leveldb",
             "SERVICES": "tcp://:51001,rpc://",
@@ -58,7 +57,7 @@ class InstallTools:
             make_bash_file("electrumx.sh", commandline_string_split, electrumx_env_vars)
 
     def generate_run_script_status_monitor(self):
-        create_if_not_exist(self.app_state.run_scripts_dir)
+        os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
         os.chdir(self.app_state.run_scripts_dir)
 
         commandline_string = (
@@ -77,7 +76,7 @@ class InstallTools:
         # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
 
         if not self.app_state.electrumsv_dir.exists():
-            os.chdir(self.app_state.depends_dir.__str__())
+            os.chdir(self.app_state.depends_dir)
             subprocess.run(f"git clone {url}", shell=True, check=True)
             checkout_branch(branch)
             subprocess.run(
@@ -92,9 +91,9 @@ class InstallTools:
     def install_electrumx(self, url, branch):
 
         if not self.app_state.electrumx_dir.exists():
-            create_if_not_exist(self.app_state.electrumx_dir.__str__())
-            create_if_not_exist(self.app_state.electrumx_data_dir.__str__())
-            os.chdir(self.app_state.depends_dir.__str__())
+            os.makedirs(self.app_state.electrumx_dir, exist_ok=True)
+            os.makedirs(self.app_state.electrumx_data_dir, exist_ok=True)
+            os.chdir(self.app_state.depends_dir)
             subprocess.run(f"git clone {url}", shell=True, check=True)
             checkout_branch(branch)
         self.generate_run_script_electrumx()

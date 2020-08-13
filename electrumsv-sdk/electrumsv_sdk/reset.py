@@ -3,7 +3,7 @@ import os
 import shutil
 from electrumsv_node import electrumsv_node
 
-from .utils import create_if_not_exist, topup_wallet, create_wallet, delete_wallet
+from .utils import topup_wallet, create_wallet, delete_wallet
 
 logger = logging.getLogger("main")
 orm_logger = logging.getLogger("peewee")
@@ -22,10 +22,10 @@ class Resetters:
         logger.debug("resetting state of RegTest electrumx server...")
         electrumx_data_dir = self.app_state.electrumx_data_dir
         if electrumx_data_dir.exists():
-            shutil.rmtree(electrumx_data_dir.__str__())
-            os.mkdir(electrumx_data_dir.__str__())
+            shutil.rmtree(electrumx_data_dir)
+            os.mkdir(electrumx_data_dir)
         else:
-            create_if_not_exist(electrumx_data_dir)
+            os.makedirs(electrumx_data_dir, exist_ok=True)
         logger.debug("reset of RegTest electrumx server completed successfully.")
 
     def reset_electrumsv_wallet(self):

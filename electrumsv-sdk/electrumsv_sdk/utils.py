@@ -19,20 +19,6 @@ def checkout_branch(branch: str):
         subprocess.run(f"git checkout {branch}", shell=True, check=True)
 
 
-def create_if_not_exist(path):
-    path = Path(path)
-    root = Path(path.parts[0])  # Root
-    cur_dir = Path(root)
-    for part in path.parts:
-        if Path(part) != root:
-            cur_dir = cur_dir.joinpath(part)
-        if cur_dir.exists():
-            continue
-        else:
-            os.mkdir(cur_dir)
-            print(f"created '{cur_dir}' successfully")
-
-
 def make_bat_file(filename, commandline_string_split, env_vars):
     open(filename, "w").close()
     with open(filename, "a") as f:
@@ -128,13 +114,13 @@ def create_wallet():
 
 def delete_wallet(app_state):
     esv_wallet_db_directory = app_state.electrumsv_regtest_wallets_dir
-    create_if_not_exist(esv_wallet_db_directory.__str__())
+    os.makedirs(esv_wallet_db_directory, exist_ok=True)
 
     try:
         time.sleep(1)
         logger.debug("deleting wallet...")
         logger.debug(
-            "wallet directory before: %s", os.listdir(esv_wallet_db_directory.__str__()),
+            "wallet directory before: %s", os.listdir(esv_wallet_db_directory),
         )
         wallet_name = "worker1"
         file_names = [
@@ -147,7 +133,7 @@ def delete_wallet(app_state):
             if Path.exists(file_path):
                 os.remove(file_path)
         logger.debug(
-            "wallet directory after: %s", os.listdir(esv_wallet_db_directory.__str__()),
+            "wallet directory after: %s", os.listdir(esv_wallet_db_directory),
         )
     except Exception as e:
         logger.exception(e)
