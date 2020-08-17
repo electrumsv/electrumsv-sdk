@@ -110,9 +110,9 @@ class ComponentStore:
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
         self.file_path = "component_state.json"
-        self.lock_path = "component_state.json.lock"
+        self.lock_path = app_state.electrumsv_sdk_data_dir / "component_state.json.lock"
         self.file_lock = FileLock(self.lock_path, timeout=1)
-        self.component_state_path = Path(MODULE_DIR).joinpath("component_state.json")
+        self.component_state_path = app_state.electrumsv_sdk_data_dir / self.file_path
 
     def get_status(self):
         filelock_logger = logging.getLogger("filelock")
@@ -132,13 +132,13 @@ class ComponentStore:
     def update_status_file(self, component):
         """updates to the *file* (component.json) - does *not* update the server"""
 
+        component_state = []
         with self.file_lock:
-            with open(self.component_state_path, "r") as f:
-                data = f.read()
-                if not data:
-                    component_state = []  # assume file was empty
-                else:
-                    component_state = json.loads(data)
+            if self.component_state_path.exists():
+                with open(self.component_state_path, "r") as f:
+                    data = f.read()
+                    if data:
+                        component_state = json.loads(data)
 
         result = self.find_component_if_exists(component, component_state)
         if not result:

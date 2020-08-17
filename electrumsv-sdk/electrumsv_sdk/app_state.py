@@ -7,6 +7,7 @@ from os.path import expanduser
 from pathlib import Path
 import shutil
 import stat
+import sys
 from typing import Dict, List, Set
 
 from electrumsv_node import electrumsv_node
@@ -30,6 +31,14 @@ class AppState:
     """Only electrumsv paths are saved to config.json so that 'reset' works on correct wallet."""
 
     def __init__(self):
+        data_dir = None
+        if sys.platform == "win32":
+            data_dir = Path(os.environ.get("LOCALAPPDATA")) / "ElectrumSV-SDK"
+        if data_dir is None:
+            data_dir = Path.home() / ".electrumsv-sdk"
+
+        self.electrumsv_sdk_data_dir = data_dir
+
         self.arparser = ArgParser(self)
         self.controller = Controller(self)
         self.handlers = Handlers(self)
@@ -51,19 +60,15 @@ class AppState:
         self.subcmd_raw_args_map: Dict[str, List[str]] = {}  # cmd_name: raw arguments
         self.subcmd_parsed_args_map = {}  # cmd_name: parsed arguments
 
-        self.sdk_package_dir = Path(MODULE_DIR)
-        self.electrumsv_sdk_config_path = self.sdk_package_dir.joinpath("config.json")
-
-        self.home = Path(expanduser("~"))
-        self.electrumsv_sdk_data_dir = self.home.joinpath("ElectrumSV-SDK")
         self.depends_dir = self.electrumsv_sdk_data_dir.joinpath("sdk_depends")
         self.run_scripts_dir = self.electrumsv_sdk_data_dir.joinpath("run_scripts")
+        self.electrumsv_sdk_config_path = self.electrumsv_sdk_data_dir.joinpath("config.json")
 
         # electrumsv paths are set dynamically at startup - see: set_electrumsv_path()
         self.electrumsv_dir = None
         self.electrumsv_data_dir = None
         self.electrumsv_regtest_dir = None
-        self.electrumsv_regtest_config_dir = None
+        self.electrumsv_regtest_config_path = None
         self.electrumsv_regtest_wallets_dir = None
         self.electrumsv_requirements_path = None
         self.electrumsv_binary_requirements_path = None
@@ -71,6 +76,7 @@ class AppState:
         self.electrumx_dir = self.depends_dir.joinpath("electrumx")
         self.electrumx_data_dir = self.depends_dir.joinpath("electrumx_data")
 
+        self.sdk_package_dir = Path(MODULE_DIR)
         self.status_monitor_dir = self.sdk_package_dir.joinpath("status_server")
 
         self.required_dependencies_set: Set[str] = set()
@@ -85,8 +91,10 @@ class AppState:
         self.electrumsv_dir = electrumsv_dir
         self.electrumsv_data_dir = self.electrumsv_dir.joinpath("electrum_sv_data")
         self.electrumsv_regtest_dir = self.electrumsv_data_dir.joinpath("regtest")
-        self.electrumsv_regtest_config_dir = self.electrumsv_regtest_dir.joinpath("config")
+        self.electrumsv_regtest_dir.mkdir(exist_ok=True, parents=True)
+        self.electrumsv_regtest_config_path = self.electrumsv_regtest_dir.joinpath("config")
         self.electrumsv_regtest_wallets_dir = self.electrumsv_regtest_dir.joinpath("wallets")
+        self.electrumsv_regtest_wallets_dir.mkdir(exist_ok=True)
         self.electrumsv_requirements_path = (
             self.electrumsv_dir.joinpath("contrib")
             .joinpath("deterministic-build")

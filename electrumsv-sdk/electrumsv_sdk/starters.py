@@ -59,10 +59,10 @@ class Starters:
             return False
 
     def start_node(self):
-        process = electrumsv_node.start()
+        process_pid = electrumsv_node.start()
 
         component = Component(
-            pid=process.pid,
+            pid=process_pid,
             process_name=ComponentName.NODE,
             process_type=ComponentType.NODE,
             endpoint="http://127.0.0.1:18332",
@@ -71,7 +71,9 @@ class Starters:
             metadata={},
             logging_path=None,
         )
-        logger.debug("polling bitcoin daemon...")
+        while not electrumsv_node.is_running():
+            logger.debug("polling bitcoin daemon...")
+            time.sleep(5)
         if not electrumsv_node.is_running():
             component.component_state = ComponentState.Failed
             logger.error("bitcoin daemon failed to start")
@@ -117,12 +119,14 @@ class Starters:
         return process
 
     def disable_rest_api_authentication(self):
-        path_to_config = self.app_state.electrumsv_regtest_config_dir
+        path_to_config = self.app_state.electrumsv_regtest_config_path
 
-        with open(path_to_config, "r") as f:
-            config = json.load(f)
-            config["rpcpassword"] = ""
-            config["rpcuser"] = "user"
+        config = {}
+        if path_to_config.exists():
+            with open(path_to_config, "r") as f:
+                config = json.load(f)
+        config["rpcpassword"] = ""
+        config["rpcuser"] = "user"
 
         with open(path_to_config, "w") as f:
             f.write(json.dumps(config, indent=4))
@@ -175,7 +179,7 @@ class Starters:
             endpoint="http://127.0.0.1:9999",
             component_state=ComponentState.NONE,
             location=str(self.app_state.electrumsv_regtest_dir),
-            metadata={"config": str(self.app_state.electrumsv_regtest_config_dir)},
+            metadata={"config": str(self.app_state.electrumsv_regtest_config_path)},
             logging_path=str(self.app_state.electrumsv_data_dir.joinpath("logs")),
         )
 
