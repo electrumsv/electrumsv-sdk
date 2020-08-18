@@ -91,10 +91,8 @@ class AppState:
         self.electrumsv_dir = electrumsv_dir
         self.electrumsv_data_dir = self.electrumsv_dir.joinpath("electrum_sv_data")
         self.electrumsv_regtest_dir = self.electrumsv_data_dir.joinpath("regtest")
-        self.electrumsv_regtest_dir.mkdir(exist_ok=True, parents=True)
         self.electrumsv_regtest_config_path = self.electrumsv_regtest_dir.joinpath("config")
         self.electrumsv_regtest_wallets_dir = self.electrumsv_regtest_dir.joinpath("wallets")
-        self.electrumsv_regtest_wallets_dir.mkdir(exist_ok=True)
         self.electrumsv_requirements_path = (
             self.electrumsv_dir.joinpath("contrib")
             .joinpath("deterministic-build")
