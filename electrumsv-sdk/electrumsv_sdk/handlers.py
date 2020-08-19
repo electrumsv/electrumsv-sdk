@@ -131,6 +131,21 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.STOP:
             return
 
+        if parsed_args.node:
+            self.app_state.stop_set.add(ComponentName.NODE)
+
+        if parsed_args.ex:
+            self.app_state.stop_set.add(ComponentName.ELECTRUMX)
+
+        if parsed_args.esv:
+            self.app_state.stop_set.add(ComponentName.ELECTRUMSV)
+
+        if parsed_args.idx:
+            self.app_state.stop_set.add(ComponentName.INDEXER)
+
+        if parsed_args.monitor:
+            self.app_state.stop_set.add(ComponentName.STATUS_MONITOR)
+
     def handle_reset_args(self, parsed_args):
         """takes no arguments"""
         if not self.app_state.NAMESPACE == self.app_state.RESET:

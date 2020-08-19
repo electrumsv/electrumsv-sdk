@@ -230,6 +230,7 @@ class ArgParser:
         stop_parser.add_argument("--ex", action="store_true", help="stop electrumx")
         stop_parser.add_argument("--esv", action="store_true", help="stop electrumsv")
         stop_parser.add_argument("--idx", action="store_true", help="stop indexer")
+        stop_parser.add_argument("--monitor", action="store_true", help="stop status monitor")
         stop_parser.add_argument("--extapp", action="store_true", help="stop extension app")
         return stop_parser
 
