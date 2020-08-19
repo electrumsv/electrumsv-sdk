@@ -7,6 +7,8 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+
+import psutil
 import requests
 from electrumsv_node import electrumsv_node
 
@@ -41,7 +43,6 @@ def make_bash_file(filename, commandline_string_split, env_vars):
         for subcmd in commandline_string_split:
             f.write(f"{subcmd}" + " ")
         f.write("\n")
-        f.write('read -s -n 1 -p "Press any key to continue" . . .\n')
         f.write("exit")
 
 
@@ -58,7 +59,9 @@ def make_esv_daemon_script(esv_script, electrumsv_env_vars):
 
     elif sys.platform in ["linux", "darwin"]:
         commandline_string_split = shlex.split(commandline_string, posix=1)
-        make_bash_file("electrumsv.sh", commandline_string_split, electrumsv_env_vars)
+        filename = "electrumsv.sh"
+        make_bash_file(filename, commandline_string_split, electrumsv_env_vars)
+        os.system(f'chmod 777 {filename}')
 
 
 def make_esv_gui_script(esv_script, electrumsv_env_vars):
@@ -73,7 +76,9 @@ def make_esv_gui_script(esv_script, electrumsv_env_vars):
 
     elif sys.platform in ["linux", "darwin"]:
         commandline_string_split = shlex.split(commandline_string, posix=1)
+        filename = "electrumsv-gui.sh"
         make_bash_file("electrumsv-gui.sh", commandline_string_split, electrumsv_env_vars)
+        os.system(f'chmod 777 {filename}')
 
 
 def get_str_datetime():
@@ -143,3 +148,27 @@ def cast_str_int_args_to_int(node_args):
     for i in int_indices:
         node_args[i] = int(node_args[i])
     return node_args
+
+
+def trace_pid(command):
+    """
+    Linux workaround:
+    - gnome-terminal only ever returns back an ephemeral pid and makes it basically impossible to retrieve
+    the pid of spawned tasks inside of the new window.
+
+    Workaround adapted from:
+    'https://stackoverflow.com/questions/55880659/
+    get-process-id-of-command-executed-inside-terminal-in-python-subprocess'
+    """
+    processes = []
+    for p in psutil.process_iter():
+        try:
+            process_name = p.name()
+            if command.stem in process_name:
+                processes.append(p.pid)
+        except Exception:
+            pass
+    processes.sort()
+    # take highest pid number (most recently allocated) if there are multiple instances
+    process_handle = psutil.Process(processes[-1])
+    return process_handle

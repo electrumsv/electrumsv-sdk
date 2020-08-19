@@ -54,7 +54,9 @@ class InstallTools:
             make_bat_file("electrumx.bat", commandline_string_split, electrumx_env_vars)
         elif sys.platform in ["linux", "darwin"]:
             commandline_string_split = shlex.split(commandline_string, posix=1)
+            filename = "electrumx.sh"
             make_bash_file("electrumx.sh", commandline_string_split, electrumx_env_vars)
+            os.system(f"chmod 777 {filename}")
 
     def generate_run_script_status_monitor(self):
         os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
@@ -69,7 +71,9 @@ class InstallTools:
             make_bat_file("status_monitor.bat", commandline_string_split, {})
         elif sys.platform in ["linux", "darwin"]:
             commandline_string_split = shlex.split(commandline_string, posix=1)
-            make_bash_file("status_monitor.sh", commandline_string_split, {})
+            filename = "status_monitor.sh"
+            make_bash_file(filename, commandline_string_split, {})
+            os.system(f'chmod 777 {filename}')
 
     def install_electrumsv(self, url, branch):
         # Note - this is only so that it works "out-of-the-box". But for development
@@ -80,12 +84,11 @@ class InstallTools:
             subprocess.run(f"git clone {url}", shell=True, check=True)
             checkout_branch(branch)
             subprocess.run(
-                f"{sys.executable} -m pip install -r {self.app_state.electrumsv_requirements_path}"
-            )
+                f"{sys.executable} -m pip install -r {self.app_state.electrumsv_requirements_path}",
+                shell=True, check=True)
             subprocess.run(
-                f"{sys.executable} -m pip install -r "
-                f"{self.app_state.electrumsv_binary_requirements_path} "
-            )
+                f"{sys.executable} -m pip install -r {self.app_state.electrumsv_binary_requirements_path} ",
+                shell=True, check=True)
         self.generate_run_scripts_electrumsv()
 
     def install_electrumx(self, url, branch):
