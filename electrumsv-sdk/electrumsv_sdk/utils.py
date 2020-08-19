@@ -8,7 +8,7 @@ import sys
 import time
 from pathlib import Path
 import requests
-
+from electrumsv_node import electrumsv_node
 
 logger = logging.getLogger("utils")
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -82,18 +82,11 @@ def get_str_datetime():
 
 def topup_wallet():
     logger.debug("topping up wallet...")
-    payload = json.dumps(
-        {
-            "jsonrpc": "2.0",
-            "method": "sendtoaddress",
-            "params": ["mwv1WZTsrtKf3S9mRQABEeMaNefLbQbKpg", 25],
-            "id": 0,
-        }
-    )
-    result = requests.post("http://rpcuser:rpcpassword@127.0.0.1:18332", data=payload)
-    result.raise_for_status()
-    logger.debug(result.json())
-    logger.debug(f"topped up wallet with 25 coins")
+    nblocks = 1
+    toaddress = "mwv1WZTsrtKf3S9mRQABEeMaNefLbQbKpg"
+    result = electrumsv_node.call_any("generatetoaddress", nblocks, toaddress)
+    if result.status_code == 200:
+        logger.debug(f"generated {nblocks}: {result.json()['result']} to {toaddress}")
 
 
 def create_wallet():
