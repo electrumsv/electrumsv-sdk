@@ -51,9 +51,9 @@ class Controller:
         self.app_state.resetters.reset_node()
         self.app_state.resetters.reset_electrumx()
 
-        self.app_state.required_dependencies_set.add(ComponentName.NODE)
-        self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMX)
-        self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMSV)
+        self.app_state.start_set.add(ComponentName.NODE)
+        self.app_state.start_set.add(ComponentName.ELECTRUMX)
+        self.app_state.start_set.add(ComponentName.ELECTRUMSV)
         self.start()
         logger.debug("allowing time for the electrumsv daemon to boot up - standby...")
         time.sleep(7)

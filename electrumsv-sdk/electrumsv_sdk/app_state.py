@@ -79,8 +79,8 @@ class AppState:
         self.sdk_package_dir = Path(MODULE_DIR)
         self.status_monitor_dir = self.sdk_package_dir.joinpath("status_server")
 
-        self.required_dependencies_set: Set[str] = set()
-        self.processes_for_stopping_set: Set[ComponentName] = set()
+        self.start_set: Set[ComponentName] = set()
+        self.stop_set: Set[ComponentName] = set()
 
         self.node_args = None
 

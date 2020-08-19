@@ -97,29 +97,29 @@ class Handlers:
             return
 
         if parsed_args.full_stack:
-            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMSV)
-            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMX)
-            self.app_state.required_dependencies_set.add(ComponentName.NODE)
+            self.app_state.start_set.add(ComponentName.ELECTRUMSV)
+            self.app_state.start_set.add(ComponentName.ELECTRUMX)
+            self.app_state.start_set.add(ComponentName.NODE)
 
         elif parsed_args.esv_ex_node:
-            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMSV)
-            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMX)
-            self.app_state.required_dependencies_set.add(ComponentName.NODE)
+            self.app_state.start_set.add(ComponentName.ELECTRUMSV)
+            self.app_state.start_set.add(ComponentName.ELECTRUMX)
+            self.app_state.start_set.add(ComponentName.NODE)
 
         elif parsed_args.esv_idx_node:
             raise NotImplementedError("esv_idx_node mode is not supported yet")
 
         elif parsed_args.ex_node:
-            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMX)
-            self.app_state.required_dependencies_set.add(ComponentName.NODE)
+            self.app_state.start_set.add(ComponentName.ELECTRUMX)
+            self.app_state.start_set.add(ComponentName.NODE)
 
         elif parsed_args.node:
-            self.app_state.required_dependencies_set.add(ComponentName.NODE)
+            self.app_state.start_set.add(ComponentName.NODE)
 
         else:  # no args defaults to '--full_stack'
-            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMSV)
-            self.app_state.required_dependencies_set.add(ComponentName.ELECTRUMX)
-            self.app_state.required_dependencies_set.add(ComponentName.NODE)
+            self.app_state.start_set.add(ComponentName.ELECTRUMSV)
+            self.app_state.start_set.add(ComponentName.ELECTRUMX)
+            self.app_state.start_set.add(ComponentName.NODE)
 
         if parsed_args.extapp_path != "":
             raise NotImplementedError(
@@ -153,7 +153,7 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        if not ComponentName.ELECTRUMSV in self.app_state.required_dependencies_set:
+        if not ComponentName.ELECTRUMSV in self.app_state.start_set:
             print()
             print(f"{ComponentName.ELECTRUMSV} not required")
             print(f"- skipping installation of {ComponentName.ELECTRUMSV}")
@@ -181,7 +181,7 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        if not ComponentName.ELECTRUMX in self.app_state.required_dependencies_set:
+        if not ComponentName.ELECTRUMX in self.app_state.start_set:
             print()
             print(f"{ComponentName.ELECTRUMX} not required")
             print(f"-------------------------------")
@@ -210,7 +210,7 @@ class Handlers:
             return
 
         # print("handle_electrumsv_node_args")
-        if not ComponentName.NODE in self.app_state.required_dependencies_set:
+        if not ComponentName.NODE in self.app_state.start_set:
             print()
             print(f"{ComponentName.NODE} not required")
             print(f"- skipping installation of {ComponentName.NODE}")
@@ -231,7 +231,7 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        if not ComponentName.INDEXER in self.app_state.required_dependencies_set:
+        if not ComponentName.INDEXER in self.app_state.start_set:
             print()
             print(f"{ComponentName.INDEXER} not required")
             print(f"-------------------------------")

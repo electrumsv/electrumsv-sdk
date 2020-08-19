@@ -237,15 +237,15 @@ class Starters:
         procs.append(status_monitor_process.pid)
         time.sleep(1)
 
-        if ComponentName.NODE in self.app_state.required_dependencies_set:
+        if ComponentName.NODE in self.app_state.start_set:
             self.start_node()
             time.sleep(2)
 
-        if ComponentName.ELECTRUMX in self.app_state.required_dependencies_set:
+        if ComponentName.ELECTRUMX in self.app_state.start_set:
             electrumx_process = self.run_electrumx_server()
             procs.append(electrumx_process.pid)
 
-        if ComponentName.ELECTRUMSV in self.app_state.required_dependencies_set:
+        if ComponentName.ELECTRUMSV in self.app_state.start_set:
             esv_process = self.run_electrumsv_daemon()
             procs.append(esv_process.pid)
 
