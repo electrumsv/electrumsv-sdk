@@ -2,7 +2,6 @@
 import os
 from setuptools import find_packages, setup
 import sys
-from typing import List
 
 
 """
@@ -30,7 +29,7 @@ if sys.version_info[:3] < (3, 7, 8):
     sys.exit("Error: ElectrumSV requires Python version >= 3.7.8...")
 
 
-def _locate_requirements() -> List[str]:
+def _locate_requirements():
     requirement_files = [ "requirements.txt" ]
     if sys.platform == 'win32':
         requirement_files.append("requirements-win32.txt")
