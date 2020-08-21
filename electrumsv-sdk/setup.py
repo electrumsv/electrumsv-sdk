@@ -6,10 +6,6 @@ from typing import List
 
 
 """
-# on a win32 machine...
-- make sure sdk_depends dir is empty
-- make sure config.json initial state == {"is_first_run": true}
-
 py -3.7-32 .\setup.py build bdist_wheel --plat-name win32
 py -3.8-32 .\setup.py build bdist_wheel --plat-name win32
 py -3.7 .\setup.py build bdist_wheel --plat-name win-amd64
@@ -27,7 +23,7 @@ py -3.8 -m pip install electrumsv-sdk
 
 """
 
-__version__ = '0.0.13'
+__version__ = '0.0.14'
 
 
 if sys.version_info[:3] < (3, 7, 8):
@@ -62,7 +58,7 @@ setup(
     maintainer_email='roger.taylor.email@gmail.com',
     url='https://github.com/electrumsv/electrumsv-sdk',
     download_url='https://github.com/electrumsv/electrumsv-sdk/tarball/{}'.format(__version__),
-    license='MIT',
+    license='Open BSV',
     keywords=[
         'bitcoinsv',
         'bsv',
@@ -80,7 +76,6 @@ setup(
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: End Users/Desktop',
-        'License :: Open BSV',
         'Natural Language :: English',
         'Operating System :: POSIX :: Linux',
         'Operating System :: MacOS :: MacOS X',
