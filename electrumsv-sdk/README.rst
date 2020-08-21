@@ -1,7 +1,7 @@
 ElectrumSV Software Development Kit
 ===================================
 
-::
+.. code-block::
 
   Licence: The Open BSV License
   Maintainers: Roger Taylor, AustEcon
