@@ -1,6 +1,7 @@
 import json
 import logging
 import subprocess
+import sys
 
 from electrumsv_node import electrumsv_node
 
@@ -25,7 +26,10 @@ class Stoppers:
                 continue
 
             elif component["process_type"] == component_type:
-                subprocess.run(f"taskkill.exe /PID {component['pid']} /T /F")
+                if sys.platform in ("linux", "darwin"):
+                    subprocess.run(f"pkill -P {component['pid']}", shell=True)
+                else:
+                    subprocess.run(f"taskkill.exe /PID {component['pid']} /T /F")
 
     def stop(self):
         """if stop_set is empty, all processes terminate."""

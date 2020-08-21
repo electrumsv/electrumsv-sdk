@@ -7,6 +7,8 @@ import time
 import aiorpcx
 import requests
 from electrumsv_node import electrumsv_node
+from electrumsv_sdk.utils import trace_pid
+
 from .constants import STATUS_MONITOR_API
 from .status_monitor_client import StatusMonitorClient
 
@@ -20,6 +22,18 @@ class Starters:
         self.app_state = app_state
         self.component_store = ComponentStore(self.app_state)
         self.status_monitor_client = StatusMonitorClient(self.app_state)
+
+    def spawn_in_new_console(self, command):
+        if sys.platform in ('linux', 'darwin'):
+            process = subprocess.Popen(f"gnome-terminal -- {command}", shell=True,
+                                       stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            process.wait()
+            process_handle = trace_pid(command)
+        else:
+            process_handle = subprocess.Popen(
+                f"{command}", creationflags=subprocess.CREATE_NEW_CONSOLE
+            )
+        return process_handle
 
     async def is_electrumx_running(self):
         for sleep_time in (1, 2, 3):
@@ -92,9 +106,7 @@ class Starters:
         else:
             electrumx_server_script = self.app_state.run_scripts_dir.joinpath("electrumx.sh")
 
-        process = subprocess.Popen(
-            f"{electrumx_server_script}", creationflags=subprocess.CREATE_NEW_CONSOLE
-        )
+        process = self.spawn_in_new_console(electrumx_server_script)
 
         component = Component(
             pid=process.pid,
@@ -141,7 +153,10 @@ class Starters:
             f"{electrumsv_server_script}", creationflags=subprocess.CREATE_NEW_CONSOLE
         )
         time.sleep(7)
-        subprocess.run(f"taskkill.exe /PID {process.pid} /T /F")
+        if sys.platform in ("linux", "darwin"):
+            subprocess.run(f"pkill -P {process.pid}", shell=True)
+        else:
+            subprocess.run(f"taskkill.exe /PID {process.pid} /T /F")
 
     def run_electrumsv_daemon(self, is_first_run=False):
         """Todo - this currently uses ugly hacks with starting and stopping the ESV wallet
@@ -153,7 +168,6 @@ class Starters:
             electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.bat")
         else:
             electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.sh")
-
         try:
             self.disable_rest_api_authentication()
         except FileNotFoundError:  # is_first_run = True
@@ -162,14 +176,16 @@ class Starters:
             return self.run_electrumsv_daemon(is_first_run=True)
 
         logger.debug(f"starting RegTest electrumsv daemon...")
-        process = subprocess.Popen(
-            f"{electrumsv_server_script}", creationflags=subprocess.CREATE_NEW_CONSOLE
-        )
+        process = self.spawn_in_new_console(electrumsv_server_script)
         if is_first_run:
             time.sleep(7)
             self.app_state.resetters.reset_electrumsv_wallet()  # create first-time wallet
             time.sleep(1)
-            subprocess.run(f"taskkill.exe /PID {process.pid} /T /F", check=True)
+
+            if sys.platform in ("linux", "darwin"):
+                subprocess.run(f"pkill -P {process.pid}", shell=True)
+            else:
+                subprocess.run(f"taskkill.exe /PID {process.pid} /T /F", check=True)
             return self.run_electrumsv_daemon(is_first_run=False)
 
         component = Component(
@@ -202,9 +218,7 @@ class Starters:
             status_monitor_script = self.app_state.run_scripts_dir.joinpath("status_monitor.sh")
 
         logger.debug(f"starting status monitor daemon...")
-        process = subprocess.Popen(
-            f"{status_monitor_script}", creationflags=subprocess.CREATE_NEW_CONSOLE
-        )
+        process = self.spawn_in_new_console(status_monitor_script)
 
         component = Component(
             pid=process.pid,
@@ -231,6 +245,8 @@ class Starters:
         print()
         print()
         print("running stack...")
+
+        open(self.app_state.electrumsv_sdk_data_dir / "spawned_pids", 'w').close()
 
         procs = []
         status_monitor_process = self.start_status_monitor()
