@@ -12,15 +12,10 @@ jobs:
 - job: macos
   pool: {vmImage: 'macOS-10.15'}
   steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: 3.8
     - script: |
-        export "CIBW_BUILD=cp37-macosx_x86_64"
-        export CIBW_BUILD_VERBOSITY=1
         python3 -m pip install --upgrade pip
-        python3 -m pip install cibuildwheel==1.5.5
-        python3 -m cibuildwheel --output-dir ../wheelhouse .
+        python3 -m pip install wheel
+        python3 setup.py build bdist_wheel --plat-name macosx_10_5_x86_64 --dist-dir ../wheelhouse
       workingDirectory: electrumsv-sdk/
     - task: PublishBuildArtifacts@1
       inputs:
@@ -49,14 +44,11 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.8
+        versionSpec: 3.7
     - bash: |
         python3 -m pip install --upgrade pip
-        export "CIBW_BUILD=cp37-manylinux_x86_64 cp38-manylinux_x86_64"
-        export CIBW_BUILD_VERBOSITY=1
-        export CIBW_MANYLINUX_X86_64_IMAGE=quay.io/pypa/manylinux1_x86_64:latest
-        python3 -m pip install cibuildwheel==1.5.5
-        python3 -m cibuildwheel --output-dir ../wheelhouse .
+        python3 -m pip install wheel
+        python3 setup.py build bdist_wheel --plat-name manylinux2014_x86_64 --dist-dir ../wheelhouse
       workingDirectory: electrumsv-sdk/
     - task: PublishBuildArtifacts@1
       inputs:

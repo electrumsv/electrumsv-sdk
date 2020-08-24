@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 import os
+
+import setuptools
 from setuptools import find_packages, setup
+from setuptools.command.install import install
+from setuptools.dist import Distribution
 import sys
 
 
@@ -23,10 +27,6 @@ py -3.8 -m pip install electrumsv-sdk
 """
 
 __version__ = '0.0.15'
-
-
-if sys.version_info[:3] < (3, 7, 8):
-    sys.exit("Error: ElectrumSV requires Python version >= 3.7.8...")
 
 
 def _locate_requirements():

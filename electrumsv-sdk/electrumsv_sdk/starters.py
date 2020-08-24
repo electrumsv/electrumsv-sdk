@@ -262,6 +262,9 @@ class Starters:
             procs.append(electrumx_process.pid)
 
         if ComponentName.ELECTRUMSV in self.app_state.start_set:
+            if sys.version_info[:3] < (3, 7, 8):
+                sys.exit("Error: ElectrumSV requires Python version >= 3.7.8...")
+
             esv_process = self.run_electrumsv_daemon()
             procs.append(esv_process.pid)
 
