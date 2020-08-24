@@ -22,7 +22,7 @@ py -3.8 -m pip install electrumsv-sdk
 
 """
 
-__version__ = '0.0.14'
+__version__ = '0.0.15'
 
 
 if sys.version_info[:3] < (3, 7, 8):
