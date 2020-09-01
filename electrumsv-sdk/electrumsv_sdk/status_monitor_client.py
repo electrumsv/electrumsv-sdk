@@ -2,6 +2,7 @@ import json
 import logging
 
 import requests
+import urllib3
 
 from .constants import STATUS_MONITOR_API
 from .components import Component
@@ -17,8 +18,9 @@ class StatusMonitorClient:
             result = requests.get(STATUS_MONITOR_API + "/get_status")
             result.raise_for_status()
             return json.loads(result.json())
-        except requests.exceptions.HTTPError as e:
+        except requests.exceptions.ConnectionError as e:
             self.logger.error("problem fetching status: reason: " + str(e))
+            return False
 
     def update_status(self, component: Component):
         try:

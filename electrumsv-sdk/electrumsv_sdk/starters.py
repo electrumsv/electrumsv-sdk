@@ -7,6 +7,7 @@ import time
 import aiorpcx
 import requests
 from electrumsv_node import electrumsv_node
+
 from electrumsv_sdk.utils import trace_pid
 
 from .constants import STATUS_MONITOR_API
@@ -68,8 +69,7 @@ class Starters:
             result = requests.get(STATUS_MONITOR_API + "/get_status")
             result.raise_for_status()
             return True
-        except Exception as e:
-            logger.error("problem fetching status: reason: " + str(e))
+        except requests.exceptions.ConnectionError as e:
             return False
 
     def start_node(self):
@@ -249,9 +249,12 @@ class Starters:
         open(self.app_state.electrumsv_sdk_data_dir / "spawned_pids", 'w').close()
 
         procs = []
-        status_monitor_process = self.start_status_monitor()
-        procs.append(status_monitor_process.pid)
-        time.sleep(1)
+
+        is_running = self.is_status_monitor_running()
+        if not is_running:
+            status_monitor_process = self.start_status_monitor()
+            procs.append(status_monitor_process.pid)
+            time.sleep(1)
 
         if ComponentName.NODE in self.app_state.start_set:
             self.start_node()

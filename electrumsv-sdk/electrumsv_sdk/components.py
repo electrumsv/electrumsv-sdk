@@ -30,7 +30,6 @@ import enum
 import json
 import logging
 import os
-from pathlib import Path
 from typing import Optional, List
 
 from electrumsv_sdk.utils import get_str_datetime
@@ -46,6 +45,14 @@ class ComponentName:
     ELECTRUMX = "electrumx"
     ELECTRUMSV = "electrumsv"
     INDEXER = "indexer"
+
+
+class ComponentOptions:
+    NEW = "new"
+    GUI = "gui"
+    ID = "id"
+    REPO = "repo"
+    BRANCH = "branch"
 
 
 class ComponentType(enum.IntEnum):

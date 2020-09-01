@@ -2,7 +2,7 @@ import logging
 import subprocess
 from pathlib import Path
 
-from .components import ComponentName
+from .components import ComponentName, ComponentOptions
 from .installers import Installers
 
 logger = logging.getLogger("install-handlers")
@@ -29,16 +29,13 @@ class Handlers:
         self.installer = Installers(self.app_state)
         self.controller = self.app_state.controller
 
-    def validate_only_one_mode(self, parsed_args):
-        modes_selected = []
-        count_true = 0
-        for cmd, mode in parsed_args.__dict__.items():
-            if mode:
-                modes_selected.append(cmd)
-                count_true += 1
-        if count_true not in [0, 1]:
-            return False, modes_selected
-        return True, modes_selected
+    def validate_flags(self, parsed_args):
+        flags_selected = [flag for flag, value in parsed_args.__dict__.items()
+                          if value not in {"", None, False}]
+        if all(flag in {'new', 'gui', 'id', 'branch', 'repo'} for flag in
+               parsed_args.__dict__):
+            return True, flags_selected
+        return False, flags_selected
 
     def handle_remote_repo(self, package_name, url, branch):
         print(f"- installing remote dependency for {package_name} at {url}")
@@ -91,60 +88,37 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        valid_input, modes_selected = self.validate_only_one_mode(parsed_args)
+        valid_input, flags = self.validate_flags(parsed_args)
         if not valid_input:
-            print(f"You must only select ONE mode of operation. You selected '{modes_selected}'")
+            print(f"valid flags include: ['--new', '--gui', '--id', --branch, --repo]. You "
+                  f"selected '{flags}'")
             return
 
-        if parsed_args.full_stack:
-            self.app_state.start_set.add(ComponentName.ELECTRUMSV)
-            self.app_state.start_set.add(ComponentName.ELECTRUMX)
-            self.app_state.start_set.add(ComponentName.NODE)
+        self.app_state.start_options[ComponentOptions.NEW] = parsed_args.new
+        self.app_state.start_options[ComponentOptions.GUI] = parsed_args.gui
+        self.app_state.start_options[ComponentOptions.ID] = id = parsed_args.id
+        self.app_state.start_options[ComponentOptions.REPO] = repo = parsed_args.repo
+        self.app_state.start_options[ComponentOptions.BRANCH] = branch = parsed_args.branch
 
-        elif parsed_args.esv_ex_node:
-            self.app_state.start_set.add(ComponentName.ELECTRUMSV)
-            self.app_state.start_set.add(ComponentName.ELECTRUMX)
-            self.app_state.start_set.add(ComponentName.NODE)
+        if parsed_args.new:
+            logger.debug("new flag=set")
 
-        elif parsed_args.esv_idx_node:
-            raise NotImplementedError("esv_idx_node mode is not supported yet")
+        if parsed_args.gui:
+            logger.debug("gui flag=set")
 
-        elif parsed_args.ex_node:
-            self.app_state.start_set.add(ComponentName.ELECTRUMX)
-            self.app_state.start_set.add(ComponentName.NODE)
+        if id != "":
+            logger.debug(f"id flag={parsed_args.id}")
 
-        elif parsed_args.node:
-            self.app_state.start_set.add(ComponentName.NODE)
+        if repo != "":
+            logger.debug(f"repo flag={self.app_state.start_options[ComponentOptions.REPO]}")
 
-        else:  # no args defaults to '--full_stack'
-            self.app_state.start_set.add(ComponentName.ELECTRUMSV)
-            self.app_state.start_set.add(ComponentName.ELECTRUMX)
-            self.app_state.start_set.add(ComponentName.NODE)
+        if branch != "":
+            logger.debug(f"branch flag={parsed_args.branch}")
 
-        if parsed_args.extapp_path != "":
-            raise NotImplementedError(
-                "loading extapps on the electrumsv daemon is " "not supported yet"
-            )
-
-    def handle_stop_args(self, parsed_args):
+    def handle_stop_args(self, _parsed_args):
         """takes no arguments"""
         if not self.app_state.NAMESPACE == self.app_state.STOP:
             return
-
-        if parsed_args.node:
-            self.app_state.stop_set.add(ComponentName.NODE)
-
-        if parsed_args.ex:
-            self.app_state.stop_set.add(ComponentName.ELECTRUMX)
-
-        if parsed_args.esv:
-            self.app_state.stop_set.add(ComponentName.ELECTRUMSV)
-
-        if parsed_args.idx:
-            self.app_state.stop_set.add(ComponentName.INDEXER)
-
-        if parsed_args.monitor:
-            self.app_state.stop_set.add(ComponentName.STATUS_MONITOR)
 
     def handle_reset_args(self, parsed_args):
         """takes no arguments"""
@@ -157,65 +131,54 @@ class Handlers:
             return
         self.app_state.node_args = parsed_args
 
-    def handle_status_args(self, parsed_args):
+    def handle_status_args(self, _parsed_args):
         """takes no arguments"""
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
         self.installer.status_monitor()
 
-    def handle_electrumsv_args(self, parsed_args):
+    def handle_electrumsv_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        if not ComponentName.ELECTRUMSV in self.app_state.start_set:
-            print()
-            print(f"{ComponentName.ELECTRUMSV} not required")
-            print(f"- skipping installation of {ComponentName.ELECTRUMSV}")
+        if not ComponentName.ELECTRUMSV in self.app_state.start_set and \
+                len(self.app_state.start_set) != 0:
             return
-        print()
-        print(f"{ComponentName.ELECTRUMSV} is required")
-        print(f"-------------------------------")
 
-        # dapp_path
-        if parsed_args.dapp_path != "":
-            raise NotImplementedError("loading dapps on the electrumsv daemon is not supported yet")
+        repo = self.app_state.start_options[ComponentOptions.REPO]
+        branch = self.app_state.start_options[ComponentOptions.BRANCH]
 
-        if parsed_args.repo == "":  # default
-            parsed_args.repo = "https://github.com/electrumsv/electrumsv.git"
+        if self.app_state.start_options[ComponentOptions.REPO] == "":  # default
+            repo = "https://github.com/electrumsv/electrumsv.git"
             self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
-            self.handle_remote_repo(ComponentName.ELECTRUMSV, parsed_args.repo, parsed_args.branch)
-        elif parsed_args.repo.startswith("https://"):
+            self.handle_remote_repo(ComponentName.ELECTRUMSV, repo, branch)
+        elif self.app_state.start_options[ComponentOptions.REPO].startswith("https://"):
             self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
-            self.handle_remote_repo(ComponentName.ELECTRUMSV, parsed_args.repo, parsed_args.branch)
+            self.handle_remote_repo(ComponentName.ELECTRUMSV, repo, branch)
         else:
-            self.app_state.set_electrumsv_path(Path(parsed_args.repo))
-            self.handle_local_repo(ComponentName.ELECTRUMSV, parsed_args.repo, parsed_args.branch)
+            self.app_state.set_electrumsv_path(Path(repo))
+            self.handle_local_repo(ComponentName.ELECTRUMSV, repo, branch)
 
-    def handle_electrumx_args(self, parsed_args):
+    def handle_electrumx_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        if not ComponentName.ELECTRUMX in self.app_state.start_set:
-            print()
-            print(f"{ComponentName.ELECTRUMX} not required")
-            print(f"-------------------------------")
-            print(f"- skipping installation of {ComponentName.NODE}")
+        if not ComponentName.ELECTRUMX in self.app_state.start_set and \
+                len(self.app_state.start_set) != 0:
             return
 
-        print()
-        print(f"{ComponentName.ELECTRUMX} is required")
-        print(f"-------------------------------")
-
-        if parsed_args.repo == "":  # default
-            parsed_args.repo = "https://github.com/kyuupichan/electrumx.git"
-            self.handle_remote_repo(ComponentName.ELECTRUMX, parsed_args.repo, parsed_args.branch)
-        elif parsed_args.repo.startswith("https://"):
-            self.handle_remote_repo(ComponentName.ELECTRUMX, parsed_args.repo, parsed_args.branch)
+        repo = self.app_state.start_options[ComponentOptions.REPO]
+        branch = self.app_state.start_options[ComponentOptions.BRANCH]
+        if repo == "":  # default
+            repo = "https://github.com/kyuupichan/electrumx.git"
+            self.handle_remote_repo(ComponentName.ELECTRUMX, repo, branch)
+        elif repo.startswith("https://"):
+            self.handle_remote_repo(ComponentName.ELECTRUMX, repo, branch)
         else:
-            self.handle_local_repo(ComponentName.ELECTRUMX, parsed_args.repo, parsed_args.branch)
+            self.handle_local_repo(ComponentName.ELECTRUMX, repo, branch)
 
-    def handle_electrumsv_node_args(self, parsed_args):
+    def handle_electrumsv_node_args(self, _parsed_args):
         """not to be confused with node namespace:
         > electrumsv-sdk node <rpc commands>
         This is for the subcommand of the 'start' namespace:
@@ -224,45 +187,41 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        # print("handle_electrumsv_node_args")
-        if not ComponentName.NODE in self.app_state.start_set:
-            print()
-            print(f"{ComponentName.NODE} not required")
-            print(f"- skipping installation of {ComponentName.NODE}")
+        if not ComponentName.NODE in self.app_state.start_set and \
+                len(self.app_state.start_set) != 0:
             return
-        print()
-        print(f"{ComponentName.NODE} is required")
-        print(f"-------------------------------")
 
-        if parsed_args.repo == "":  # default
-            parsed_args.repo = "https://github.com/electrumsv/electrumsv_node.git"
-            self.handle_remote_repo(ComponentName.NODE, parsed_args.repo, parsed_args.branch)
-        elif parsed_args.repo.startswith("https://"):
-            self.handle_remote_repo(ComponentName.NODE, parsed_args.repo, parsed_args.branch)
+        repo = self.app_state.start_options[ComponentOptions.REPO]
+        branch = self.app_state.start_options[ComponentOptions.BRANCH]
+        if repo == "":  # default
+            repo = "https://github.com/electrumsv/electrumsv_node.git"
+            self.handle_remote_repo(ComponentName.NODE, repo, branch)
+        elif repo.startswith("https://"):
+            self.handle_remote_repo(ComponentName.NODE, repo, branch)
         else:
-            self.handle_local_repo(ComponentName.NODE, parsed_args.repo, parsed_args.branch)
+            self.handle_local_repo(ComponentName.NODE, repo, branch)
 
-    def handle_indexer_args(self, parsed_args):
+    def handle_indexer_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
         if not ComponentName.INDEXER in self.app_state.start_set:
-            print()
-            print(f"{ComponentName.INDEXER} not required")
-            print(f"-------------------------------")
-            print(f"- skipping installation of {ComponentName.INDEXER}")
             return
-        print()
-        print(f"{ComponentName.INDEXER} is required")
+
         raise NotImplementedError("electrumsv_indexer installation is not supported yet.")
 
-        if parsed_args.repo == "":  # default
-            parsed_args.repo = "????"
-            self.handle_remote_repo(ComponentName.INDEXER, parsed_args.repo, parsed_args.branch)
+        repo = self.app_state.start_options[ComponentOptions.REPO]
+        branch = self.app_state.start_options[ComponentOptions.BRANCH]
+        if repo == "":  # default
+            repo = "????"
+            self.handle_remote_repo(ComponentName.INDEXER, repo, branch)
         elif parsed_args.repo.startswith("https://"):
-            self.handle_remote_repo(ComponentName.INDEXER, parsed_args.repo, parsed_args.branch)
+            self.handle_remote_repo(ComponentName.INDEXER, repo, branch)
         else:
-            self.handle_local_repo(ComponentName.INDEXER, parsed_args.repo, parsed_args.branch)
+            self.handle_local_repo(ComponentName.INDEXER, repo, branch)
+
+    def handle_status_monitor_args(self, _parsed_args):
+        return
 
     # ----- HANDLERS ENTRY POINT ----- #
 

@@ -59,6 +59,7 @@ class AppState:
         self.subcmd_map: Dict[str, argparse.ArgumentParser] = {}  # cmd_name: ArgumentParser
         self.subcmd_raw_args_map: Dict[str, List[str]] = {}  # cmd_name: raw arguments
         self.subcmd_parsed_args_map = {}  # cmd_name: parsed arguments
+        self.component_args = []  # e.g. store arguments to pass to the electrumsv's cli interface
 
         self.depends_dir = self.electrumsv_sdk_data_dir.joinpath("sdk_depends")
         self.run_scripts_dir = self.electrumsv_sdk_data_dir.joinpath("run_scripts")
@@ -80,6 +81,7 @@ class AppState:
         self.status_monitor_dir = self.sdk_package_dir.joinpath("status_server")
 
         self.start_set: Set[ComponentName] = set()
+        self.start_options: Dict[ComponentName] = {}
         self.stop_set: Set[ComponentName] = set()
 
         self.node_args = None

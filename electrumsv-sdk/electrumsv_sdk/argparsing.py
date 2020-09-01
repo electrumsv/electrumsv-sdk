@@ -8,16 +8,14 @@ Fortunately the help menu displays as expected so does not deviate from the stan
 
 import argparse
 import logging
+import sys
 import textwrap
 from argparse import RawTextHelpFormatter
 
 from electrumsv_sdk.components import ComponentName
+from electrumsv_sdk.esv_argparsing_facade import extend_esv_parser
 
 logger = logging.getLogger("argparsing")
-
-
-class InvalidInput(Exception):
-    pass
 
 
 class ArgParser:
@@ -47,18 +45,18 @@ class ArgParser:
             self.app_state.NAMESPACE = self.app_state.STATUS
             subcommand_indices[self.app_state.STATUS] = []
         elif arg == "--help":
-            pass
+            subcommand_indices[self.app_state.TOP_LEVEL].append(0)
         else:
-            raise InvalidInput(
-                "First argument must be one of: [start, stop, reset, node, " "status, --help]"
-            )
+            print("First argument must be one of: "
+                "[start, stop, reset, node, " "status, --help]")
+            sys.exit()
         return cur_cmd_name, subcommand_indices
 
     def manual_argparsing(self, args):
         """manually iterate through sys.argv and feed arguments to either:
         a) parent ArgumentParser
         b) child ArgumentParsers (aka subcommands)"""
-
+        component_selected = False
         args.pop(0)
 
         subcommand_indices = {}  # cmd_name: [index_arg1, index_arg2]
@@ -71,40 +69,65 @@ class ArgParser:
                 cur_cmd_name, subcommand_indices = self.parse_first_arg(
                     arg, cur_cmd_name, subcommand_indices
                 )
+                continue
 
-            if self.app_state.NAMESPACE == self.app_state.TOP_LEVEL:
+            elif self.app_state.NAMESPACE == self.app_state.TOP_LEVEL:
                 subcommand_indices[self.app_state.TOP_LEVEL].append(index)
 
-            if self.app_state.NAMESPACE == self.app_state.START:
-                # 'start' top-level arguments
-                if arg.startswith("--"):
+            elif self.app_state.NAMESPACE == self.app_state.START:
+                # <start options>
+                if arg.startswith("--") and not component_selected:
                     subcommand_indices[cur_cmd_name].append(index)
+                    continue
 
-                # new child ArgumentParser
-                if not arg.startswith("-"):
+                # <component name>
+                elif not arg.startswith("-") and not component_selected:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
+                    if arg in ComponentName.__dict__.values():
+                        self.app_state.start_set.add(arg)
+                    else:
+                        print("must select from: node, electrumx, electrumsv, indexer, "
+                              "status_monitor]")
+                        sys.exit()
+                    component_selected = True
+                    continue
 
-                # child ArgumentParser arguments
-                if arg.startswith("-") and not arg.startswith("--"):
+                # <arguments to pass to component> (e.g. to standard electrumsv cli interface)
+                elif component_selected:
+                    self.app_state.component_args.append(arg)
+                    continue
+
+            elif self.app_state.NAMESPACE == self.app_state.STOP:
+                # <stop options>
+                if arg.startswith("--") and not component_selected:
                     subcommand_indices[cur_cmd_name].append(index)
+                    continue
 
-            if self.app_state.NAMESPACE == self.app_state.STOP:
-                if arg.startswith("--"):
-                    subcommand_indices[cur_cmd_name].append(index)
+                # <component name>
+                if not arg.startswith("-") and not component_selected:
+                    cur_cmd_name = arg
+                    subcommand_indices[cur_cmd_name] = []
+                    if arg in ComponentName.__dict__.values():
+                        self.app_state.stop_set.add(arg)
+                    else:
+                        print("must select from: node, electrumx, electrumsv, indexer, "
+                              "status_monitor]")
+                        sys.exit()
+                    component_selected = True
+                    continue
 
-            if self.app_state.NAMESPACE == self.app_state.RESET:
+            elif self.app_state.NAMESPACE == self.app_state.RESET:
                 pass
 
-            if self.app_state.NAMESPACE == self.app_state.NODE:
+            elif self.app_state.NAMESPACE == self.app_state.NODE:
                 if index != 0:
                     subcommand_indices[cur_cmd_name].append(index)
 
-            if self.app_state.NAMESPACE == self.app_state.STATUS:
+            elif self.app_state.NAMESPACE == self.app_state.STATUS:
                 pass
 
             # print(f"subcommand_indices={subcommand_indices}, index={index}, arg={arg}")
-
         self.feed_to_argparsers(args, subcommand_indices)
 
     def update_subcommands_args_map(self, args, subcommand_indices):
@@ -126,83 +149,48 @@ class ArgParser:
             self.app_state.subcmd_parsed_args_map[cmd_name] = parsed_args
 
     def add_subparser_electrumsv(self, subparsers):
-        electrumsv = subparsers.add_parser(ComponentName.ELECTRUMSV, help="specify repo and branch")
-        electrumsv.add_argument(
-            "-repo",
-            type=str,
-            default="",
-            help="electrumsv git repo as either an https://github.com url or a "
-            "local git repo path e.g. G:/electrumsv",
-        )
-        electrumsv.add_argument(
-            "-branch", type=str, default="", help="electrumsv git repo branch (optional)",
-        )
-        electrumsv.add_argument(
-            "-dapp",
-            default="",
-            dest="dapp_path",
-            type=str,
-            help="load and launch a daemon app plugin on the electrumsv daemon",
-        )
+        electrumsv = subparsers.add_parser(ComponentName.ELECTRUMSV, help="start electrumsv")
+        extend_esv_parser(electrumsv)
         return subparsers, electrumsv
 
+    def add_subparser_electrumsv_node(self, subparsers):
+        node = subparsers.add_parser(ComponentName.NODE, help="start node")
+        return subparsers, node
+
     def add_subparser_electrumx(self, subparsers):
-        electrumx = subparsers.add_parser(ComponentName.ELECTRUMX, help="specify repo and branch")
-        electrumx.add_argument(
-            "-repo",
-            type=str,
-            default="",
-            help="electrumx git repo as either an https://github.com url or a "
-            "local git repo path e.g. G:/electrumx",
-        )
-        electrumx.add_argument(
-            "-branch", type=str, default="", help="electrumx git repo branch (optional)"
-        )
+        electrumx = subparsers.add_parser(ComponentName.ELECTRUMX, help="start electrumx")
         return subparsers, electrumx
 
     def add_subparser_indexer(self, subparsers):
-        electrumsv_indexer = subparsers.add_parser(
-            ComponentName.INDEXER, help="specify repo and branch"
-        )
-        electrumsv_indexer.add_argument(
-            "-repo",
-            type=str,
-            default="",
-            help="electrumsv_indexer git repo as either an https://github.com url or a "
-            "local git repo path e.g. G:/electrumsv_indexer",
-        )
-        electrumsv_indexer.add_argument(
-            "-branch", type=str, default="", help="electrumsv_indexer git repo branch (optional)"
-        )
-        return subparsers, electrumsv_indexer
+        electrumsv = subparsers.add_parser(ComponentName.INDEXER, help="start indexer")
+        return subparsers, electrumsv
 
-    def add_subparser_node(self, subparsers):
-        electrumsv_node = subparsers.add_parser(ComponentName.NODE, help="specify repo and branch")
-        electrumsv_node.add_argument(
-            "-repo",
-            type=str,
-            default="",
-            help="electrumsv_node git repo as either an https://github.com url or a "
-            "local git repo path e.g. G:/electrumsv_node",
-        )
-        electrumsv_node.add_argument(
-            "-branch", type=str, default="", help="electrumsv_node git repo branch (optional)",
-        )
-        return subparsers, electrumsv_node
+    def add_subparser_status_monitor(self, subparsers):
+        status_monitor = subparsers.add_parser(ComponentName.STATUS_MONITOR,
+            help="start status monitor")
+        return subparsers, status_monitor
 
     def add_start_parser_args(self, start_parser):
-        start_parser.add_argument("--full-stack", action="store_true", help="")
-        start_parser.add_argument("--node", action="store_true", help="")
-        start_parser.add_argument("--ex-node", action="store_true", help="")
-        start_parser.add_argument("--esv-ex-node", action="store_true", help="")
-        start_parser.add_argument("--esv-idx-node", action="store_true", help="")
+        start_parser.add_argument("--new", action="store_true", help="")
+        start_parser.add_argument("--gui", action="store_true", help="")
         start_parser.add_argument(
-            "--extapp",
-            default="",
-            dest="extapp_path",
+            "--id",
             type=str,
-            help="path to 3rd party applications. Can be specified multiple times. "
-            "For electrumsv 'daemon apps' please see electrumsv subcommand help menu",
+            default="",
+            help="human-readable identifier for component (e.g. 'worker1_esv')",
+        )
+        start_parser.add_argument(
+            "--repo",
+            type=str,
+            default="",
+            help="git repo as either an https://github.com url or a local git repo path "
+                 "e.g. G:/electrumsv (optional)",
+        )
+        start_parser.add_argument(
+            "--branch",
+            type=str,
+            default="",
+            help="git repo branch (optional)"
         )
         return start_parser
 
@@ -213,26 +201,44 @@ class ArgParser:
         subparsers = start_parser.add_subparsers(help="subcommand", required=False)
         subparsers, electrumsv = self.add_subparser_electrumsv(subparsers)
         subparsers, electrumx = self.add_subparser_electrumx(subparsers)
+        subparsers, status = self.add_subparser_status_monitor(subparsers)
+        subparsers, electrumsv_node = self.add_subparser_electrumsv_node(subparsers)
         subparsers, electrumsv_indexer = self.add_subparser_indexer(subparsers)
-        subparsers, electrumsv_node = self.add_subparser_node(subparsers)
 
         start_namespace_subcommands = [
             electrumsv,
-            electrumsv_node,
             electrumx,
+            status,
+            electrumsv_node,
             electrumsv_indexer,
         ]
         return start_parser, start_namespace_subcommands
 
     def add_stop_argparser(self, namespaces):
         stop_parser = namespaces.add_parser("stop", help="stop all spawned processes")
-        stop_parser.add_argument("--node", action="store_true", help="stop node")
-        stop_parser.add_argument("--ex", action="store_true", help="stop electrumx")
-        stop_parser.add_argument("--esv", action="store_true", help="stop electrumsv")
-        stop_parser.add_argument("--idx", action="store_true", help="stop indexer")
-        stop_parser.add_argument("--monitor", action="store_true", help="stop status monitor")
-        stop_parser.add_argument("--extapp", action="store_true", help="stop extension app")
-        return stop_parser
+        stop_parser.add_argument(
+            "--id",
+            type=str,
+            default="",
+            help="human-readable identifier for component (e.g. 'worker1_esv')",
+        )
+
+        # Stop based on ComponentType
+        subparsers = stop_parser.add_subparsers(help="subcommand", required=False)
+        electrumsv_node = subparsers.add_parser(ComponentName.NODE, help="stop node")
+        electrumx = subparsers.add_parser(ComponentName.ELECTRUMX, help="stop electrumx")
+        electrumsv = subparsers.add_parser(ComponentName.ELECTRUMSV, help="stop electrumsv")
+        electrumsv_indexer = subparsers.add_parser(ComponentName.INDEXER, help="stop indexer")
+        status = subparsers.add_parser(ComponentName.STATUS_MONITOR, help="stop status monitor")
+
+        stop_namespace_subcommands = [
+            electrumsv,
+            electrumsv_node,
+            electrumx,
+            electrumsv_indexer,
+            status,
+        ]
+        return stop_parser, stop_namespace_subcommands
 
     def add_reset_argparser(self, namespaces):
         reset_parser = namespaces.add_parser(
@@ -251,7 +257,7 @@ class ArgParser:
 
     def add_status_argparser(self, namespaces):
         status_parser = namespaces.add_parser(
-            "node", help="get a status update of SDK applications"
+            "status", help="get a status update of SDK applications"
         )
         return status_parser
 
@@ -262,7 +268,7 @@ class ArgParser:
 
         namespaces = top_level_parser.add_subparsers(help="namespaces", required=False)
         start_parser, start_namespace_subcommands = self.add_start_argparser(namespaces)
-        stop_parser = self.add_stop_argparser(namespaces)
+        stop_parser, stop_namespace_subcommands = self.add_stop_argparser(namespaces)
         reset_parser = self.add_reset_argparser(namespaces)
         node_parser = self.add_node_argparser(namespaces)
         status_parser = self.add_status_argparser(namespaces)
@@ -277,6 +283,10 @@ class ArgParser:
 
         # register subcommands second so that handlers are called in desired ordering
         for cmd in start_namespace_subcommands:
+            cmd_name = cmd.prog.split(sep=" ")[2]
+            self.app_state.subcmd_map[cmd_name] = cmd
+
+        for cmd in stop_namespace_subcommands:
             cmd_name = cmd.prog.split(sep=" ")[2]
             self.app_state.subcmd_map[cmd_name] = cmd
 
@@ -352,3 +362,13 @@ class ArgParser:
 
             """
         )
+
+    def no_start_component_selected(self, namespace, component_selected):
+        if namespace == self.app_state.START and not component_selected:
+            return False
+        return True
+
+    def no_stop_component_selected(self, namespace, component_selected):
+        if namespace == self.app_state.START and not component_selected:
+            return False
+        return True
