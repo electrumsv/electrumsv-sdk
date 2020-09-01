@@ -1,5 +1,6 @@
 import logging
 import subprocess
+import sys
 from pathlib import Path
 
 from .components import ComponentName, ComponentOptions
@@ -99,6 +100,14 @@ class Handlers:
         self.app_state.start_options[ComponentOptions.ID] = id = parsed_args.id
         self.app_state.start_options[ComponentOptions.REPO] = repo = parsed_args.repo
         self.app_state.start_options[ComponentOptions.BRANCH] = branch = parsed_args.branch
+
+        def has_startup_flags():
+            return parsed_args.new or parsed_args.gui or id != "" or repo != "" or branch != ""
+
+        if has_startup_flags():
+            if len(self.app_state.start_set) == 0:
+                print("must select a component type when specifying startup flags")
+                sys.exit()
 
         if parsed_args.new:
             logger.debug("new flag=set")

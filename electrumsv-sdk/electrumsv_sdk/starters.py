@@ -164,6 +164,11 @@ class Starters:
         1) generate the config files (so that it can be directly edited) - would be obviated by
         fixing this: https://github.com/electrumsv/electrumsv/issues/111
         2) newly created wallet doesn't seem to be fully useable until after stopping the daemon."""
+        if not electrumsv_node.is_running():
+            print()
+            print("electrumsv in RegTest mode requires a bitcoin node to be running... failed to "
+                  "connect")
+            sys.exit()
         if sys.platform == "win32":
             electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.bat")
         else:
@@ -256,15 +261,18 @@ class Starters:
             procs.append(status_monitor_process.pid)
             time.sleep(1)
 
-        if ComponentName.NODE in self.app_state.start_set:
+        if ComponentName.NODE in self.app_state.start_set \
+                or len(self.app_state.start_set) == 0:
             self.start_node()
             time.sleep(2)
 
-        if ComponentName.ELECTRUMX in self.app_state.start_set:
+        if ComponentName.ELECTRUMX in self.app_state.start_set \
+                or len(self.app_state.start_set) == 0:
             electrumx_process = self.run_electrumx_server()
             procs.append(electrumx_process.pid)
 
-        if ComponentName.ELECTRUMSV in self.app_state.start_set:
+        if ComponentName.ELECTRUMSV in self.app_state.start_set \
+                or len(self.app_state.start_set) == 0:
             if sys.version_info[:3] < (3, 7, 8):
                 sys.exit("Error: ElectrumSV requires Python version >= 3.7.8...")
 
