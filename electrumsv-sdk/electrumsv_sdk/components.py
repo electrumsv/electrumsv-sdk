@@ -75,8 +75,8 @@ class ComponentState(enum.IntEnum):
 class Component:
     def __init__(
         self,
+        id: int,
         pid: int,
-        process_name: ComponentName,
         process_type: ComponentType,
         endpoint: str,
         component_state: ComponentState,
@@ -84,8 +84,8 @@ class Component:
         metadata: Optional[dict] = None,
         logging_path: Optional[str] = None,
     ):
+        self.id = id  # human-readable identifier for instance
         self.pid = pid
-        self.process_name = process_name  # unique e.g. "electrumsv1" or "electrumsv2" if multiple
         self.process_type = process_type
         self.endpoint = endpoint
         self.component_state = component_state
@@ -96,7 +96,7 @@ class Component:
 
     def __repr__(self):
         return (
-            f"Component(pid={self.pid}, process_name={self.process_name}, "
+            f"Component(id={self.id}, pid={self.pid}, "
             f"process_type={self.process_type}, "
             f"endpoint={self.endpoint}, "
             f"component_state={self.component_state.name}, "
@@ -132,7 +132,7 @@ class ComponentStore:
 
     def find_component_if_exists(self, component: Component, component_state: List[dict]):
         for index, comp in enumerate(component_state):
-            if comp["process_name"] == component.process_name:
+            if comp.get("id") == component.id:
                 return (index, component)
         return False
 

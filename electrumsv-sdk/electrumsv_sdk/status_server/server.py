@@ -94,7 +94,7 @@ class StatusServer:
                 for ws in self.server.websockets:
                     component = await self.curio_status_queue.get()
                     self.logger.debug(
-                        f"publishing status update for component:" f" {component['process_name']}"
+                        f"publishing status update for component:" f" {component['id']}"
                     )
                     await ws.send(json.dumps(component))
             else:  # drain queue
@@ -103,7 +103,7 @@ class StatusServer:
 
     def update_status(self, component):
         self.curio_status_queue.put(component)
-        logger.debug(f"got status update for component: {component['process_name']}")
+        logger.debug(f"got status update for component: {component['id']}")
 
 
 if __name__ == "__main__":

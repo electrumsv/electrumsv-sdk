@@ -10,10 +10,12 @@ from electrumsv_node import electrumsv_node
 
 from electrumsv_sdk.utils import trace_pid
 
-from .constants import STATUS_MONITOR_API
+from .constants import STATUS_MONITOR_API, DEFAULT_ID_ELECTRUMSV, DEFAULT_ID_ELECTRUMX, \
+    DEFAULT_ID_NODE, DEFAULT_ID_STATUS, DEFAULT_ID_INDEXER
 from .status_monitor_client import StatusMonitorClient
 
-from .components import Component, ComponentName, ComponentType, ComponentState, ComponentStore
+from .components import Component, ComponentName, ComponentType, ComponentState, ComponentStore, \
+    ComponentOptions
 
 logger = logging.getLogger("starters")
 
@@ -75,9 +77,13 @@ class Starters:
     def start_node(self):
         process_pid = electrumsv_node.start()
 
+        id = self.app_state.start_options[ComponentOptions.ID]
+        if not id:
+            id = DEFAULT_ID_NODE
+
         component = Component(
+            id=id,
             pid=process_pid,
-            process_name=ComponentName.NODE,
             process_type=ComponentType.NODE,
             endpoint="http://127.0.0.1:18332",
             component_state=ComponentState.NONE,
@@ -99,7 +105,7 @@ class Starters:
 
         # process handle not returned because node is stopped via rpc
 
-    def run_electrumx_server(self):
+    def start_electrumx_server(self):
         logger.debug(f"starting RegTest electrumx server...")
         if sys.platform == "win32":
             electrumx_server_script = self.app_state.run_scripts_dir.joinpath("electrumx.bat")
@@ -108,9 +114,13 @@ class Starters:
 
         process = self.spawn_in_new_console(electrumx_server_script)
 
+        id = self.app_state.start_options[ComponentOptions.ID]
+        if not id:
+            id = DEFAULT_ID_ELECTRUMX
+
         component = Component(
+            id=id,
             pid=process.pid,
-            process_name=ComponentName.ELECTRUMX,
             process_type=ComponentType.ELECTRUMX,
             endpoint="http://127.0.0.1:51001",
             component_state=ComponentState.NONE,
@@ -158,7 +168,7 @@ class Starters:
         else:
             subprocess.run(f"taskkill.exe /PID {process.pid} /T /F")
 
-    def run_electrumsv_daemon(self, is_first_run=False):
+    def start_electrumsv_daemon(self, is_first_run=False):
         """Todo - this currently uses ugly hacks with starting and stopping the ESV wallet
          in order to:
         1) generate the config files (so that it can be directly edited) - would be obviated by
@@ -178,7 +188,7 @@ class Starters:
         except FileNotFoundError:  # is_first_run = True
             self.start_and_stop_ESV(electrumsv_server_script)  # generates config json file
             self.disable_rest_api_authentication()  # now this will work
-            return self.run_electrumsv_daemon(is_first_run=True)
+            return self.start_electrumsv_daemon(is_first_run=True)
 
         logger.debug(f"starting RegTest electrumsv daemon...")
         process = self.spawn_in_new_console(electrumsv_server_script)
@@ -191,11 +201,15 @@ class Starters:
                 subprocess.run(f"pkill -P {process.pid}", shell=True)
             else:
                 subprocess.run(f"taskkill.exe /PID {process.pid} /T /F", check=True)
-            return self.run_electrumsv_daemon(is_first_run=False)
+            return self.start_electrumsv_daemon(is_first_run=False)
+
+        id = self.app_state.start_options[ComponentOptions.ID]
+        if not id:
+            id = DEFAULT_ID_ELECTRUMSV
 
         component = Component(
+            id=id,
             pid=process.pid,
-            process_name=ComponentName.ELECTRUMSV,
             process_type=ComponentType.ELECTRUMSV,
             endpoint="http://127.0.0.1:9999",
             component_state=ComponentState.NONE,
@@ -225,9 +239,13 @@ class Starters:
         logger.debug(f"starting status monitor daemon...")
         process = self.spawn_in_new_console(status_monitor_script)
 
+        id = self.app_state.start_options[ComponentOptions.ID]
+        if not id:
+            id = DEFAULT_ID_STATUS
+
         component = Component(
+            id=id,
             pid=process.pid,
-            process_name=ComponentName.STATUS_MONITOR,
             process_type=ComponentType.STATUS_MONITOR,
             endpoint="http://127.0.0.1:api/status",
             component_state=ComponentState.Running,
@@ -268,7 +286,7 @@ class Starters:
 
         if ComponentName.ELECTRUMX in self.app_state.start_set \
                 or len(self.app_state.start_set) == 0:
-            electrumx_process = self.run_electrumx_server()
+            electrumx_process = self.start_electrumx_server()
             procs.append(electrumx_process.pid)
 
         if ComponentName.ELECTRUMSV in self.app_state.start_set \
@@ -276,7 +294,7 @@ class Starters:
             if sys.version_info[:3] < (3, 7, 8):
                 sys.exit("Error: ElectrumSV requires Python version >= 3.7.8...")
 
-            esv_process = self.run_electrumsv_daemon()
+            esv_process = self.start_electrumsv_daemon()
             procs.append(esv_process.pid)
 
         self.app_state.save_repo_paths()
