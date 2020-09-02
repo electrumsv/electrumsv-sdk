@@ -46,11 +46,11 @@ def make_bash_file(filename, commandline_string_split, env_vars):
         f.write("exit")
 
 
-def make_esv_daemon_script(esv_script, electrumsv_env_vars):
+def make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir):
     commandline_string = (
         f"{sys.executable} {esv_script} --regtest daemon -dapp restapi "
         f"--v=debug --file-logging --restapi --server=127.0.0.1:51001:t "
-        f"--portable"
+        f"--dir {esv_data_dir}"
     )
 
     if sys.platform == "win32":
@@ -64,10 +64,10 @@ def make_esv_daemon_script(esv_script, electrumsv_env_vars):
         os.system(f'chmod 777 {filename}')
 
 
-def make_esv_gui_script(esv_script, electrumsv_env_vars):
+def make_esv_gui_script(esv_script, electrumsv_env_vars, esv_dir):
     commandline_string = (
         f"{sys.executable} {esv_script} --regtest --v=debug --file-logging "
-        f"--server=127.0.0.1:51001:t --portable"
+        f"--server=127.0.0.1:51001:t --dir {esv_dir}"
     )
 
     if sys.platform == "win32":

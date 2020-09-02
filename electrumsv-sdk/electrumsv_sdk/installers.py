@@ -1,13 +1,70 @@
+import logging
 import os
 import subprocess
 import sys
 
-from electrumsv_sdk.utils import checkout_branch
+from .constants import DEFAULT_ID_ELECTRUMSV
+from .components import ComponentOptions
+from .utils import checkout_branch
+
+logger = logging.getLogger("install-handlers")
 
 
 class Installers:
     def __init__(self, app_state):
         self.app_state = app_state
+
+    def is_new_and_no_id(self, id, new) -> bool:
+        return id == "" and new
+
+    def is_new_and_id(self, id, new) -> bool:
+        return id != "" and new
+
+    def is_not_new_and_no_id(self, id, new) -> bool:
+        return id == "" and not new
+
+    def is_not_new_and_id(self, id, new) -> bool:
+        return id != "" and not new
+
+    def get_electrumsv_data_dir(self):
+        """to run multiple instances of electrumsv requires multiple data directories (with
+        separate lock files)"""
+        new = self.app_state.start_options[ComponentOptions.NEW]
+        id = self.app_state.start_options[ComponentOptions.ID]
+
+        # autoincrement (electrumsv1 -> electrumsv2 -> electrumsv3...)
+        if self.is_new_and_no_id(id, new):
+            count = 1
+            while True:
+                self.app_state.start_options[ComponentOptions.ID] = id = "electrumsv" + str(count)
+                new_dir = self.app_state.electrumsv_dir.joinpath(id)
+                if not new_dir.exists():
+                    break
+                else:
+                    count += 1
+            logger.debug(f"using new user-specified electrumsv data dir ({id})")
+
+        elif self.is_new_and_id(id, new):
+            new_dir = self.app_state.electrumsv_dir.joinpath(id)
+            if new_dir.exists():
+                print(f"user-specified electrumsv data directory: {new_dir} already exists ("
+                      f"either drop the --new flag or choose a unique identifier).")
+            logger.debug(f"using user-specified electrumsv data dir ({id})")
+
+        elif self.is_not_new_and_id(id, new):
+            new_dir = self.app_state.electrumsv_dir.joinpath(id)
+            if not new_dir.exists():
+                print(f"user-specified electrumsv data directory: {new_dir} does not exist ("
+                      f"either use the --new flag or choose a pre-existing id.")
+            logger.debug(f"using user-specified electrumsv data dir ({id})")
+
+        elif self.is_not_new_and_no_id(id, new):
+            id = DEFAULT_ID_ELECTRUMSV
+            new_dir = self.app_state.electrumsv_dir.joinpath(id)
+            logger.debug(f"using default electrumsv data dir ({DEFAULT_ID_ELECTRUMSV})")
+
+        logger.debug(f"electrumsv data dir = {new_dir}")
+        return new_dir
 
     def remote_electrumsv(self, url, branch):
         """3 possibilities:
@@ -15,6 +72,9 @@ class Installers:
         (dir exists, url matches)
         (dir exists, url does not match - it's a forked repo)
         """
+        new_dir = self.get_electrumsv_data_dir()
+        self.app_state.update_electrumsv_data_dir(new_dir)
+
         if not self.app_state.electrumsv_dir.exists():
             print(f"- installing electrumsv (url={url})")
             self.app_state.install_tools.install_electrumsv(url, branch)
@@ -57,6 +117,7 @@ class Installers:
                 self.app_state.install_tools.install_electrumsv(url, branch)
 
         os.makedirs(self.app_state.electrumsv_regtest_wallets_dir, exist_ok=True)
+        self.app_state.install_tools.generate_run_scripts_electrumsv()
 
     def local_electrumsv(self, url, branch):
         os.makedirs(self.app_state.electrumsv_regtest_wallets_dir, exist_ok=True)

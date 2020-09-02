@@ -26,8 +26,9 @@ class InstallTools:
             "PYTHONPATH": str(path_to_dapp_example_apps),
         }
         esv_script = str(self.app_state.electrumsv_dir.joinpath("electrum-sv"))
-        make_esv_daemon_script(esv_script, electrumsv_env_vars)
-        make_esv_gui_script(esv_script, electrumsv_env_vars)
+        esv_data_dir = self.app_state.electrumsv_data_dir
+        make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir)
+        make_esv_gui_script(esv_script, electrumsv_env_vars, esv_data_dir)
 
     def generate_run_script_electrumx(self):
         os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
@@ -89,7 +90,6 @@ class InstallTools:
             subprocess.run(
                 f"{sys.executable} -m pip install -r {self.app_state.electrumsv_binary_requirements_path} ",
                 shell=True, check=True)
-        self.generate_run_scripts_electrumsv()
 
     def install_electrumx(self, url, branch):
 

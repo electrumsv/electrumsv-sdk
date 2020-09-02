@@ -155,9 +155,9 @@ class Handlers:
                 len(self.app_state.start_set) != 0:
             return
 
+
         repo = self.app_state.start_options[ComponentOptions.REPO]
         branch = self.app_state.start_options[ComponentOptions.BRANCH]
-
         if self.app_state.start_options[ComponentOptions.REPO] == "":  # default
             repo = "https://github.com/electrumsv/electrumsv.git"
             self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
