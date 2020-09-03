@@ -27,7 +27,8 @@ class InstallTools:
         }
         esv_script = str(self.app_state.electrumsv_dir.joinpath("electrum-sv"))
         esv_data_dir = self.app_state.electrumsv_data_dir
-        make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir)
+        port = self.app_state.electrumsv_port
+        make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir, port)
         make_esv_gui_script(esv_script, electrumsv_env_vars, esv_data_dir)
 
     def generate_run_script_electrumx(self):

@@ -10,7 +10,7 @@ from typing import Dict, List, Set
 
 from electrumsv_node import electrumsv_node
 
-from .constants import DEFAULT_ID_ELECTRUMSV
+from .constants import DEFAULT_ID_ELECTRUMSV, DEFAULT_PORT_ELECTRUMSV
 from .argparsing import ArgParser
 from .components import ComponentName
 from .controller import Controller
@@ -90,7 +90,8 @@ class AppState:
         command. The trade-off is that the electrumsv 'repo' will need to be specified anew every
         time the SDK 'start' command is run."""
         self.electrumsv_dir = electrumsv_dir
-        self.update_electrumsv_data_dir(self.electrumsv_dir.joinpath(DEFAULT_ID_ELECTRUMSV))
+        self.update_electrumsv_data_dir(self.electrumsv_dir.joinpath(DEFAULT_ID_ELECTRUMSV),
+            DEFAULT_PORT_ELECTRUMSV)
         self.electrumsv_requirements_path = (
             self.electrumsv_dir.joinpath("contrib")
             .joinpath("deterministic-build")
@@ -102,11 +103,13 @@ class AppState:
             .joinpath("requirements-binaries.txt")
         )
 
-    def update_electrumsv_data_dir(self, electrumsv_data_dir):
+    def update_electrumsv_data_dir(self, electrumsv_data_dir, port):
         self.electrumsv_data_dir = electrumsv_data_dir
         self.electrumsv_regtest_dir = electrumsv_data_dir.joinpath("regtest")
         self.electrumsv_regtest_config_path = self.electrumsv_regtest_dir.joinpath("config")
         self.electrumsv_regtest_wallets_dir = self.electrumsv_regtest_dir.joinpath("wallets")
+
+        self.electrumsv_port = port
 
     def save_repo_paths(self):
         """overwrites config.json"""

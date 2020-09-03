@@ -2,8 +2,10 @@ import logging
 import os
 import subprocess
 import sys
+import socket
+import errno
 
-from .constants import DEFAULT_ID_ELECTRUMSV
+from .constants import DEFAULT_ID_ELECTRUMSV, DEFAULT_PORT_ELECTRUMSV
 from .components import ComponentOptions
 from .utils import checkout_branch
 
@@ -66,6 +68,29 @@ class Installers:
         logger.debug(f"electrumsv data dir = {new_dir}")
         return new_dir
 
+    def port_is_in_use(self, port) -> bool:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.bind(("127.0.0.1", port))
+            return False
+        except socket.error as e:
+            if e.errno == errno.EADDRINUSE:
+                print("Port is already in use")
+                return True
+            else:
+                print(e)
+        s.close()
+
+    def get_electrumsv_port(self):
+        """any port that is not currently in use"""
+        port = DEFAULT_PORT_ELECTRUMSV
+        while True:
+            if self.port_is_in_use(port):
+                port += 1
+            else:
+                break
+        return port
+
     def remote_electrumsv(self, url, branch):
         """3 possibilities:
         (dir doesn't exists) -> install
@@ -73,7 +98,8 @@ class Installers:
         (dir exists, url does not match - it's a forked repo)
         """
         new_dir = self.get_electrumsv_data_dir()
-        self.app_state.update_electrumsv_data_dir(new_dir)
+        port = self.get_electrumsv_port()
+        self.app_state.update_electrumsv_data_dir(new_dir, port)
 
         if not self.app_state.electrumsv_dir.exists():
             print(f"- installing electrumsv (url={url})")
@@ -120,6 +146,10 @@ class Installers:
         self.app_state.install_tools.generate_run_scripts_electrumsv()
 
     def local_electrumsv(self, url, branch):
+        new_dir = self.get_electrumsv_data_dir()
+        port = self.get_electrumsv_port()
+        self.app_state.update_electrumsv_data_dir(new_dir, port)
+
         os.makedirs(self.app_state.electrumsv_regtest_wallets_dir, exist_ok=True)
         self.app_state.install_tools.generate_run_scripts_electrumsv()
 
