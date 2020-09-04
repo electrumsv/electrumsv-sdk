@@ -46,12 +46,25 @@ def make_bash_file(filename, commandline_string_split, env_vars):
         f.write("exit")
 
 
+def add_esv_custom_args(commandline_string, component_args, esv_data_dir):
+    additional_args = " ".join(component_args)
+    commandline_string += " " + additional_args
+    if "--dir" not in component_args:
+        commandline_string += " " + f"--dir {esv_data_dir}"
+
+    # so that polling works
+    if "--restapi" not in component_args:
+        commandline_string += " " + f"--restapi"
+    return commandline_string
+
+
 def make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
         component_args=None):
     if component_args is not None:
         commandline_string = (
-            f"{sys.executable} {esv_script} {component_args}"
+            f"{sys.executable} {esv_script}"
         )
+        commandline_string = add_esv_custom_args(commandline_string, component_args, esv_data_dir)
     else:
         commandline_string = (
             f"{sys.executable} {esv_script} --regtest daemon -dapp restapi "
@@ -74,8 +87,9 @@ def make_esv_gui_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
         component_args=None):
     if component_args is not None:
         commandline_string = (
-            f"{sys.executable} {esv_script} {component_args}"
+            f"{sys.executable} {esv_script}"
         )
+        commandline_string = add_esv_custom_args(commandline_string, component_args, esv_data_dir)
     else:
         commandline_string = (
             f"{sys.executable} {esv_script} gui --regtest --restapi --restapi-port={port} "
