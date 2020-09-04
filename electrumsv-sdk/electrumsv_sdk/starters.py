@@ -168,6 +168,20 @@ class Starters:
         else:
             subprocess.run(f"taskkill.exe /PID {process.pid} /T /F")
 
+    def ensure_restapi_auth_disabled(self):
+        if sys.platform == "win32":
+            electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.bat")
+        elif sys.platform == "linux":
+            electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.sh")
+        elif sys.platform == "darwin":
+            electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.sh")
+        try:
+            self.disable_rest_api_authentication()
+        except FileNotFoundError:  # is_first_run = True
+            self.start_and_stop_ESV(electrumsv_server_script)  # generates config json file
+            self.disable_rest_api_authentication()  # now this will work
+            return self.start_electrumsv_daemon(is_first_run=True)
+
     def start_electrumsv_daemon(self, is_first_run=False):
         """Todo - this currently uses ugly hacks with starting and stopping the ESV wallet
          in order to:
@@ -179,19 +193,23 @@ class Starters:
             print("electrumsv in RegTest mode requires a bitcoin node to be running... failed to "
                   "connect")
             sys.exit()
-        if sys.platform == "win32":
-            electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.bat")
-        else:
-            electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.sh")
-        try:
-            self.disable_rest_api_authentication()
-        except FileNotFoundError:  # is_first_run = True
-            self.start_and_stop_ESV(electrumsv_server_script)  # generates config json file
-            self.disable_rest_api_authentication()  # now this will work
-            return self.start_electrumsv_daemon(is_first_run=True)
+
+        self.ensure_restapi_auth_disabled()
 
         logger.debug(f"starting RegTest electrumsv daemon...")
-        process = self.spawn_in_new_console(electrumsv_server_script)
+        if self.app_state.start_options[ComponentOptions.GUI]:
+            script_name = "electrumsv-gui"
+        else:
+            script_name = "electrumsv"
+
+        if sys.platform == "win32":
+            script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.bat")
+        elif sys.platform == "linux":
+            script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.sh")
+        elif sys.platform == "darwin":
+            script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.sh")
+
+        process = self.spawn_in_new_console(script)
         if is_first_run:
             time.sleep(7)
             self.app_state.resetters.reset_electrumsv_wallet()  # create first-time wallet

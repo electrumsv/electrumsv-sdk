@@ -46,12 +46,18 @@ def make_bash_file(filename, commandline_string_split, env_vars):
         f.write("exit")
 
 
-def make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir, port):
-    commandline_string = (
-        f"{sys.executable} {esv_script} --regtest daemon -dapp restapi "
-        f"--v=debug --file-logging --restapi --restapi-port={port} --server=127.0.0.1:51001:t "
-        f"--dir {esv_data_dir}"
-    )
+def make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
+        component_args=None):
+    if component_args is not None:
+        commandline_string = (
+            f"{sys.executable} {esv_script} {component_args}"
+        )
+    else:
+        commandline_string = (
+            f"{sys.executable} {esv_script} --regtest daemon -dapp restapi "
+            f"--v=debug --file-logging --restapi --restapi-port={port} --server=127.0.0.1:51001:t "
+            f"--dir {esv_data_dir}"
+        )
 
     if sys.platform == "win32":
         commandline_string_split = shlex.split(commandline_string, posix=0)
@@ -64,11 +70,17 @@ def make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir, port):
         os.system(f'chmod 777 {filename}')
 
 
-def make_esv_gui_script(esv_script, electrumsv_env_vars, esv_dir):
-    commandline_string = (
-        f"{sys.executable} {esv_script} --regtest --v=debug --file-logging "
-        f"--server=127.0.0.1:51001:t --dir {esv_dir}"
-    )
+def make_esv_gui_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
+        component_args=None):
+    if component_args is not None:
+        commandline_string = (
+            f"{sys.executable} {esv_script} {component_args}"
+        )
+    else:
+        commandline_string = (
+            f"{sys.executable} {esv_script} gui --regtest --restapi --restapi-port={port} "
+            f"--v=debug --file-logging --server=127.0.0.1:51001:t --dir {esv_data_dir}"
+        )
 
     if sys.platform == "win32":
         commandline_string_split = shlex.split(commandline_string, posix=0)

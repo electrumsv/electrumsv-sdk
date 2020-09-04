@@ -2,6 +2,8 @@ import os
 import shlex
 import subprocess
 import sys
+
+from .components import ComponentOptions
 from .utils import (
     checkout_branch,
     make_esv_daemon_script,
@@ -28,8 +30,17 @@ class InstallTools:
         esv_script = str(self.app_state.electrumsv_dir.joinpath("electrum-sv"))
         esv_data_dir = self.app_state.electrumsv_data_dir
         port = self.app_state.electrumsv_port
-        make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir, port)
-        make_esv_gui_script(esv_script, electrumsv_env_vars, esv_data_dir)
+        component_args = \
+            self.app_state.component_args if len(self.app_state.component_args) != 0 else None
+
+        print(f"esv_data_dir = {esv_data_dir}")
+
+        if not self.app_state.start_options[ComponentOptions.GUI]:
+            make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
+                component_args)
+        else:
+            make_esv_gui_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
+                component_args)
 
     def generate_run_script_electrumx(self):
         os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
