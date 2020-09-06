@@ -50,6 +50,7 @@ class ComponentName:
 class ComponentOptions:
     NEW = "new"
     GUI = "gui"
+    BACKGROUND = "background"
     ID = "id"
     REPO = "repo"
     BRANCH = "branch"

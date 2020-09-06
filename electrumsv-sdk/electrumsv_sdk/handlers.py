@@ -33,7 +33,7 @@ class Handlers:
     def validate_flags(self, parsed_args):
         flags_selected = [flag for flag, value in parsed_args.__dict__.items()
                           if value not in {"", None, False}]
-        if all(flag in {'new', 'gui', 'id', 'branch', 'repo'} for flag in
+        if all(flag in {'new', 'gui', 'id', 'branch', 'repo', 'background'} for flag in
                parsed_args.__dict__):
             return True, flags_selected
         return False, flags_selected
@@ -97,6 +97,7 @@ class Handlers:
 
         self.app_state.start_options[ComponentOptions.NEW] = parsed_args.new
         self.app_state.start_options[ComponentOptions.GUI] = parsed_args.gui
+        self.app_state.start_options[ComponentOptions.BACKGROUND] = parsed_args.background
         self.app_state.start_options[ComponentOptions.ID] = id = parsed_args.id
         self.app_state.start_options[ComponentOptions.REPO] = repo = parsed_args.repo
         self.app_state.start_options[ComponentOptions.BRANCH] = branch = parsed_args.branch

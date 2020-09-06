@@ -4,12 +4,13 @@ import logging
 import subprocess
 import sys
 import time
+from typing import Union
+
 import aiorpcx
 import requests
 from electrumsv_node import electrumsv_node
 
-from electrumsv_sdk.utils import trace_pid
-
+from .utils import trace_pid
 from .constants import STATUS_MONITOR_API, DEFAULT_ID_ELECTRUMSV, DEFAULT_ID_ELECTRUMX, \
     DEFAULT_ID_NODE, DEFAULT_ID_STATUS, DEFAULT_ID_INDEXER
 from .status_monitor_client import StatusMonitorClient
@@ -26,17 +27,49 @@ class Starters:
         self.component_store = ComponentStore(self.app_state)
         self.status_monitor_client = StatusMonitorClient(self.app_state)
 
-    def spawn_in_new_console(self, command):
-        if sys.platform in ('linux', 'darwin'):
-            process = subprocess.Popen(f"gnome-terminal -- {command}", shell=True,
+    def spawn_process(self, command):
+        if self.app_state.start_options[ComponentOptions.BACKGROUND]:
+            return self.spawn_in_background(command)
+        else:
+            return self.spawn_in_new_console(command)
+
+    def spawn_in_background(self, command):
+        if sys.platform == 'linux':
+            process = subprocess.Popen(f"nohup {command} &", shell=True,
                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             process.wait()
             process_handle = trace_pid(command)
-        else:
+            return process_handle
+        elif sys.platform == 'darwin':
+            print()
+            print("MACOS platform is not supported at this time")
+            sys.exit()
+        elif sys.platform in 'win32':
+            print("running as a background process (without a console window) is not supported on windows, "
+                  "spawning in a new console window")
             process_handle = subprocess.Popen(
                 f"{command}", creationflags=subprocess.CREATE_NEW_CONSOLE
             )
-        return process_handle
+            return process_handle
+
+    def spawn_in_new_console(self, command):
+        if sys.platform in 'linux':
+            process = subprocess.Popen(f"gnome-terminal -- {command}", shell=True,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            process.wait()
+            process_handle = trace_pid(command)
+            return process_handle
+
+        elif sys.platform == 'darwin':
+            print()
+            print("MACOS platform is not supported at this time")
+            sys.exit()
+
+        elif sys.platform in 'win32':
+            process_handle = subprocess.Popen(
+                f"{command}", creationflags=subprocess.CREATE_NEW_CONSOLE
+            )
+            return process_handle
 
     async def is_electrumx_running(self):
         for sleep_time in (1, 2, 3):
@@ -112,7 +145,7 @@ class Starters:
         else:
             electrumx_server_script = self.app_state.run_scripts_dir.joinpath("electrumx.sh")
 
-        process = self.spawn_in_new_console(electrumx_server_script)
+        process = self.spawn_process(electrumx_server_script)
 
         id = self.app_state.start_options[ComponentOptions.ID]
         if not id:
@@ -209,7 +242,7 @@ class Starters:
         elif sys.platform == "darwin":
             script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.sh")
 
-        process = self.spawn_in_new_console(script)
+        process = self.spawn_process(script)
         if is_first_run:
             time.sleep(7)
             self.app_state.resetters.reset_electrumsv_wallet()  # create first-time wallet
@@ -255,7 +288,7 @@ class Starters:
             status_monitor_script = self.app_state.run_scripts_dir.joinpath("status_monitor.sh")
 
         logger.debug(f"starting status monitor daemon...")
-        process = self.spawn_in_new_console(status_monitor_script)
+        process = self.spawn_process(status_monitor_script)
 
         id = self.app_state.start_options[ComponentOptions.ID]
         if not id:

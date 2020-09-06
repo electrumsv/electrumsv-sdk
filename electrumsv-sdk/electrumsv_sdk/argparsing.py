@@ -173,6 +173,7 @@ class ArgParser:
     def add_start_parser_args(self, start_parser):
         start_parser.add_argument("--new", action="store_true", help="")
         start_parser.add_argument("--gui", action="store_true", help="")
+        start_parser.add_argument("--background", action="store_true", help="")
         start_parser.add_argument(
             "--id",
             type=str,
