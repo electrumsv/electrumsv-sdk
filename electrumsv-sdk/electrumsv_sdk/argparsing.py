@@ -12,7 +12,7 @@ import sys
 import textwrap
 from argparse import RawTextHelpFormatter
 
-from electrumsv_sdk.components import ComponentName
+from electrumsv_sdk.components import ComponentName, ComponentOptions
 from electrumsv_sdk.esv_argparsing_facade import extend_esv_parser
 
 logger = logging.getLogger("argparsing")
@@ -171,6 +171,13 @@ class ArgParser:
         return subparsers, status_monitor
 
     def add_start_parser_args(self, start_parser):
+        self.app_state.start_options[ComponentOptions.NEW] = False
+        self.app_state.start_options[ComponentOptions.GUI] = False
+        self.app_state.start_options[ComponentOptions.BACKGROUND] = False
+        self.app_state.start_options[ComponentOptions.ID] = False
+        self.app_state.start_options[ComponentOptions.REPO] = False
+        self.app_state.start_options[ComponentOptions.BRANCH] = False
+
         start_parser.add_argument("--new", action="store_true", help="")
         start_parser.add_argument("--gui", action="store_true", help="")
         start_parser.add_argument("--background", action="store_true", help="")

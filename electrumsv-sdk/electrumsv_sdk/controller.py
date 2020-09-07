@@ -58,3 +58,5 @@ class Controller:
         logger.debug("allowing time for the electrumsv daemon to boot up - standby...")
         time.sleep(7)
         self.app_state.resetters.reset_electrumsv_wallet()
+        self.stop()
+
