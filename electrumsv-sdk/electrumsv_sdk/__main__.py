@@ -23,11 +23,10 @@ def main():
     b) the ability to string multiple subcommands + optional args together into a single cli
     command.
     """
-    print("ElectrumSV Software Development Kit")
-    print(
+    logger.info("Starting ElectrumSV Software Development Kit")
+    logger.info(
         f"-Python version {platform.python_version()}-{platform.architecture()[0]}"
     )
-    print()
     app_state = AppState()
     os.makedirs(app_state.depends_dir, exist_ok=True)
     os.makedirs(app_state.run_scripts_dir, exist_ok=True)

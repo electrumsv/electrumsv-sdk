@@ -67,9 +67,9 @@ def make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
         commandline_string = add_esv_custom_args(commandline_string, component_args, esv_data_dir)
     else:
         commandline_string = (
-            f"{sys.executable} {esv_script} --regtest daemon -dapp restapi "
-            f"--v=debug --file-logging --restapi --restapi-port={port} --server=127.0.0.1:51001:t "
-            f"--dir {esv_data_dir}"
+            f"{sys.executable} {esv_script} --portable --dir {esv_data_dir} "
+            f"--regtest daemon -dapp restapi --v=debug --file-logging "
+            f"--restapi --restapi-port={port} --server=127.0.0.1:51001:t "
         )
 
     if sys.platform == "win32":

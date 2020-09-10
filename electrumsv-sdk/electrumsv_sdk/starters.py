@@ -5,6 +5,7 @@ import subprocess
 import sys
 import time
 from typing import Union
+import os
 
 import aiorpcx
 import requests
@@ -34,26 +35,22 @@ class Starters:
             return self.spawn_in_new_console(command)
 
     def spawn_in_background(self, command):
-        if sys.platform == 'linux':
-            process = subprocess.Popen(f"nohup {command} &", shell=True,
-                                       stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            process.wait()
-            process_handle = trace_pid(command)
+        if sys.platform in ('linux', 'darwin'):
+            process_handle = subprocess.Popen(f"nohup {command} &", shell=True,
+                                              stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                              stderr=subprocess.STDOUT)
             return process_handle
-        elif sys.platform == 'darwin':
-            print()
-            print("MACOS platform is not supported at this time")
-            sys.exit()
-        elif sys.platform in 'win32':
-            print("running as a background process (without a console window) is not supported on windows, "
-                  "spawning in a new console window")
+        elif sys.platform == 'win32':
+            print(
+                "running as a background process (without a console window) is not supported "
+                "on windows, spawning in a new console window")
             process_handle = subprocess.Popen(
                 f"{command}", creationflags=subprocess.CREATE_NEW_CONSOLE
             )
             return process_handle
 
     def spawn_in_new_console(self, command):
-        if sys.platform in 'linux':
+        if sys.platform == 'linux':
             process = subprocess.Popen(f"gnome-terminal -- {command}", shell=True,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             process.wait()
@@ -61,11 +58,13 @@ class Starters:
             return process_handle
 
         elif sys.platform == 'darwin':
-            print()
-            print("MACOS platform is not supported at this time")
-            sys.exit()
+            process = subprocess.Popen(f"gnome-terminal -- {command}", shell=True,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            process.wait()
+            process_handle = trace_pid(command)
+            return process_handle
 
-        elif sys.platform in 'win32':
+        elif sys.platform == 'win32':
             process_handle = subprocess.Popen(
                 f"{command}", creationflags=subprocess.CREATE_NEW_CONSOLE
             )
@@ -86,7 +85,7 @@ class Starters:
         return False
 
     def is_electrumsv_running(self):
-        for sleep_time in (3, 3, 3):
+        for sleep_time in (3, 3, 3, 3):
             try:
                 logger.debug("polling electrumsv...")
                 result = requests.get("http://127.0.0.1:9999/")
@@ -100,12 +99,16 @@ class Starters:
         return False
 
     def is_status_monitor_running(self) -> bool:
-        try:
-            result = requests.get(STATUS_MONITOR_API + "/get_status")
-            result.raise_for_status()
-            return True
-        except requests.exceptions.ConnectionError as e:
-            return False
+        for sleep_time in (3, 3, 3):
+            try:
+                result = requests.get(STATUS_MONITOR_API + "/get_status")
+                result.raise_for_status()
+                return True
+            except requests.exceptions.ConnectionError as e:
+                pass
+
+            time.sleep(sleep_time)
+        return False
 
     def start_node(self):
         process_pid = electrumsv_node.start()
@@ -192,22 +195,24 @@ class Starters:
             "starting RegTest electrumsv daemon for the first time - initializing wallet - "
             "standby..."
         )
-        process = subprocess.Popen(
-            f"{electrumsv_server_script}", creationflags=subprocess.CREATE_NEW_CONSOLE
-        )
+        if sys.platform == "win32":
+            script = self.app_state.run_scripts_dir.joinpath(f"{electrumsv_server_script}")
+        elif sys.platform in ("linux", "darwin"):
+            script = self.app_state.run_scripts_dir.joinpath(f"{electrumsv_server_script}")
+
+        process = self.spawn_process(script)
         time.sleep(7)
         if sys.platform in ("linux", "darwin"):
             subprocess.run(f"pkill -P {process.pid}", shell=True)
-        else:
+        elif sys.platform == 'win32':
             subprocess.run(f"taskkill.exe /PID {process.pid} /T /F")
 
     def ensure_restapi_auth_disabled(self):
         if sys.platform == "win32":
             electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.bat")
-        elif sys.platform == "linux":
+        elif sys.platform in ("linux", "darwin"):
             electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.sh")
-        elif sys.platform == "darwin":
-            electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.sh")
+
         try:
             self.disable_rest_api_authentication()
         except FileNotFoundError:  # is_first_run = True
@@ -227,6 +232,10 @@ class Starters:
                   "connect")
             sys.exit()
 
+        is_running = asyncio.run(self.is_electrumx_running())
+        if not is_running:
+            logger.debug("electrumsv in RegTest mode requires electrumx to be running... "
+                         "failed to connect")
         self.ensure_restapi_auth_disabled()
 
         logger.debug(f"starting RegTest electrumsv daemon...")
@@ -237,9 +246,7 @@ class Starters:
 
         if sys.platform == "win32":
             script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.bat")
-        elif sys.platform == "linux":
-            script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.sh")
-        elif sys.platform == "darwin":
+        elif sys.platform in ("linux", "darwin"):
             script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.sh")
 
         process = self.spawn_process(script)
@@ -250,13 +257,15 @@ class Starters:
 
             if sys.platform in ("linux", "darwin"):
                 subprocess.run(f"pkill -P {process.pid}", shell=True)
-            else:
+            elif sys.platform == "win32":
                 subprocess.run(f"taskkill.exe /PID {process.pid} /T /F", check=True)
             return self.start_electrumsv_daemon(is_first_run=False)
 
         id = self.app_state.start_options[ComponentOptions.ID]
         if not id:
             id = DEFAULT_ID_ELECTRUMSV
+
+        logging_path = self.app_state.electrumsv_data_dir.joinpath("logs")
 
         component = Component(
             id=id,
@@ -266,13 +275,14 @@ class Starters:
             component_state=ComponentState.NONE,
             location=str(self.app_state.electrumsv_regtest_dir),
             metadata={"config": str(self.app_state.electrumsv_regtest_config_path)},
-            logging_path=str(self.app_state.electrumsv_data_dir.joinpath("logs")),
+            logging_path=str(logging_path),
         )
 
         is_running = self.is_electrumsv_running()
         if not is_running:
             component.component_state = ComponentState.Failed
             logger.error("electrumsv failed to start")
+            sys.exit(1)
         else:
             component.component_state = ComponentState.Running
             logger.debug("electrumsv online")
@@ -284,7 +294,7 @@ class Starters:
     def start_status_monitor(self):
         if sys.platform == "win32":
             status_monitor_script = self.app_state.run_scripts_dir.joinpath("status_monitor.bat")
-        else:
+        elif sys.platform in ("linux", "darwin"):
             status_monitor_script = self.app_state.run_scripts_dir.joinpath("status_monitor.sh")
 
         logger.debug(f"starting status monitor daemon...")

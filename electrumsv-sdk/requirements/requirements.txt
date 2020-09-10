@@ -3,3 +3,4 @@ requests
 filelock
 curio==0.9
 trinket==0.1.5
+psutil

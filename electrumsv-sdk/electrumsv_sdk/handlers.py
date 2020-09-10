@@ -28,7 +28,6 @@ class Handlers:
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
         self.installer = Installers(self.app_state)
-        self.controller = self.app_state.controller
 
     def validate_flags(self, parsed_args):
         flags_selected = [flag for flag, value in parsed_args.__dict__.items()
@@ -39,7 +38,7 @@ class Handlers:
         return False, flags_selected
 
     def handle_remote_repo(self, package_name, url, branch):
-        print(f"- installing remote dependency for {package_name} at {url}")
+        logger.debug(f"- installing remote dependency for {package_name} at {url}")
 
         if package_name == ComponentName.ELECTRUMSV:
             self.installer.remote_electrumsv(url, branch)
@@ -52,7 +51,7 @@ class Handlers:
 
     def handle_local_repo(self, package_name, path, branch):
         try:
-            print(f"- installing local dependency for {package_name} at path: {path}")
+            logger.debug(f"- installing local dependency for {package_name} at path: {path}")
             assert Path(path).exists(), f"the path {path} to {package_name} does not exist!"
             if branch != "":
                 subprocess.run(f"git checkout {branch}", shell=True, check=True)

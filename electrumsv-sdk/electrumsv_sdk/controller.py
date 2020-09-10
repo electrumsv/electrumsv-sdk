@@ -5,6 +5,7 @@ import time
 from electrumsv_node import electrumsv_node
 from electrumsv_sdk.components import ComponentName, ComponentStore
 
+from .handlers import Handlers
 from .starters import Starters
 from .stoppers import Stoppers
 from .utils import cast_str_int_args_to_int
@@ -17,6 +18,7 @@ class Controller:
         self.app_state = app_state
         self.starters = Starters(self.app_state)
         self.stoppers = Stoppers(self.app_state)
+        self.handlers = Handlers(self.app_state)
         self.component_store = ComponentStore(self.app_state)
 
     def start(self):
@@ -54,6 +56,9 @@ class Controller:
         self.app_state.start_set.add(ComponentName.NODE)
         self.app_state.start_set.add(ComponentName.ELECTRUMX)
         self.app_state.start_set.add(ComponentName.ELECTRUMSV)
+
+        self.handlers.handle_install()
+
         self.start()
         logger.debug("allowing time for the electrumsv daemon to boot up - standby...")
         time.sleep(7)
