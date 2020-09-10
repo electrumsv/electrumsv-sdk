@@ -27,7 +27,7 @@ class Stoppers:
             elif component["process_type"] == component_type:
                 if sys.platform in ("linux", "darwin"):
                     subprocess.run(f"pkill -P {component['pid']}", shell=True)
-                else:
+                elif sys.platform == "win32":
                     subprocess.run(f"taskkill.exe /PID {component['pid']} /T /F")
 
     def stop(self):

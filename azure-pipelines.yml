@@ -9,7 +9,72 @@ trigger:
     exclude: [ 'README.md' ]
 
 jobs:
-- job: macos
+- job: TestLinux
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: 3.7
+    - script: |
+          sudo apt-get update
+          sudo apt-get install libusb-1.0-0-dev libudev-dev
+          git clone https://github.com/electrumsv/electrumsv.git
+          cd electrumsv
+          python3 -m pip install -r contrib/deterministic-build/requirements.txt
+          python3 -m pip install -r contrib/deterministic-build/requirements-hw.txt
+          python3 -m pip install -r contrib/deterministic-build/requirements-binaries.txt
+          python3 -m pip install pysqlite3-binary
+      displayName: 'prepare for electrumsv'
+      workingDirectory: electrumsv-sdk/
+    - script: |
+        python3 -m pip install -e .
+        python3 -m pip install pytest pytest-cov
+        electrumsv-sdk start --background node
+        electrumsv-sdk start --background electrumx
+        cd electrumsv
+        electrumsv-sdk start --background --new --repo=$PWD electrumsv
+      displayName: 'start stop reset'
+      workingDirectory: electrumsv-sdk/
+
+
+#- job: TestWindows
+#  pool: {vmImage: 'windows-latest'}
+#  steps:
+#    - task: UsePythonVersion@0
+#      inputs:
+#        versionSpec: 3.7
+#    - script: |
+#        py -3 -m pip install wheel
+#        cd electrumsv-sdk
+#        py -3 -m pip install -e .
+#        cd ..
+#        electrumsv-sdk start --background node
+#        electrumsv-sdk start --background electrumx
+#        electrumsv-sdk start --background --new electrumsv
+#        sleep 5
+#        electrumsv-sdk stop
+#      workingDirectory: electrumsv-sdk/
+#      displayName: 'start stop reset windows'
+#
+#- job: TestMacOS
+#  pool: {vmImage: 'macOS-10.15'}
+#  steps:
+#    - script: |
+#        python3 -m pip install wheel
+#        cd electrumsv-sdk
+#        python3 -m pip install -e .
+#        cd ..
+#        electrumsv-sdk start --background node
+#        electrumsv-sdk start --background electrumx
+#        electrumsv-sdk start --background --new electrumsv
+#        sleep 5
+#        electrumsv-sdk stop
+#      workingDirectory: electrumsv-sdk/
+#      displayName: 'start stop reset macos'
+
+
+- job: BuildMacOS
   pool: {vmImage: 'macOS-10.15'}
   steps:
     - script: |
@@ -21,8 +86,9 @@ jobs:
       inputs:
         artifactName: 'MacOS'
         pathtoPublish: 'wheelhouse'
+      displayName: 'build wheel macos'
 
-- job: windows
+- job: BuildWindows
   pool: {vmImage: 'windows-latest'}
   steps:
     - task: UsePythonVersion@0
@@ -37,8 +103,9 @@ jobs:
       inputs:
         artifactName: 'Windows'
         pathtoPublish: 'wheelhouse'
+      displayName: 'build wheel windows'
 
-- job: linux
+- job: BuildLinux
   pool:
     vmImage: 'ubuntu-latest'
   steps:
@@ -54,3 +121,4 @@ jobs:
       inputs:
         artifactName: 'Linux'
         pathtoPublish: 'wheelhouse'
+      displayName: 'build wheel linux'

@@ -1,3 +1,4 @@
+import logging
 import os
 import shlex
 import subprocess
@@ -11,6 +12,8 @@ from .utils import (
     make_bat_file,
     make_bash_file,
 )
+
+logger = logging.getLogger("install-tools")
 
 
 class InstallTools:
@@ -33,7 +36,7 @@ class InstallTools:
         component_args = \
             self.app_state.component_args if len(self.app_state.component_args) != 0 else None
 
-        print(f"esv_data_dir = {esv_data_dir}")
+        logger.debug(f"esv_data_dir = {esv_data_dir}")
 
         if not self.app_state.start_options[ComponentOptions.GUI]:
             make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
@@ -65,7 +68,12 @@ class InstallTools:
         if sys.platform == "win32":
             commandline_string_split = shlex.split(commandline_string, posix=0)
             make_bat_file("electrumx.bat", commandline_string_split, electrumx_env_vars)
-        elif sys.platform in ["linux", "darwin"]:
+        elif sys.platform == "linux":
+            commandline_string_split = shlex.split(commandline_string, posix=1)
+            filename = "electrumx.sh"
+            make_bash_file("electrumx.sh", commandline_string_split, electrumx_env_vars)
+            os.system(f"chmod 777 {filename}")
+        elif sys.platform == "darwin":
             commandline_string_split = shlex.split(commandline_string, posix=1)
             filename = "electrumx.sh"
             make_bash_file("electrumx.sh", commandline_string_split, electrumx_env_vars)
@@ -82,7 +90,12 @@ class InstallTools:
         if sys.platform == "win32":
             commandline_string_split = shlex.split(commandline_string, posix=0)
             make_bat_file("status_monitor.bat", commandline_string_split, {})
-        elif sys.platform in ["linux", "darwin"]:
+        elif sys.platform == "linux":
+            commandline_string_split = shlex.split(commandline_string, posix=1)
+            filename = "status_monitor.sh"
+            make_bash_file(filename, commandline_string_split, {})
+            os.system(f'chmod 777 {filename}')
+        elif sys.platform == "linux":
             commandline_string_split = shlex.split(commandline_string, posix=1)
             filename = "status_monitor.sh"
             make_bash_file(filename, commandline_string_split, {})
@@ -96,12 +109,14 @@ class InstallTools:
             os.chdir(self.app_state.depends_dir)
             subprocess.run(f"git clone {url}", shell=True, check=True)
             checkout_branch(branch)
-            subprocess.run(
+            process1 = subprocess.Popen(
                 f"{sys.executable} -m pip install -r {self.app_state.electrumsv_requirements_path}",
-                shell=True, check=True)
-            subprocess.run(
+                shell=True)
+            process1.wait()
+            process2 = subprocess.Popen(
                 f"{sys.executable} -m pip install -r {self.app_state.electrumsv_binary_requirements_path} ",
-                shell=True, check=True)
+                shell=True)
+            process2.wait()
 
     def install_electrumx(self, url, branch):
 
