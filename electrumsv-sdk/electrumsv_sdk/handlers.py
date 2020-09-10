@@ -155,7 +155,6 @@ class Handlers:
                 len(self.app_state.start_set) != 0:
             return
 
-
         repo = self.app_state.start_options[ComponentOptions.REPO]
         branch = self.app_state.start_options[ComponentOptions.BRANCH]
         if self.app_state.start_options[ComponentOptions.REPO] == "":  # default
