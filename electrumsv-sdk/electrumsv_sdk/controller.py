@@ -5,6 +5,7 @@ import time
 from electrumsv_node import electrumsv_node
 from electrumsv_sdk.components import ComponentName, ComponentStore, ComponentOptions
 
+from .installers import Installers
 from .handlers import Handlers
 from .starters import Starters
 from .stoppers import Stoppers
@@ -19,6 +20,7 @@ class Controller:
         self.starters = Starters(self.app_state)
         self.stoppers = Stoppers(self.app_state)
         self.handlers = Handlers(self.app_state)
+        self.installers = Installers(self.app_state)
         self.component_store = ComponentStore(self.app_state)
 
     def start(self):
@@ -49,7 +51,11 @@ class Controller:
     def reset(self):
         """no choice is given to the user at present - resets node, electrumx and electrumsv
         wallet"""
+
+        # Todo - these should be set via the cli similar to the start command
         self.app_state.start_options[ComponentOptions.BACKGROUND] = True
+        self.app_state.start_options[ComponentOptions.NEW] = False
+        self.app_state.start_options[ComponentOptions.ID] = ""
         
         self.app_state.load_repo_paths()
         self.app_state.resetters.reset_node()
@@ -59,7 +65,10 @@ class Controller:
         self.app_state.start_set.add(ComponentName.ELECTRUMX)
         self.app_state.start_set.add(ComponentName.ELECTRUMSV)
 
-        self.handlers.handle_install()
+        self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
+        new_dir = self.installers.get_electrumsv_data_dir()
+        port = self.installers.get_electrumsv_port()
+        self.app_state.update_electrumsv_data_dir(new_dir, port)
 
         self.start()
         logger.debug("allowing time for the electrumsv daemon to boot up - standby...")
