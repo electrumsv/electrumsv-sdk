@@ -3,7 +3,7 @@ import pprint
 import logging
 import time
 from electrumsv_node import electrumsv_node
-from electrumsv_sdk.components import ComponentName, ComponentStore
+from electrumsv_sdk.components import ComponentName, ComponentStore, ComponentOptions
 
 from .handlers import Handlers
 from .starters import Starters
@@ -49,6 +49,8 @@ class Controller:
     def reset(self):
         """no choice is given to the user at present - resets node, electrumx and electrumsv
         wallet"""
+        self.app_state.start_options[ComponentOptions.BACKGROUND] = True
+        
         self.app_state.load_repo_paths()
         self.app_state.resetters.reset_node()
         self.app_state.resetters.reset_electrumx()

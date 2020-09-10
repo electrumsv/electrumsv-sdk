@@ -172,6 +172,7 @@ class Starters:
         else:
             component.component_state = ComponentState.Running
             logger.debug("electrumx online")
+        time.sleep(3)
         self.component_store.update_status_file(component)
         self.status_monitor_client.update_status(component)
         return process
@@ -334,11 +335,12 @@ class Starters:
 
         procs = []
 
-        is_running = self.is_status_monitor_running()
-        if not is_running:
+        if not self.is_status_monitor_running():
             status_monitor_process = self.start_status_monitor()
             procs.append(status_monitor_process.pid)
-            time.sleep(1)
+            if not self.is_status_monitor_running():
+                logger.error("failed to launch status monitor")
+                sys.exit(1)
 
         if ComponentName.NODE in self.app_state.start_set \
                 or len(self.app_state.start_set) == 0:

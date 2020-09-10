@@ -42,8 +42,9 @@ jobs:
       displayName: 'stop node, electrumx and electrumsv'
       workingDirectory: electrumsv-sdk/
     - script: |
+        sleep 5
         electrumsv-sdk reset
-      displayName: 'stop node, electrumx and electrumsv'
+      displayName: 'reset'
       workingDirectory: electrumsv-sdk/
 
 

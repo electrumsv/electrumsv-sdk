@@ -131,7 +131,6 @@ class Installers:
                     shell=True,
                     check=True,
                 )
-                subprocess.run(f"{sys.executable} -m pip install pysqlite3-binary")
             if result.stdout.strip() != url:
                 existing_fork = self.app_state.electrumsv_dir
                 logger.debug(f"- alternate fork of electrumsv is already installed")
