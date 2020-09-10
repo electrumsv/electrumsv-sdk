@@ -32,9 +32,18 @@ jobs:
         python3 -m pip install pytest pytest-cov
         electrumsv-sdk start --background node
         electrumsv-sdk start --background electrumx
-        cd electrumsv
-        electrumsv-sdk start --background --new --repo=$PWD electrumsv
-      displayName: 'start stop reset'
+        electrumsv-sdk start --background --new electrumsv
+      displayName: 'start node, electrumx and electrumsv'
+      workingDirectory: electrumsv-sdk/
+    - script: |
+        electrumsv-sdk stop node
+        electrumsv-sdk stop electrumx
+        electrumsv-sdk stop electrumsv
+      displayName: 'stop node, electrumx and electrumsv'
+      workingDirectory: electrumsv-sdk/
+    - script: |
+        electrumsv-sdk reset
+      displayName: 'stop node, electrumx and electrumsv'
       workingDirectory: electrumsv-sdk/
 
 
