@@ -127,15 +127,13 @@ class Starters:
             metadata={},
             logging_path=None,
         )
-        while not electrumsv_node.is_running():
-            logger.debug("polling bitcoin daemon...")
-            time.sleep(5)
         if not electrumsv_node.is_running():
             component.component_state = ComponentState.Failed
             logger.error("bitcoin daemon failed to start")
         else:
             component.component_state = ComponentState.Running
             logger.debug("bitcoin daemon online")
+
         self.component_store.update_status_file(component)
         self.status_monitor_client.update_status(component)
 
