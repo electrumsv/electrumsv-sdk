@@ -35,6 +35,6 @@ async def subscribe(app, request, websocket):
     """subscribe for status updates"""
     host = request.socket._socket.getpeername()[0]
     port = request.socket._socket.getpeername()[1]
-    logger.debug(f"got websocket connection: host={host}, port={port}")
+    logger.debug(f"Got websocket connection: host={host}, port={port}")
     msg = await websocket.recv()
-    logger.debug(f"websocket client closed connection")
+    logger.debug(f"Websocket client closed connection")

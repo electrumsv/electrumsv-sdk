@@ -38,7 +38,7 @@ class Handlers:
         return False, flags_selected
 
     def handle_remote_repo(self, package_name, url, branch):
-        logger.debug(f"- installing remote dependency for {package_name} at {url}")
+        logger.debug(f"Installing remote dependency for {package_name} at {url}")
 
         if package_name == ComponentName.ELECTRUMSV:
             self.installer.remote_electrumsv(url, branch)
@@ -51,7 +51,7 @@ class Handlers:
 
     def handle_local_repo(self, package_name, path, branch):
         try:
-            logger.debug(f"- installing local dependency for {package_name} at path: {path}")
+            logger.debug(f"Installing local dependency for {package_name} at path: {path}")
             assert Path(path).exists(), f"the path {path} to {package_name} does not exist!"
             if branch != "":
                 subprocess.run(f"git checkout {branch}", shell=True, check=True)
@@ -90,7 +90,7 @@ class Handlers:
 
         valid_input, flags = self.validate_flags(parsed_args)
         if not valid_input:
-            print(f"valid flags include: ['--new', '--gui', '--id', --branch, --repo]. You "
+            logger.info(f"valid flags include: ['--new', '--gui', '--id', --branch, --repo]. You "
                   f"selected '{flags}'")
             return
 
@@ -106,7 +106,7 @@ class Handlers:
 
         if has_startup_flags():
             if len(self.app_state.start_set) == 0:
-                print("must select a component type when specifying startup flags")
+                logger.error("must select a component type when specifying startup flags")
                 sys.exit()
 
         if parsed_args.new:

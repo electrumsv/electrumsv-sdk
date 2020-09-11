@@ -16,22 +16,22 @@ class Resetters:
 
     def reset_node(self):
         electrumsv_node.reset()
-        logger.debug("reset of RegTest bitcoin daemon completed successfully.")
+        logger.debug("Reset of RegTest bitcoin daemon completed successfully.")
 
     def reset_electrumx(self):
-        logger.debug("resetting state of RegTest electrumx server...")
+        logger.debug("Resetting state of RegTest electrumx server...")
         electrumx_data_dir = self.app_state.electrumx_data_dir
         if electrumx_data_dir.exists():
             shutil.rmtree(electrumx_data_dir)
             os.mkdir(electrumx_data_dir)
         else:
             os.makedirs(electrumx_data_dir, exist_ok=True)
-        logger.debug("reset of RegTest electrumx server completed successfully.")
+        logger.debug("Reset of RegTest electrumx server completed successfully.")
 
     def reset_electrumsv_wallet(self):
         """depends on having node and electrumx already running"""
-        logger.debug("resetting state of RegTest electrumsv server...")
+        logger.debug("Resetting state of RegTest electrumsv server...")
         delete_wallet(self.app_state)
         create_wallet()
         topup_wallet()
-        logger.debug("reset of RegTest electrumsv wallet completed successfully")
+        logger.debug("Reset of RegTest electrumsv wallet completed successfully")

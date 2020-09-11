@@ -42,7 +42,7 @@ class Controller:
         result = electrumsv_node.call_any(
             self.app_state.node_args[0], *self.app_state.node_args[1:]
         )
-        print(result.json()["result"])
+        logger.info(result.json()["result"])
 
     def status(self):
         status = self.component_store.get_status()
@@ -71,7 +71,7 @@ class Controller:
         self.app_state.update_electrumsv_data_dir(new_dir, port)
 
         self.start()
-        logger.debug("allowing time for the electrumsv daemon to boot up - standby...")
+        logger.debug("Allowing time for the electrumsv daemon to boot up - standby...")
         time.sleep(7)
         self.app_state.resetters.reset_electrumsv_wallet()
         self.stop()

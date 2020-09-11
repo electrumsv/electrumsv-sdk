@@ -112,17 +112,17 @@ def get_str_datetime():
 
 
 def topup_wallet():
-    logger.debug("topping up wallet...")
+    logger.debug("Topping up wallet...")
     nblocks = 1
     toaddress = "mwv1WZTsrtKf3S9mRQABEeMaNefLbQbKpg"
     result = electrumsv_node.call_any("generatetoaddress", nblocks, toaddress)
     if result.status_code == 200:
-        logger.debug(f"generated {nblocks}: {result.json()['result']} to {toaddress}")
+        logger.debug(f"Generated {nblocks}: {result.json()['result']} to {toaddress}")
 
 
 def create_wallet():
     try:
-        logger.debug("creating wallet...")
+        logger.debug("Creating wallet...")
         wallet_name = "worker1"
         url = (
             f"http://127.0.0.1:9999/v1/regtest/dapp/wallets/"
@@ -131,7 +131,7 @@ def create_wallet():
         payload = {"password": "test"}
         response = requests.post(url, data=json.dumps(payload))
         response.raise_for_status()
-        logger.debug(f"new wallet created in {response.json()['value']['new_wallet']}")
+        logger.debug(f"New wallet created in {response.json()['value']['new_wallet']}")
     except Exception as e:
         logger.exception(e)
 
@@ -142,9 +142,9 @@ def delete_wallet(app_state):
 
     try:
         time.sleep(1)
-        logger.debug("deleting wallet...")
+        logger.debug("Deleting wallet...")
         logger.debug(
-            "wallet directory before: %s", os.listdir(esv_wallet_db_directory),
+            "Wallet directory before: %s", os.listdir(esv_wallet_db_directory),
         )
         wallet_name = "worker1"
         file_names = [
@@ -157,7 +157,7 @@ def delete_wallet(app_state):
             if Path.exists(file_path):
                 os.remove(file_path)
         logger.debug(
-            "wallet directory after: %s", os.listdir(esv_wallet_db_directory),
+            "Wallet directory after: %s", os.listdir(esv_wallet_db_directory),
         )
     except Exception as e:
         logger.exception(e)

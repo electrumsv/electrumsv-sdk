@@ -47,7 +47,7 @@ class ArgParser:
         elif arg == "--help":
             subcommand_indices[self.app_state.TOP_LEVEL].append(0)
         else:
-            print("First argument must be one of: "
+            logger.error("First argument must be one of: "
                 "[start, stop, reset, node, " "status, --help]")
             sys.exit()
         return cur_cmd_name, subcommand_indices
@@ -87,7 +87,7 @@ class ArgParser:
                     if arg in ComponentName.__dict__.values():
                         self.app_state.start_set.add(arg)
                     else:
-                        print("must select from: node, electrumx, electrumsv, indexer, "
+                        logger.error("Must select from: node, electrumx, electrumsv, indexer, "
                               "status_monitor]")
                         sys.exit()
                     component_selected = True
@@ -111,7 +111,7 @@ class ArgParser:
                     if arg in ComponentName.__dict__.values():
                         self.app_state.stop_set.add(arg)
                     else:
-                        print("must select from: node, electrumx, electrumsv, indexer, "
+                        logger.error("Must select from: node, electrumx, electrumsv, indexer, "
                               "status_monitor]")
                         sys.exit()
                     component_selected = True
