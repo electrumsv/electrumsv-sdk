@@ -1,8 +1,8 @@
 import json
 import logging
+import time
 
 import requests
-import urllib3
 
 from .constants import STATUS_MONITOR_API
 from .components import Component
@@ -23,8 +23,13 @@ class StatusMonitorClient:
             return False
 
     def update_status(self, component: Component):
-        try:
-            result = requests.post(STATUS_MONITOR_API + "/update_status", json=component.to_dict())
-            result.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            self.logger.error("could not update status_monitor: reason: " + str(e))
+        for sleep_time in (3, 3, 3):
+            try:
+                result = requests.post(STATUS_MONITOR_API + "/update_status", json=component.to_dict())
+                result.raise_for_status()
+                return result
+            except Exception as e:
+                self.logger.error("could not update status_monitor: reason: " + str(e))
+                self.logger.debug("retrying status update...")
+                time.sleep(sleep_time)
+        self.logger.error("failed to update status monitor")
