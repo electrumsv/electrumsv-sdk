@@ -61,7 +61,7 @@ class StatusServer:
         try:
             with self.kernel as kernel:
                 kernel.run(self.main)
-            logger.debug("status server stopped")
+            logger.debug("Status server stopped")
         except Exception as e:
             self.logger.exception(e)
 
@@ -94,7 +94,7 @@ class StatusServer:
                 for ws in self.server.websockets:
                     component = await self.curio_status_queue.get()
                     self.logger.debug(
-                        f"publishing status update for component:" f" {component['id']}"
+                        f"Publishing status update for component:" f" {component['id']}"
                     )
                     await ws.send(json.dumps(component))
             else:  # drain queue
@@ -103,7 +103,7 @@ class StatusServer:
 
     def update_status(self, component):
         self.curio_status_queue.put(component)
-        logger.debug(f"got status update for component: {component['id']}")
+        logger.debug(f"Got status update for component: {component['id']}")
 
 
 if __name__ == "__main__":

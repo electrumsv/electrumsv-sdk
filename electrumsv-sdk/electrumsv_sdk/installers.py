@@ -44,28 +44,28 @@ class Installers:
                     break
                 else:
                     count += 1
-            logger.debug(f"using new user-specified electrumsv data dir ({id})")
+            logger.debug(f"Using new user-specified electrumsv data dir ({id})")
 
         elif self.is_new_and_id(id, new):
             new_dir = self.app_state.electrumsv_dir.joinpath(id)
             if new_dir.exists():
-                logger.debug(f"user-specified electrumsv data directory: {new_dir} already exists ("
+                logger.debug(f"User-specified electrumsv data directory: {new_dir} already exists ("
                       f"either drop the --new flag or choose a unique identifier).")
-            logger.debug(f"using user-specified electrumsv data dir ({id})")
+            logger.debug(f"Using user-specified electrumsv data dir ({id})")
 
         elif self.is_not_new_and_id(id, new):
             new_dir = self.app_state.electrumsv_dir.joinpath(id)
             if not new_dir.exists():
-                logger.debug(f"user-specified electrumsv data directory: {new_dir} does not exist ("
+                logger.debug(f"User-specified electrumsv data directory: {new_dir} does not exist ("
                       f"either use the --new flag or choose a pre-existing id.")
-            logger.debug(f"using user-specified electrumsv data dir ({id})")
+            logger.debug(f"Using user-specified electrumsv data dir ({id})")
 
         elif self.is_not_new_and_no_id(id, new):
             id = DEFAULT_ID_ELECTRUMSV
             new_dir = self.app_state.electrumsv_dir.joinpath(id)
-            logger.debug(f"using default electrumsv data dir ({DEFAULT_ID_ELECTRUMSV})")
+            logger.debug(f"Using default electrumsv data dir ({DEFAULT_ID_ELECTRUMSV})")
 
-        logger.debug(f"electrumsv data dir = {new_dir}")
+        logger.debug(f"Electrumsv data dir = {new_dir}")
         return new_dir
 
     def port_is_in_use(self, port) -> bool:
@@ -102,7 +102,7 @@ class Installers:
         self.app_state.update_electrumsv_data_dir(new_dir, port)
 
         if not self.app_state.electrumsv_dir.exists():
-            logger.debug(f"- installing electrumsv (url={url})")
+            logger.debug(f"Installing electrumsv (url={url})")
             self.app_state.install_tools.install_electrumsv(url, branch)
 
         elif self.app_state.electrumsv_dir.exists():
@@ -116,7 +116,7 @@ class Installers:
                 text=True,
             )
             if result.stdout.strip() == url:
-                logger.debug(f"- electrumsv is already installed (url={url})")
+                logger.debug(f"Electrumsv is already installed (url={url})")
                 checkout_branch(branch)
                 subprocess.run(f"git pull", shell=True, check=True)
                 subprocess.run(
@@ -133,9 +133,9 @@ class Installers:
                 )
             if result.stdout.strip() != url:
                 existing_fork = self.app_state.electrumsv_dir
-                logger.debug(f"- alternate fork of electrumsv is already installed")
-                logger.debug(f"- moving existing fork (to '{existing_fork}.bak')")
-                logger.debug(f"- installing electrumsv (url={url})")
+                logger.debug(f"Alternate fork of electrumsv is already installed")
+                logger.debug(f"Moving existing fork (to '{existing_fork}.bak')")
+                logger.debug(f"Installing electrumsv (url={url})")
                 os.rename(
                     self.app_state.electrumsv_dir,
                     self.app_state.electrumsv_dir.with_suffix(".bak"),
@@ -160,7 +160,7 @@ class Installers:
         (dir exists, url does not match - it's a forked repo)
         """
         if not self.app_state.electrumx_dir.exists():
-            logger.debug(f"- installing electrumx (url={url})")
+            logger.debug(f"Installing electrumx (url={url})")
             self.app_state.install_tools.install_electrumx(url, branch)
         elif self.app_state.electrumx_dir.exists():
             os.chdir(self.app_state.electrumx_dir)
@@ -173,7 +173,7 @@ class Installers:
                 text=True,
             )
             if result.stdout.strip() == url:
-                logger.debug(f"- electrumx is already installed (url={url})")
+                logger.debug(f"Electrumx is already installed (url={url})")
                 checkout_branch(branch)
                 subprocess.run(f"git pull", shell=True, check=True)
                 # Todo - cannot re-install requirements dynamically because of plyvel
@@ -181,9 +181,9 @@ class Installers:
 
             if result.stdout.strip() != url:
                 existing_fork = self.app_state.electrumx_dir
-                logger.debug(f"- alternate fork of electrumx is already installed")
-                logger.debug(f"- moving existing fork (to '{existing_fork}.bak')")
-                logger.debug(f"- installing electrumsv (url={url})")
+                logger.debug(f"Alternate fork of electrumx is already installed")
+                logger.debug(f"Moving existing fork (to '{existing_fork}.bak')")
+                logger.debug(f"Installing electrumsv (url={url})")
                 os.rename(
                     self.app_state.electrumx_dir,
                     self.app_state.electrumx_dir.with_suffix(".bak"),

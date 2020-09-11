@@ -157,13 +157,13 @@ class AppState:
 
         if config.get("is_first_run") or config.get("is_first_run") is None:
             logger.debug(
-                "running SDK for the first time. please wait for configuration to complete..."
+                "Running SDK for the first time. please wait for configuration to complete..."
             )
-            logger.debug("purging previous server installations (if any)...")
+            logger.debug("Purging previous server installations (if any)...")
             self.purge_prev_installs_if_exist()
             with open(self.electrumsv_sdk_config_path, "w") as f:
                 config = {"is_first_run": False}
                 f.write(json.dumps(config, indent=4))
-            logger.debug("purging completed successfully")
+            logger.debug("Purging completed successfully")
 
             electrumsv_node.reset()

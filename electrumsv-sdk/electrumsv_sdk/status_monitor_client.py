@@ -19,7 +19,7 @@ class StatusMonitorClient:
             result.raise_for_status()
             return json.loads(result.json())
         except requests.exceptions.ConnectionError as e:
-            self.logger.error("problem fetching status: reason: " + str(e))
+            self.logger.error("Problem fetching status: reason: " + str(e))
             return False
 
     def update_status(self, component: Component):
@@ -29,7 +29,7 @@ class StatusMonitorClient:
                 result.raise_for_status()
                 return result
             except Exception as e:
-                self.logger.error("could not update status_monitor: reason: " + str(e))
-                self.logger.debug("retrying status update...")
+                self.logger.error("Could not update status_monitor: reason: " + str(e))
+                self.logger.debug("Retrying status update...")
                 time.sleep(sleep_time)
         self.logger.error("failed to update status monitor")

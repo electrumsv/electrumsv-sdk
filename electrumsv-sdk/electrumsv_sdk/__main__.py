@@ -25,7 +25,7 @@ def main():
     """
     logger.info("Starting ElectrumSV Software Development Kit")
     logger.info(
-        f"-Python version {platform.python_version()}-{platform.architecture()[0]}"
+        f"Python version {platform.python_version()}-{platform.architecture()[0]}"
     )
     app_state = AppState()
     os.makedirs(app_state.depends_dir, exist_ok=True)

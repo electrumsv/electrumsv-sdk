@@ -41,8 +41,8 @@ class Starters:
                                               stderr=subprocess.STDOUT)
             return process_handle
         elif sys.platform == 'win32':
-            print(
-                "running as a background process (without a console window) is not supported "
+            logger.info(
+                "Running as a background process (without a console window) is not supported "
                 "on windows, spawning in a new console window")
             process_handle = subprocess.Popen(
                 f"{command}", creationflags=subprocess.CREATE_NEW_CONSOLE
@@ -73,7 +73,7 @@ class Starters:
     async def is_electrumx_running(self):
         for sleep_time in (1, 2, 3):
             try:
-                logger.debug("polling electrumx...")
+                logger.debug("Polling electrumx...")
                 async with aiorpcx.connect_rs(host="127.0.0.1", port=51001) as session:
                     result = await session.send_request("server.version")
                     if result[1] == "1.4":
@@ -87,7 +87,7 @@ class Starters:
     def is_electrumsv_running(self):
         for sleep_time in (3, 3, 3, 3):
             try:
-                logger.debug("polling electrumsv...")
+                logger.debug("Polling electrumsv...")
                 result = requests.get("http://127.0.0.1:9999/")
                 result.raise_for_status()
                 assert result.json()["status"] == "success"
@@ -132,7 +132,7 @@ class Starters:
             logger.error("bitcoin daemon failed to start")
         else:
             component.component_state = ComponentState.Running
-            logger.debug("bitcoin daemon online")
+            logger.debug("Bitcoin daemon online")
 
         self.component_store.update_status_file(component)
         self.status_monitor_client.update_status(component)
@@ -140,7 +140,7 @@ class Starters:
         # process handle not returned because node is stopped via rpc
 
     def start_electrumx_server(self):
-        logger.debug(f"starting RegTest electrumx server...")
+        logger.debug(f"Starting RegTest electrumx server...")
         if sys.platform == "win32":
             electrumx_server_script = self.app_state.run_scripts_dir.joinpath("electrumx.bat")
         else:
@@ -166,10 +166,10 @@ class Starters:
         is_running = asyncio.run(self.is_electrumx_running())
         if not is_running:
             component.component_state = ComponentState.Failed
-            logger.error("electrumx server failed to start")
+            logger.error("Electrumx server failed to start")
         else:
             component.component_state = ComponentState.Running
-            logger.debug("electrumx online")
+            logger.debug("Electrumx online")
         time.sleep(3)
         self.component_store.update_status_file(component)
         self.status_monitor_client.update_status(component)
@@ -226,18 +226,17 @@ class Starters:
         fixing this: https://github.com/electrumsv/electrumsv/issues/111
         2) newly created wallet doesn't seem to be fully useable until after stopping the daemon."""
         if not electrumsv_node.is_running():
-            print()
-            print("electrumsv in RegTest mode requires a bitcoin node to be running... failed to "
+            logger.debug("Electrumsv in RegTest mode requires a bitcoin node to be running... failed to "
                   "connect")
             sys.exit()
 
         is_running = asyncio.run(self.is_electrumx_running())
         if not is_running:
-            logger.debug("electrumsv in RegTest mode requires electrumx to be running... "
+            logger.debug("Electrumsv in RegTest mode requires electrumx to be running... "
                          "failed to connect")
         self.ensure_restapi_auth_disabled()
 
-        logger.debug(f"starting RegTest electrumsv daemon...")
+        logger.debug(f"Starting RegTest electrumsv daemon...")
         if self.app_state.start_options[ComponentOptions.GUI]:
             script_name = "electrumsv-gui"
         else:
@@ -280,11 +279,11 @@ class Starters:
         is_running = self.is_electrumsv_running()
         if not is_running:
             component.component_state = ComponentState.Failed
-            logger.error("electrumsv failed to start")
+            logger.error("Electrumsv failed to start")
             sys.exit(1)
         else:
             component.component_state = ComponentState.Running
-            logger.debug("electrumsv online")
+            logger.debug("Electrumsv online")
 
         self.component_store.update_status_file(component)
         self.status_monitor_client.update_status(component)
@@ -296,7 +295,7 @@ class Starters:
         elif sys.platform in ("linux", "darwin"):
             status_monitor_script = self.app_state.run_scripts_dir.joinpath("status_monitor.sh")
 
-        logger.debug(f"starting status monitor daemon...")
+        logger.debug(f"Starting status monitor daemon...")
         process = self.spawn_process(status_monitor_script)
 
         id = self.app_state.start_options[ComponentOptions.ID]
@@ -317,18 +316,15 @@ class Starters:
         is_running = self.is_status_monitor_running()
         if not is_running:
             component.component_state = ComponentState.Failed
-            logger.error("status_monitor failed to start")
+            logger.error("Status_monitor failed to start")
         else:
             component.component_state = ComponentState.Running
-            logger.debug("status_monitor online")
+            logger.debug("Status_monitor online")
         self.component_store.update_status_file(component)
         return process
 
     def start(self):
-        print()
-        print()
-        print("running stack...")
-
+        logger.info("Starting component...")
         open(self.app_state.electrumsv_sdk_data_dir / "spawned_pids", 'w').close()
 
         procs = []
