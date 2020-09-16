@@ -118,7 +118,23 @@ class ArgParser:
                     continue
 
             elif self.app_state.NAMESPACE == self.app_state.RESET:
-                pass
+                # <reset options>
+                if arg.startswith("--") and not component_selected:
+                    subcommand_indices[cur_cmd_name].append(index)
+                    continue
+
+                # <component name>
+                if not arg.startswith("-") and not component_selected:
+                    cur_cmd_name = arg
+                    subcommand_indices[cur_cmd_name] = []
+                    if arg in ComponentName.__dict__.values():
+                        self.app_state.reset_set.add(arg)
+                    else:
+                        logger.error("Must select from: node, electrumx, electrumsv, indexer, "
+                              "status_monitor]")
+                        sys.exit()
+                    component_selected = True
+                    continue
 
             elif self.app_state.NAMESPACE == self.app_state.NODE:
                 if index != 0:
@@ -171,13 +187,6 @@ class ArgParser:
         return subparsers, status_monitor
 
     def add_start_parser_args(self, start_parser):
-        self.app_state.start_options[ComponentOptions.NEW] = False
-        self.app_state.start_options[ComponentOptions.GUI] = False
-        self.app_state.start_options[ComponentOptions.BACKGROUND] = False
-        self.app_state.start_options[ComponentOptions.ID] = False
-        self.app_state.start_options[ComponentOptions.REPO] = False
-        self.app_state.start_options[ComponentOptions.BRANCH] = False
-
         start_parser.add_argument("--new", action="store_true", help="")
         start_parser.add_argument("--gui", action="store_true", help="")
         start_parser.add_argument("--background", action="store_true", help="")
@@ -228,7 +237,7 @@ class ArgParser:
             "--id",
             type=str,
             default="",
-            help="human-readable identifier for component (e.g. 'worker1_esv')",
+            help="human-readable identifier for component (e.g. 'electrumsv1')",
         )
 
         # Stop based on ComponentType
@@ -252,7 +261,29 @@ class ArgParser:
         reset_parser = namespaces.add_parser(
             "reset", help="reset state of relevant servers to genesis"
         )
-        return reset_parser
+        reset_parser.add_argument(
+            "--id",
+            type=str,
+            default="",
+            help="human-readable identifier for component (e.g. 'electrumsv1')",
+        )
+
+        # Stop based on ComponentType
+        subparsers = reset_parser.add_subparsers(help="subcommand", required=False)
+        electrumsv_node = subparsers.add_parser(ComponentName.NODE, help="reset node")
+        electrumx = subparsers.add_parser(ComponentName.ELECTRUMX, help="reset electrumx")
+        electrumsv = subparsers.add_parser(ComponentName.ELECTRUMSV, help="reset electrumsv")
+        electrumsv_indexer = subparsers.add_parser(ComponentName.INDEXER, help="reset indexer")
+        status = subparsers.add_parser(ComponentName.STATUS_MONITOR, help="reset status monitor")
+
+        reset_namespace_subcommands = [
+            electrumsv,
+            electrumsv_node,
+            electrumx,
+            electrumsv_indexer,
+            status,
+        ]
+        return reset_parser, reset_namespace_subcommands
 
     def add_node_argparser(self, namespaces):
         node_parser = namespaces.add_parser(
@@ -277,7 +308,7 @@ class ArgParser:
         namespaces = top_level_parser.add_subparsers(help="namespaces", required=False)
         start_parser, start_namespace_subcommands = self.add_start_argparser(namespaces)
         stop_parser, stop_namespace_subcommands = self.add_stop_argparser(namespaces)
-        reset_parser = self.add_reset_argparser(namespaces)
+        reset_parser, reset_namespace_subcommands = self.add_reset_argparser(namespaces)
         node_parser = self.add_node_argparser(namespaces)
         status_parser = self.add_status_argparser(namespaces)
 
@@ -295,6 +326,10 @@ class ArgParser:
             self.app_state.subcmd_map[cmd_name] = cmd
 
         for cmd in stop_namespace_subcommands:
+            cmd_name = cmd.prog.split(sep=" ")[2]
+            self.app_state.subcmd_map[cmd_name] = cmd
+
+        for cmd in reset_namespace_subcommands:
             cmd_name = cmd.prog.split(sep=" ")[2]
             self.app_state.subcmd_map[cmd_name] = cmd
 

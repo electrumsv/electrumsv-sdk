@@ -30,6 +30,7 @@ import enum
 import json
 import logging
 import os
+import sys
 from typing import Optional, List
 
 from electrumsv_sdk.utils import get_str_datetime
@@ -37,6 +38,8 @@ from filelock import FileLock
 
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+logger = logging.getLogger("component-store")
 
 
 class ComponentName:
@@ -127,9 +130,12 @@ class ComponentStore:
         filelock_logger.setLevel(logging.WARNING)
 
         with self.file_lock:
-            with open(self.component_state_path, "r") as f:
-                component_state = json.loads(f.read())
-        return component_state
+            if self.component_state_path.exists():
+                with open(self.component_state_path, "r") as f:
+                    component_state = json.loads(f.read())
+                return component_state
+            else:
+                return []
 
     def find_component_if_exists(self, component: Component, component_state: List[dict]):
         for index, comp in enumerate(component_state):
@@ -157,3 +163,12 @@ class ComponentStore:
 
         with open(self.component_state_path, "w") as f:
             f.write(json.dumps(component_state, indent=4))
+
+    def component_data_by_id(self, component_id):
+        component_state = self.get_status()
+        for component in component_state:
+            if component['id'] == component_id:
+                return component
+        else:
+            logger.error("component id not found")
+            return {}

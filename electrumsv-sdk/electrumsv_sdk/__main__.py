@@ -11,6 +11,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s'
 logger = logging.getLogger("main")
 logger_requests = logging.getLogger("urllib3").setLevel(logging.WARNING)
 
+
 def main():
     """
     Command-line interface for the ElectrumSV Software Development Kit

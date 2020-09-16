@@ -134,6 +134,10 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.RESET:
             return
 
+        if id != "":
+            self.app_state.start_options[ComponentOptions.ID] = parsed_args.id
+            logger.debug(f"id flag={parsed_args.id}")
+
     def handle_node_args(self, parsed_args):
         """parsed_args are actually raw args. feeds runners.node() via Config.node_args"""
         if not self.app_state.NAMESPACE == ComponentName.NODE:
