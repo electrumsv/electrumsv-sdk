@@ -12,7 +12,7 @@ from electrumsv_node import electrumsv_node
 
 from .constants import DEFAULT_ID_ELECTRUMSV, DEFAULT_PORT_ELECTRUMSV
 from .argparsing import ArgParser
-from .components import ComponentName
+from .components import ComponentName, ComponentOptions
 from .controller import Controller
 from .handlers import Handlers
 from .install_tools import InstallTools
@@ -82,8 +82,16 @@ class AppState:
         self.start_set: Set[ComponentName] = set()
         self.start_options: Dict[ComponentName] = {}
         self.stop_set: Set[ComponentName] = set()
+        self.reset_set: Set[ComponentName] = set()
 
         self.node_args = None
+
+        self.start_options[ComponentOptions.NEW] = False
+        self.start_options[ComponentOptions.GUI] = False
+        self.start_options[ComponentOptions.BACKGROUND] = False
+        self.start_options[ComponentOptions.ID] = ""
+        self.start_options[ComponentOptions.REPO] = ""
+        self.start_options[ComponentOptions.BRANCH] = ""
 
     def set_electrumsv_path(self, electrumsv_dir: Path):
         """This is set dynamically at startup. It is *only persisted for purposes of the 'reset'

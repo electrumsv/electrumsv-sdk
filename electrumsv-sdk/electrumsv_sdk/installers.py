@@ -28,11 +28,12 @@ class Installers:
     def is_not_new_and_id(self, id, new) -> bool:
         return id != "" and not new
 
-    def get_electrumsv_data_dir(self):
+    def get_electrumsv_data_dir(self, id=None):
         """to run multiple instances of electrumsv requires multiple data directories (with
         separate lock files)"""
         new = self.app_state.start_options[ComponentOptions.NEW]
-        id = self.app_state.start_options[ComponentOptions.ID]
+        if not id:
+            id = self.app_state.start_options[ComponentOptions.ID]
 
         # autoincrement (electrumsv1 -> electrumsv2 -> electrumsv3...)
         if self.is_new_and_no_id(id, new):

@@ -1,8 +1,14 @@
 import logging
 import os
 import shutil
+import time
+
 from electrumsv_node import electrumsv_node
 
+from .stoppers import Stoppers
+from .components import ComponentName
+from .installers import Installers
+from .starters import Starters
 from .utils import topup_wallet, create_wallet, delete_wallet
 
 logger = logging.getLogger("main")
@@ -13,6 +19,9 @@ orm_logger.setLevel(logging.WARNING)
 class Resetters:
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
+        self.starters = Starters(self.app_state)
+        self.stoppers = Stoppers(self.app_state)
+        self.installers = Installers(self.app_state)
 
     def reset_node(self):
         electrumsv_node.reset()
@@ -28,9 +37,28 @@ class Resetters:
             os.makedirs(electrumx_data_dir, exist_ok=True)
         logger.debug("Reset of RegTest electrumx server completed successfully.")
 
-    def reset_electrumsv_wallet(self):
+    def launch_esv_dependencies(self, component_id):
+        """ElectrumSV requires ElectrumX and Node to be running."""
+        self.app_state.start_set.add(ComponentName.NODE)
+        self.app_state.start_set.add(ComponentName.ELECTRUMX)
+        self.app_state.start_set.add(ComponentName.ELECTRUMSV)
+
+        self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
+        new_dir = self.installers.get_electrumsv_data_dir(id=component_id)
+        port = self.installers.get_electrumsv_port()
+        self.app_state.update_electrumsv_data_dir(new_dir, port)
+
+        self.starters.start()
+        logger.debug("Allowing time for the electrumsv daemon to boot up - standby...")
+        time.sleep(7)
+
+    def reset_electrumsv_wallet(self, component_id=None):
         """depends on having node and electrumx already running"""
+        self.launch_esv_dependencies(component_id)
         logger.debug("Resetting state of RegTest electrumsv server...")
+        if component_id is None:
+            logger.warning("Note: No --id flag is specified. Therefore the default 'electrumsv1' "
+                "instance will be reset.")
         delete_wallet(self.app_state)
         create_wallet()
         topup_wallet()

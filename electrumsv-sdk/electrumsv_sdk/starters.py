@@ -27,6 +27,7 @@ class Starters:
         self.app_state = app_state
         self.component_store = ComponentStore(self.app_state)
         self.status_monitor_client = StatusMonitorClient(self.app_state)
+        self.component_store = ComponentStore(self.app_state)
 
     def spawn_process(self, command):
         if self.app_state.start_options[ComponentOptions.BACKGROUND]:
@@ -114,7 +115,8 @@ class Starters:
         process_pid = electrumsv_node.start()
 
         id = self.app_state.start_options[ComponentOptions.ID]
-        if not id:
+        component_data = self.component_store.component_data_by_id(id)
+        if not id or component_data.get('process_type') != ComponentType.NODE:
             id = DEFAULT_ID_NODE
 
         component = Component(
@@ -149,7 +151,8 @@ class Starters:
         process = self.spawn_process(electrumx_server_script)
 
         id = self.app_state.start_options[ComponentOptions.ID]
-        if not id:
+        component_data = self.component_store.component_data_by_id(id)
+        if not id or component_data.get('process_type') != ComponentType.ELECTRUMX:
             id = DEFAULT_ID_ELECTRUMX
 
         component = Component(
@@ -260,7 +263,8 @@ class Starters:
             return self.start_electrumsv_daemon(is_first_run=False)
 
         id = self.app_state.start_options[ComponentOptions.ID]
-        if not id:
+        component_data = self.component_store.component_data_by_id(id)
+        if not id or component_data.get('process_type') != ComponentType.ELECTRUMSV:
             id = DEFAULT_ID_ELECTRUMSV
 
         logging_path = self.app_state.electrumsv_data_dir.joinpath("logs")
@@ -299,7 +303,8 @@ class Starters:
         process = self.spawn_process(status_monitor_script)
 
         id = self.app_state.start_options[ComponentOptions.ID]
-        if not id:
+        component_data = self.component_store.component_data_by_id(id)
+        if not id or component_data.get('process_type') != ComponentType.STATUS_MONITOR:
             id = DEFAULT_ID_STATUS
 
         component = Component(
