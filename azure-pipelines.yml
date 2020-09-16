@@ -47,6 +47,13 @@ jobs:
         electrumsv-sdk reset
       displayName: 'reset'
       workingDirectory: electrumsv-sdk/
+    - script: |
+        sleep 5
+        electrumsv-sdk reset --id=node1
+        electrumsv-sdk reset --id=electrumx1
+        electrumsv-sdk reset --id=electrumsv1
+      displayName: 'reset by id'
+      workingDirectory: electrumsv-sdk/
 
 - job: TestWindows
   pool: {vmImage: 'windows-latest'}
