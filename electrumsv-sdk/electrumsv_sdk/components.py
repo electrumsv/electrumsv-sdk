@@ -43,11 +43,16 @@ logger = logging.getLogger("component-store")
 
 
 class ComponentName:
+    WOC = "whatsonchain"
     STATUS_MONITOR = "status_monitor"
     NODE = "node"
     ELECTRUMX = "electrumx"
     ELECTRUMSV = "electrumsv"
     INDEXER = "indexer"
+
+
+COMPONENTS = [ComponentName.WOC, ComponentName.STATUS_MONITOR, ComponentName.NODE,
+              ComponentName.ELECTRUMX, ComponentName.ELECTRUMSV, ComponentName.INDEXER]
 
 
 class ComponentOptions:
@@ -65,6 +70,7 @@ class ComponentType(enum.IntEnum):
     ELECTRUMSV = 3
     INDEXER = 4
     STATUS_MONITOR = 5
+    WOC = 6
 
 
 class ComponentState(enum.IntEnum):
@@ -167,7 +173,7 @@ class ComponentStore:
     def component_data_by_id(self, component_id):
         component_state = self.get_status()
         for component in component_state:
-            if component['id'] == component_id:
+            if component.get('id') == component_id:
                 return component
         else:
             logger.error("component id not found")

@@ -151,6 +151,17 @@ class Handlers:
 
         self.installer.status_monitor()
 
+    def handle_whatsonchain_args(self, _parsed_args):
+        """takes no arguments"""
+        if not self.app_state.NAMESPACE == self.app_state.START:
+            return
+
+        if not ComponentName.WOC in self.app_state.start_set and \
+                len(self.app_state.start_set) != 0:
+            return
+
+        self.installer.woc()
+
     def handle_electrumsv_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
             return

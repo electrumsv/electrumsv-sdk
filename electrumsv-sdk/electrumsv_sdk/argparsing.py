@@ -12,7 +12,7 @@ import sys
 import textwrap
 from argparse import RawTextHelpFormatter
 
-from electrumsv_sdk.components import ComponentName, ComponentOptions
+from electrumsv_sdk.components import ComponentName, ComponentOptions, COMPONENTS
 from electrumsv_sdk.esv_argparsing_facade import extend_esv_parser
 
 logger = logging.getLogger("argparsing")
@@ -87,8 +87,7 @@ class ArgParser:
                     if arg in ComponentName.__dict__.values():
                         self.app_state.start_set.add(arg)
                     else:
-                        logger.error("Must select from: node, electrumx, electrumsv, indexer, "
-                              "status_monitor]")
+                        logger.error(f"Must select from: {COMPONENTS}")
                         sys.exit()
                     component_selected = True
                     continue
@@ -186,6 +185,10 @@ class ArgParser:
             help="start status monitor")
         return subparsers, status_monitor
 
+    def add_subparser_woc(self, subparsers):
+        woc = subparsers.add_parser(ComponentName.WOC, help="start whatsonchain explorer")
+        return subparsers, woc
+
     def add_start_parser_args(self, start_parser):
         start_parser.add_argument("--new", action="store_true", help="")
         start_parser.add_argument("--gui", action="store_true", help="")
@@ -221,6 +224,7 @@ class ArgParser:
         subparsers, status = self.add_subparser_status_monitor(subparsers)
         subparsers, electrumsv_node = self.add_subparser_electrumsv_node(subparsers)
         subparsers, electrumsv_indexer = self.add_subparser_indexer(subparsers)
+        subparsers, woc = self.add_subparser_woc(subparsers)
 
         start_namespace_subcommands = [
             electrumsv,
@@ -228,6 +232,7 @@ class ArgParser:
             status,
             electrumsv_node,
             electrumsv_indexer,
+            woc,
         ]
         return start_parser, start_namespace_subcommands
 

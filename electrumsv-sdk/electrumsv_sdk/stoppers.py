@@ -50,5 +50,9 @@ class Stoppers:
                 or len(self.app_state.stop_set) == 0:
             self.stop_components_by_type(ComponentType.STATUS_MONITOR)
 
+        if ComponentName.WOC in self.app_state.stop_set \
+                or len(self.app_state.stop_set) == 0:
+            self.stop_components_by_type(ComponentType.WOC)
+
         logger.info(f"terminated: "
                     f"{self.app_state.stop_set if len(self.app_state.stop_set) != 0 else 'all'}")

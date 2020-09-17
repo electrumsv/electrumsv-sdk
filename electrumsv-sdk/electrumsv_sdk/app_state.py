@@ -76,6 +76,8 @@ class AppState:
         self.electrumx_dir = self.depends_dir.joinpath("electrumx")
         self.electrumx_data_dir = self.depends_dir.joinpath("electrumx_data")
 
+        self.woc_dir = self.depends_dir.joinpath("woc-explorer")
+
         self.sdk_package_dir = Path(MODULE_DIR)
         self.status_monitor_dir = self.sdk_package_dir.joinpath("status_server")
 

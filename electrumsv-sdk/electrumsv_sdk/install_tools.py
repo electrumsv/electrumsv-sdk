@@ -101,6 +101,25 @@ class InstallTools:
             make_bash_file(filename, commandline_string_split, {})
             os.system(f'chmod 777 {filename}')
 
+    def generate_run_script_woc(self):
+        os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
+        os.chdir(self.app_state.run_scripts_dir)
+
+        commandline_string1 = f"cd {self.app_state.woc_dir}\n"
+        commandline_string2 = f"call npm start\n" if sys.platform == "win32" else f"npm start\n"
+        separate_lines = [commandline_string1, commandline_string2]
+
+        if sys.platform == "win32":
+            make_bat_file("whatsonchain.bat", separate_lines=separate_lines)
+        elif sys.platform == "linux":
+            filename = "whatsonchain.sh"
+            make_bash_file(filename, separate_lines=separate_lines)
+            os.system(f'chmod 777 {filename}')
+        elif sys.platform == "darwin":
+            filename = "whatsonchain.sh"
+            make_bash_file(filename, separate_lines=separate_lines)
+            os.system(f'chmod 777 {filename}')
+
     def install_electrumsv(self, url, branch):
         # Note - this is only so that it works "out-of-the-box". But for development
         # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
@@ -108,7 +127,10 @@ class InstallTools:
         if not self.app_state.electrumsv_dir.exists():
             os.chdir(self.app_state.depends_dir)
             subprocess.run(f"git clone {url}", shell=True, check=True)
+
+            os.chdir(self.app_state.electrumsv_dir)
             checkout_branch(branch)
+
             process1 = subprocess.Popen(
                 f"{sys.executable} -m pip install -r {self.app_state.electrumsv_requirements_path}",
                 shell=True)
@@ -125,6 +147,8 @@ class InstallTools:
             os.makedirs(self.app_state.electrumx_data_dir, exist_ok=True)
             os.chdir(self.app_state.depends_dir)
             subprocess.run(f"git clone {url}", shell=True, check=True)
+
+            os.chdir(self.app_state.electrumx_dir)
             checkout_branch(branch)
         self.generate_run_script_electrumx()
 
@@ -133,3 +157,25 @@ class InstallTools:
 
     def install_bitcoin_node(self):
         subprocess.run(f"{sys.executable} -m pip install electrumsv-node", shell=True, check=True)
+
+    def install_woc(self, url="https://github.com/AustEcon/woc-explorer.git", branch=''):
+
+        if not self.app_state.woc_dir.exists():
+            os.makedirs(self.app_state.woc_dir, exist_ok=True)
+            os.makedirs(self.app_state.woc_dir, exist_ok=True)
+            os.chdir(self.app_state.depends_dir)
+            subprocess.run(f"git clone {url}", shell=True, check=True)
+
+            os.chdir(self.app_state.woc_dir)
+            checkout_branch(branch)
+
+        os.chdir(self.app_state.woc_dir)
+        process = subprocess.Popen("call npm install\n" if sys.platform == "win32"
+                       else "npm install\n",
+                       shell=True)
+        process.wait()
+        process = subprocess.Popen("call npm run-script build\n" if sys.platform == "win32"
+                       else "npm run-script build\n",
+                       shell=True)
+        process.wait()
+        self.generate_run_script_woc()
