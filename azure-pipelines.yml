@@ -28,19 +28,28 @@ jobs:
       displayName: 'prepare for electrumsv'
       workingDirectory: electrumsv-sdk/
     - script: |
+        sudo apt-get update
+        sudo apt install npm nodejs
+      displayName: 'prepare for whatsonchain'
+      workingDirectory: electrumsv-sdk/
+    - script: |
         python3 -m pip install wheel
         python3 -m pip install -e .
         python3 -m pip install pytest pytest-cov
         electrumsv-sdk start --background node
         electrumsv-sdk start --background electrumx
         electrumsv-sdk start --background --new electrumsv
-      displayName: 'start node, electrumx and electrumsv'
+
+        electrumsv-sdk node generate 1
+        electrumsv-sdk start --background whatsonchain
+      displayName: 'start node, electrumx, electrumsv, whatsonchain'
       workingDirectory: electrumsv-sdk/
     - script: |
         electrumsv-sdk stop node
         electrumsv-sdk stop electrumx
         electrumsv-sdk stop electrumsv
-      displayName: 'stop node, electrumx and electrumsv'
+        electrumsv-sdk stop whatsonchain
+      displayName: 'stop node, electrumx, electrumsv, whatsonchain'
       workingDirectory: electrumsv-sdk/
     - script: |
         sleep 5
@@ -73,18 +82,29 @@ jobs:
         electrumsv-sdk start --background node
         electrumsv-sdk start --background electrumx
         electrumsv-sdk start --background --new electrumsv
-      displayName: 'start node, electrumx and electrumsv'
+
+        electrumsv-sdk node generate 1
+        electrumsv-sdk start --background whatsonchain
+      displayName: 'start node, electrumx, electrumsv, whatsonchain'
       workingDirectory: electrumsv-sdk/
     - script: |
         electrumsv-sdk stop node
         electrumsv-sdk stop electrumx
         electrumsv-sdk stop electrumsv
-      displayName: 'stop node, electrumx and electrumsv'
+        electrumsv-sdk stop whatsonchain
+      displayName: 'stop node, electrumx, electrumsv, whatsonchain'
       workingDirectory: electrumsv-sdk/
     - script: |
         sleep 5
         electrumsv-sdk reset
       displayName: 'reset'
+      workingDirectory: electrumsv-sdk/
+    - script: |
+        sleep 5
+        electrumsv-sdk reset --id=node1
+        electrumsv-sdk reset --id=electrumx1
+        electrumsv-sdk reset --id=electrumsv1
+      displayName: 'reset by id'
       workingDirectory: electrumsv-sdk/
 
 

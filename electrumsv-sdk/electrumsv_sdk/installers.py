@@ -201,3 +201,6 @@ class Installers:
     def status_monitor(self):
         """purely for generating the .bat / .sh script"""
         self.app_state.install_tools.install_status_monitor()
+
+    def woc(self):
+        self.app_state.install_tools.install_woc()

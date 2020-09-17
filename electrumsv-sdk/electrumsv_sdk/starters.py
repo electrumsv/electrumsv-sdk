@@ -13,7 +13,7 @@ from electrumsv_node import electrumsv_node
 
 from .utils import trace_pid
 from .constants import STATUS_MONITOR_API, DEFAULT_ID_ELECTRUMSV, DEFAULT_ID_ELECTRUMX, \
-    DEFAULT_ID_NODE, DEFAULT_ID_STATUS, DEFAULT_ID_INDEXER
+    DEFAULT_ID_NODE, DEFAULT_ID_STATUS, DEFAULT_ID_INDEXER, DEFAULT_ID_WOC
 from .status_monitor_client import StatusMonitorClient
 
 from .components import Component, ComponentName, ComponentType, ComponentState, ComponentStore, \
@@ -37,9 +37,11 @@ class Starters:
 
     def spawn_in_background(self, command):
         if sys.platform in ('linux', 'darwin'):
-            process_handle = subprocess.Popen(f"nohup {command} &", shell=True,
-                                              stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                              stderr=subprocess.STDOUT)
+            process = subprocess.Popen(f"nohup {command} &", shell=True,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
+            process.wait()
+            process_handle = trace_pid(command)
             return process_handle
         elif sys.platform == 'win32':
             logger.info(
@@ -328,6 +330,46 @@ class Starters:
         self.component_store.update_status_file(component)
         return process
 
+    def start_woc_server(self):
+        if sys.platform == "win32":
+            woc_script = self.app_state.run_scripts_dir.joinpath("whatsonchain.bat")
+        elif sys.platform in ("linux", "darwin"):
+            woc_script = self.app_state.run_scripts_dir.joinpath("whatsonchain.sh")
+
+        if not self.check_node_for_woc():
+            sys.exit(1)
+
+        logger.debug(f"Starting whatsonchain daemon...")
+        process = self.spawn_process(woc_script)
+
+        id = self.app_state.start_options[ComponentOptions.ID]
+        component_data = self.component_store.component_data_by_id(id)
+        if not id or component_data.get('process_type') != ComponentType.WOC:
+            id = DEFAULT_ID_WOC
+
+        component = Component(
+            id=id,
+            pid=process.pid,
+            process_type=ComponentType.WOC,
+            endpoint="http://127.0.0.1:api/status",
+            component_state=ComponentState.Running,
+            location=str(self.app_state.woc_dir),
+            metadata={},
+            logging_path=None,
+        )
+
+        is_running = self.is_woc_server_running()
+        if not is_running:
+            component.component_state = ComponentState.Failed
+            logger.error("woc server failed to start")
+            self.component_store.update_status_file(component)
+            sys.exit(1)
+        else:
+            component.component_state = ComponentState.Running
+            logger.debug("Whatsonchain server online")
+            self.component_store.update_status_file(component)
+        return process
+
     def start(self):
         logger.info("Starting component...")
         open(self.app_state.electrumsv_sdk_data_dir / "spawned_pids", 'w').close()
@@ -359,4 +401,35 @@ class Starters:
             esv_process = self.start_electrumsv_daemon()
             procs.append(esv_process.pid)
 
+        if ComponentName.WOC in self.app_state.start_set \
+                or len(self.app_state.start_set) == 0:
+
+            woc_process = self.start_woc_server()
+            procs.append(woc_process.pid)
+
         self.app_state.save_repo_paths()
+
+    def is_woc_server_running(self):
+        for timeout in (3, 3, 3, 3, 3):
+            try:
+                result = requests.get("http://localhost:3002", timeout=1.0)
+                result.raise_for_status()
+                if result.status_code == 200:
+                    return True
+            except Exception as e:
+                time.sleep(timeout)
+                continue
+        return False
+
+    def check_node_for_woc(self):
+        if not electrumsv_node.is_running():
+            return False
+
+        result = electrumsv_node.call_any("getinfo")
+        block_height = result.json()['result']['blocks']
+        if block_height == 0:
+            logger.error(f"Block height=0. "
+                f"The Whatsonchain explorer requires at least 1 block to be mined. Hint: try: "
+                f"'electrumsv-sdk node generate 1'")
+            return False
+        return True

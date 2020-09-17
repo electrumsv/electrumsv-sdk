@@ -21,25 +21,35 @@ def checkout_branch(branch: str):
         subprocess.run(f"git checkout {branch}", shell=True, check=True)
 
 
-def make_bat_file(filename, commandline_string_split, env_vars):
+def make_bat_file(filename, commandline_string_split=[], env_vars={}, separate_lines=None):
     open(filename, "w").close()
     with open(filename, "a") as f:
         f.write("@echo off\n")
         for key, val in env_vars.items():
             f.write(f"set {key}={val}\n")
+
+        if separate_lines:
+            for line in separate_lines:
+                f.write(line)
+
         for subcmd in commandline_string_split:
             f.write(f"{subcmd}" + " ")
         f.write("\n")
         f.write("pause\n")
 
 
-def make_bash_file(filename, commandline_string_split, env_vars):
+def make_bash_file(filename, commandline_string_split=[], env_vars={}, separate_lines=None):
     open(filename, "w").close()
     with open(filename, "a") as f:
         f.write("#!/bin/bash\n")
         f.write("set echo off\n")
         for key, val in env_vars.items():
             f.write(f"export {key}={val}\n")
+
+        if separate_lines:
+            for line in separate_lines:
+                f.write(line)
+
         for subcmd in commandline_string_split:
             f.write(f"{subcmd}" + " ")
         f.write("\n")
