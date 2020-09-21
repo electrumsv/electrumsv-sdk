@@ -26,7 +26,7 @@ py -3.8 -m pip install electrumsv-sdk
 
 """
 
-__version__ = '0.0.17'
+__version__ = '0.0.18'
 
 
 def _locate_requirements():
