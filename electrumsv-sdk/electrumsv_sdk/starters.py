@@ -41,6 +41,7 @@ class Starters:
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT)
             process.wait()
+            time.sleep(1)  # allow time for pid to be searchable
             process_handle = trace_pid(command)
             return process_handle
         elif sys.platform == 'win32':
