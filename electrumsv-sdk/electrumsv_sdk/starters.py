@@ -102,9 +102,9 @@ class Starters:
         return False
 
     def is_status_monitor_running(self) -> bool:
-        for sleep_time in (3, 3, 3):
+        for sleep_time in (0.5, 0.5, 0.5):
             try:
-                result = requests.get(STATUS_MONITOR_API + "/get_status")
+                result = requests.get(STATUS_MONITOR_API + "/get_status", timeout=0.5)
                 result.raise_for_status()
                 return True
             except requests.exceptions.ConnectionError as e:
@@ -379,9 +379,6 @@ class Starters:
         if not self.is_status_monitor_running():
             status_monitor_process = self.start_status_monitor()
             procs.append(status_monitor_process.pid)
-            if not self.is_status_monitor_running():
-                logger.error("failed to launch status monitor")
-                sys.exit(1)
 
         if ComponentName.NODE in self.app_state.start_set \
                 or len(self.app_state.start_set) == 0:

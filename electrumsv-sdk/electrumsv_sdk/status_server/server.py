@@ -1,9 +1,14 @@
 import json
+import os
+import sys
+import time
 from functools import partial
+from pathlib import Path
 from typing import Optional
 
 import curio
 import logging
+import logging.handlers
 import signal
 
 from constants import FILE_LOCK_PATH
@@ -19,11 +24,25 @@ from logs import trinket_logging_setup
 logger = logging.getLogger("status-server")
 filelock_logger = logging.getLogger("filelock")
 filelock_logger.setLevel(logging.WARNING)
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(name)-24s %(message)s",
-    level=logging.DEBUG,
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+
+data_dir = None
+if sys.platform == "win32":
+    data_dir = Path(os.environ.get("LOCALAPPDATA")) / "ElectrumSV-SDK"
+if data_dir is None:
+    data_dir = Path.home() / ".electrumsv-sdk"
+
+logging_path = data_dir.joinpath("logs").joinpath("status_monitor")
+os.makedirs(logging_path, exist_ok=True)
+logging_filename = str(int(time.time())) + ".log"
+
+handler = logging.FileHandler(filename=str(logging_path.joinpath(logging_filename)),
+                              mode='a')
+formatter = logging.Formatter(fmt="%(asctime)s %(levelname)-8s %(name)-24s %(message)s",
+                              datefmt="%Y-%m-%d %H:%M:%S")
+handler.setFormatter(formatter)
+root = logging.getLogger()
+root.setLevel(logging.DEBUG)
+root.addHandler(handler)
 
 
 class ServerRunner(Server):
