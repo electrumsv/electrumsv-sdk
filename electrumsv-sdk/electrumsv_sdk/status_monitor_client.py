@@ -23,6 +23,7 @@ class StatusMonitorClient:
             return False
 
     def update_status(self, component: Component):
+        logging.debug(f"updating status monitor with component data: {component}")
         for sleep_time in (3, 3, 3):
             try:
                 result = requests.post(STATUS_MONITOR_API + "/update_status", json=component.to_dict())
@@ -30,6 +31,7 @@ class StatusMonitorClient:
                 return result
             except Exception as e:
                 self.logger.error("Could not update status_monitor: reason: " + str(e))
+                self.logger.debug(f"Component dict={component.to_dict()}")
                 self.logger.debug("Retrying status update...")
                 time.sleep(sleep_time)
         self.logger.error("failed to update status monitor")
