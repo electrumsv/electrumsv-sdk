@@ -132,7 +132,7 @@ class Starters:
             metadata={},
             logging_path=None,
         )
-        if not electrumsv_node.is_running():
+        if not electrumsv_node.is_node_running():
             component.component_state = ComponentState.Failed
             logger.error("bitcoin daemon failed to start")
         else:
