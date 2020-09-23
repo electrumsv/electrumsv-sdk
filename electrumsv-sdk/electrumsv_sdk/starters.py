@@ -11,7 +11,7 @@ import aiorpcx
 import requests
 from electrumsv_node import electrumsv_node
 
-from .utils import trace_pid
+from .utils import trace_pid, trace_processes_for_cmd
 from .constants import STATUS_MONITOR_API, DEFAULT_ID_ELECTRUMSV, DEFAULT_ID_ELECTRUMX, \
     DEFAULT_ID_NODE, DEFAULT_ID_STATUS, DEFAULT_ID_INDEXER, DEFAULT_ID_WOC
 from .status_monitor_client import StatusMonitorClient
@@ -20,6 +20,10 @@ from .components import Component, ComponentName, ComponentType, ComponentState,
     ComponentOptions
 
 logger = logging.getLogger("starters")
+
+
+class ComponentLaunchFailedError(Exception):
+    pass
 
 
 class Starters:
@@ -37,11 +41,19 @@ class Starters:
 
     def spawn_in_background(self, command):
         if sys.platform in ('linux', 'darwin'):
+            len_processes_before = len(trace_processes_for_cmd(command))
+
             process = subprocess.Popen(f"nohup {command} &", shell=True,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT)
             process.wait()
-            time.sleep(1)  # allow time for pid to be searchable
+            time.sleep(1)  # allow brief time window for process to fail at startup
+
+            len_processes_after = len(trace_processes_for_cmd(command))
+            if len_processes_before == len_processes_after:
+                logger.error(f"failed to launch command: {command}")
+                raise ComponentLaunchFailedError()
+
             process_handle = trace_pid(command)
             return process_handle
         elif sys.platform == 'win32':
@@ -54,17 +66,22 @@ class Starters:
             return process_handle
 
     def spawn_in_new_console(self, command):
-        if sys.platform == 'linux':
-            process = subprocess.Popen(f"gnome-terminal -- {command}", shell=True,
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            process.wait()
-            process_handle = trace_pid(command)
-            return process_handle
+        if sys.platform in ('linux', 'darwin'):
+            len_processes_before = len(trace_processes_for_cmd(command))
 
-        elif sys.platform == 'darwin':
+            # todo gnome-terminal part will not work cross-platform for spawning new terminals
             process = subprocess.Popen(f"gnome-terminal -- {command}", shell=True,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             process.wait()
+            time.sleep(1)  # allow brief time window for process to fail at startup
+
+            len_processes_after = len(trace_processes_for_cmd(command))
+            if len_processes_before == len_processes_after:
+                logger.error(f"failed to launch command: {command}. On linux cloud servers try "
+                             f"using the --background flag e.g. electrumsv-sdk start "
+                             f"--background node.")
+                raise ComponentLaunchFailedError()
+
             process_handle = trace_pid(command)
             return process_handle
 
@@ -303,7 +320,14 @@ class Starters:
             status_monitor_script = self.app_state.run_scripts_dir.joinpath("status_monitor.sh")
 
         logger.debug(f"Starting status monitor daemon...")
-        process = self.spawn_process(status_monitor_script)
+        try:
+            process = self.spawn_process(status_monitor_script)
+        except ComponentLaunchFailedError:
+            log_files = os.listdir(self.app_state.status_monitor_logging_path)
+            log_files.sort(reverse=True)  # get latest log file at index 0
+            logger.debug(f"see {self.app_state.status_monitor_logging_path.joinpath(log_files[0])} "
+                         f"for details")
+            sys.exit(1)
 
         id = self.app_state.start_options[ComponentOptions.ID]
         component_data = self.component_store.component_data_by_id(id)

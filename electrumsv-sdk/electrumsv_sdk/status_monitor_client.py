@@ -30,7 +30,8 @@ class StatusMonitorClient:
                 result.raise_for_status()
                 return result
             except Exception as e:
-                self.logger.error("Could not update status_monitor: reason: " + str(e))
+                self.logger.error("Could not update status_monitor: reason: " + str(e) +
+                                  f" message: {result.text}")
                 self.logger.debug(f"Component dict={component.to_dict()}")
                 self.logger.debug("Retrying status update...")
                 time.sleep(sleep_time)
