@@ -35,14 +35,15 @@ logging_path = data_dir.joinpath("logs").joinpath("status_monitor")
 os.makedirs(logging_path, exist_ok=True)
 logging_filename = str(int(time.time())) + ".log"
 
+root = logging.getLogger()
 handler = logging.FileHandler(filename=str(logging_path.joinpath(logging_filename)),
                               mode='a')
-formatter = logging.Formatter(fmt="%(asctime)s %(levelname)-8s %(name)-24s %(message)s",
+formatter = logging.Formatter("%(asctime)s %(levelname)-8s %(name)-24s %(message)s",
                               datefmt="%Y-%m-%d %H:%M:%S")
 handler.setFormatter(formatter)
-root = logging.getLogger()
 root.setLevel(logging.DEBUG)
-root.addHandler(handler)
+logging.root.addHandler(handler)
+logging.root.addHandler(logging.StreamHandler())
 
 
 class ServerRunner(Server):
