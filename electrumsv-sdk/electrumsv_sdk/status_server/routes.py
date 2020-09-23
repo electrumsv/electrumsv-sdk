@@ -30,7 +30,7 @@ async def update_status(app, request: Request):
         return Response.json(json.dumps(payload))
     except Exception as e:
         logger.exception(e)
-        payload = {"status": None, "error": str(e)}
+        payload = {"status": None, "error": str(e) + f" request.body={request.body}"}
         return Response.json(json.dumps(payload), status=500)
 
 

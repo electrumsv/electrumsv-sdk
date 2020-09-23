@@ -80,6 +80,9 @@ class AppState:
 
         self.sdk_package_dir = Path(MODULE_DIR)
         self.status_monitor_dir = self.sdk_package_dir.joinpath("status_server")
+        self.status_monitor_logging_path = self.electrumsv_sdk_data_dir.joinpath("logs").joinpath(
+            "status_monitor")
+        os.makedirs(self.status_monitor_logging_path, exist_ok=True)
 
         self.start_set: Set[ComponentName] = set()
         self.start_options: Dict[ComponentName] = {}

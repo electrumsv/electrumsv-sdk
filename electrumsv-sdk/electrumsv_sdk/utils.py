@@ -186,6 +186,17 @@ def cast_str_int_args_to_int(node_args):
     return node_args
 
 
+def trace_processes_for_cmd(command):
+    processes = []
+    for p in psutil.process_iter():
+        try:
+            process_name = p.name()
+            if command.stem in process_name:
+                processes.append(p.pid)
+        except Exception:
+            pass
+    return processes
+
 def trace_pid(command):
     """
     Linux workaround:
@@ -196,14 +207,7 @@ def trace_pid(command):
     'https://stackoverflow.com/questions/55880659/
     get-process-id-of-command-executed-inside-terminal-in-python-subprocess'
     """
-    processes = []
-    for p in psutil.process_iter():
-        try:
-            process_name = p.name()
-            if command.stem in process_name:
-                processes.append(p.pid)
-        except Exception:
-            pass
+    processes = trace_processes_for_cmd(command)
     processes.sort()
     # take highest pid number (most recently allocated) if there are multiple instances
     process_handle = psutil.Process(processes[-1])
