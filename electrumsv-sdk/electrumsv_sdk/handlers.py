@@ -1,9 +1,8 @@
 import logging
-import subprocess
 import sys
-from pathlib import Path
 
 from .components import ComponentName, ComponentOptions
+from .install_tools import InstallTools
 from .installers import Installers
 
 logger = logging.getLogger("install-handlers")
@@ -26,6 +25,7 @@ class Handlers:
     """
 
     def __init__(self, app_state: "AppState"):
+        self.install_tools = InstallTools(app_state)
         self.app_state = app_state
         self.installer = Installers(self.app_state)
 
@@ -36,34 +36,6 @@ class Handlers:
                parsed_args.__dict__):
             return True, flags_selected
         return False, flags_selected
-
-    def handle_remote_repo(self, package_name, url, branch):
-        logger.debug(f"Installing remote dependency for {package_name} at {url}")
-
-        if package_name == ComponentName.ELECTRUMSV:
-            self.installer.remote_electrumsv(url, branch)
-
-        if package_name == ComponentName.ELECTRUMX:
-            self.installer.remote_electrumx(url, branch)
-
-        if package_name == ComponentName.NODE:
-            self.installer.node(branch)
-
-    def handle_local_repo(self, package_name, path, branch):
-        try:
-            logger.debug(f"Installing local dependency for {package_name} at path: {path}")
-            assert Path(path).exists(), f"the path {path} to {package_name} does not exist!"
-            if branch != "":
-                subprocess.run(f"git checkout {branch}", shell=True, check=True)
-
-            if package_name == ComponentName.ELECTRUMSV:
-                self.installer.local_electrumsv(path, branch)
-
-            if package_name == ComponentName.ELECTRUMX:
-                self.installer.local_electrumx(path, branch)
-
-        except Exception as e:
-            raise e
 
     # ----- MAIN ARGUMENT HANDLERS ----- #
     def handle_top_level_args(self, parsed_args):
@@ -109,6 +81,7 @@ class Handlers:
                 logger.error("must select a component type when specifying startup flags")
                 sys.exit()
 
+        # logging
         if parsed_args.new:
             logger.debug("new flag=set")
 
@@ -134,9 +107,19 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.RESET:
             return
 
+        self.app_state.start_options[ComponentOptions.ID] = id = parsed_args.id
+        self.app_state.start_options[ComponentOptions.REPO] = repo = parsed_args.repo
+        self.app_state.start_options[ComponentOptions.BRANCH] = branch = parsed_args.branch
+
+        # logging
         if id != "":
-            self.app_state.start_options[ComponentOptions.ID] = parsed_args.id
             logger.debug(f"id flag={parsed_args.id}")
+
+        if repo != "":
+            logger.debug(f"repo flag={self.app_state.start_options[ComponentOptions.REPO]}")
+
+        if branch != "":
+            logger.debug(f"branch flag={parsed_args.branch}")
 
     def handle_node_args(self, parsed_args):
         """parsed_args are actually raw args. feeds runners.node() via Config.node_args"""
@@ -170,18 +153,7 @@ class Handlers:
                 len(self.app_state.start_set) != 0:
             return
 
-        repo = self.app_state.start_options[ComponentOptions.REPO]
-        branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        if self.app_state.start_options[ComponentOptions.REPO] == "":  # default
-            repo = "https://github.com/electrumsv/electrumsv.git"
-            self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
-            self.handle_remote_repo(ComponentName.ELECTRUMSV, repo, branch)
-        elif self.app_state.start_options[ComponentOptions.REPO].startswith("https://"):
-            self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
-            self.handle_remote_repo(ComponentName.ELECTRUMSV, repo, branch)
-        else:
-            self.app_state.set_electrumsv_path(Path(repo))
-            self.handle_local_repo(ComponentName.ELECTRUMSV, repo, branch)
+        self.install_tools.setup_paths_and_shell_scripts_electrumsv()
 
     def handle_electrumx_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
@@ -195,11 +167,11 @@ class Handlers:
         branch = self.app_state.start_options[ComponentOptions.BRANCH]
         if repo == "":  # default
             repo = "https://github.com/kyuupichan/electrumx.git"
-            self.handle_remote_repo(ComponentName.ELECTRUMX, repo, branch)
+            self.install_tools.install_from_remote_repo(ComponentName.ELECTRUMX, repo, branch)
         elif repo.startswith("https://"):
-            self.handle_remote_repo(ComponentName.ELECTRUMX, repo, branch)
+            self.install_tools.install_from_remote_repo(ComponentName.ELECTRUMX, repo, branch)
         else:
-            self.handle_local_repo(ComponentName.ELECTRUMX, repo, branch)
+            self.install_tools.install_from_local_repo(ComponentName.ELECTRUMX, repo, branch)
 
     def handle_electrumsv_node_args(self, _parsed_args):
         """not to be confused with node namespace:
@@ -218,11 +190,11 @@ class Handlers:
         branch = self.app_state.start_options[ComponentOptions.BRANCH]
         if repo == "":  # default
             repo = "https://github.com/electrumsv/electrumsv_node.git"
-            self.handle_remote_repo(ComponentName.NODE, repo, branch)
+            self.install_tools.install_from_remote_repo(ComponentName.NODE, repo, branch)
         elif repo.startswith("https://"):
-            self.handle_remote_repo(ComponentName.NODE, repo, branch)
+            self.install_tools.install_from_remote_repo(ComponentName.NODE, repo, branch)
         else:
-            self.handle_local_repo(ComponentName.NODE, repo, branch)
+            self.install_tools.install_from_local_repo(ComponentName.NODE, repo, branch)
 
     def handle_indexer_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
@@ -237,11 +209,11 @@ class Handlers:
         branch = self.app_state.start_options[ComponentOptions.BRANCH]
         if repo == "":  # default
             repo = "????"
-            self.handle_remote_repo(ComponentName.INDEXER, repo, branch)
+            self.install_tools.install_from_remote_repo(ComponentName.INDEXER, repo, branch)
         elif parsed_args.repo.startswith("https://"):
-            self.handle_remote_repo(ComponentName.INDEXER, repo, branch)
+            self.install_tools.install_from_remote_repo(ComponentName.INDEXER, repo, branch)
         else:
-            self.handle_local_repo(ComponentName.INDEXER, repo, branch)
+            self.install_tools.install_from_local_repo(ComponentName.INDEXER, repo, branch)
 
     def handle_status_monitor_args(self, _parsed_args):
         return

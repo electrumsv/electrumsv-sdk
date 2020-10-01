@@ -272,6 +272,19 @@ class ArgParser:
             default="",
             help="human-readable identifier for component (e.g. 'electrumsv1')",
         )
+        reset_parser.add_argument(
+            "--repo",
+            type=str,
+            default="",
+            help="git repo as either an https://github.com url or a local git repo path "
+                 "e.g. G:/electrumsv (optional)",
+        )
+        reset_parser.add_argument(
+            "--branch",
+            type=str,
+            default="",
+            help="git repo branch (optional)"
+        )
 
         # Stop based on ComponentType
         subparsers = reset_parser.add_subparsers(help="subcommand", required=False)

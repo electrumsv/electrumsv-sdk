@@ -3,8 +3,10 @@ import os
 import shlex
 import subprocess
 import sys
+from pathlib import Path
 
-from .components import ComponentOptions
+from .installers import Installers
+from .components import ComponentOptions, ComponentName
 from .utils import (
     checkout_branch,
     make_esv_daemon_script,
@@ -19,6 +21,35 @@ logger = logging.getLogger("install-tools")
 class InstallTools:
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
+        self.installers = Installers(self.app_state)
+
+    def install_from_local_repo(self, package_name, path, branch):
+        try:
+            logger.debug(f"Installing local dependency for {package_name} at path: {path}")
+            assert Path(path).exists(), f"the path {path} to {package_name} does not exist!"
+            if branch != "":
+                subprocess.run(f"git checkout {branch}", shell=True, check=True)
+
+            if package_name == ComponentName.ELECTRUMSV:
+                self.installers.local_electrumsv(path, branch)
+
+            if package_name == ComponentName.ELECTRUMX:
+                self.installers.local_electrumx(path, branch)
+
+        except Exception as e:
+            raise e
+
+    def install_from_remote_repo(self, package_name, url, branch):
+        logger.debug(f"Installing remote dependency for {package_name} at {url}")
+
+        if package_name == ComponentName.ELECTRUMSV:
+            self.installers.remote_electrumsv(url, branch)
+
+        if package_name == ComponentName.ELECTRUMX:
+            self.installers.remote_electrumx(url, branch)
+
+        if package_name == ComponentName.NODE:
+            self.installers.node(branch)
 
     def generate_run_scripts_electrumsv(self):
         """makes both the daemon script and a script for running the GUI"""
@@ -120,10 +151,23 @@ class InstallTools:
             make_bash_file(filename, separate_lines=separate_lines)
             os.system(f'chmod 777 {filename}')
 
+    def setup_paths_and_shell_scripts_electrumsv(self):
+        repo = self.app_state.start_options[ComponentOptions.REPO]
+        branch = self.app_state.start_options[ComponentOptions.BRANCH]
+        if repo == "":  # default
+            repo_default = "https://github.com/electrumsv/electrumsv.git"
+            self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
+            self.install_from_remote_repo(ComponentName.ELECTRUMSV, repo_default, branch)
+        elif repo.startswith("https://"):
+            self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
+            self.install_from_remote_repo(ComponentName.ELECTRUMSV, repo, branch)
+        else:
+            self.app_state.set_electrumsv_path(Path(repo))
+            self.install_from_local_repo(ComponentName.ELECTRUMSV, repo, branch)
+
     def install_electrumsv(self, url, branch):
         # Note - this is only so that it works "out-of-the-box". But for development
         # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
-
         if not self.app_state.electrumsv_dir.exists():
             os.chdir(self.app_state.depends_dir)
             subprocess.run(f"git clone {url}", shell=True, check=True)

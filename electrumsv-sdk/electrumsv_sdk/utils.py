@@ -143,7 +143,7 @@ def create_wallet():
         response.raise_for_status()
         logger.debug(f"New wallet created in {response.json()['value']['new_wallet']}")
     except Exception as e:
-        logger.exception(e)
+        logger.exception(response.text)
 
 
 def delete_wallet(app_state):

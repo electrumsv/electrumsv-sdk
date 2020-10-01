@@ -98,9 +98,9 @@ class Installers:
         (dir exists, url matches)
         (dir exists, url does not match - it's a forked repo)
         """
-        new_dir = self.get_electrumsv_data_dir()
+        data_dir = self.get_electrumsv_data_dir()
         port = self.get_electrumsv_port()
-        self.app_state.update_electrumsv_data_dir(new_dir, port)
+        self.app_state.update_electrumsv_data_dir(data_dir, port)
 
         if not self.app_state.electrumsv_dir.exists():
             logger.debug(f"Installing electrumsv (url={url})")
@@ -192,6 +192,7 @@ class Installers:
                 self.app_state.install_tools.install_electrumx(url, branch)
 
     def local_electrumx(self, path, branch):
+        # Todo - setup paths and checkout branch for electrumx local repo
         self.app_state.install_tools.generate_run_script_electrumx()
 
     def node(self, branch):
