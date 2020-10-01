@@ -10,6 +10,7 @@ from typing import Dict, List, Set
 
 from electrumsv_node import electrumsv_node
 
+from .installers import Installers
 from .constants import DEFAULT_ID_ELECTRUMSV, DEFAULT_PORT_ELECTRUMSV
 from .argparsing import ArgParser
 from .components import ComponentName, ComponentOptions
@@ -42,6 +43,7 @@ class AppState:
         self.controller = Controller(self)
         self.handlers = Handlers(self)
         self.install_tools = InstallTools(self)
+        self.installers = Installers(self)
         self.resetters = Resetters(self)
         self.status_monitor_client = StatusMonitorClient(self)
 

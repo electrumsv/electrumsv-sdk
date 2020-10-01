@@ -5,8 +5,9 @@ import time
 
 from electrumsv_node import electrumsv_node
 
+from .install_tools import InstallTools
 from .stoppers import Stoppers
-from .components import ComponentName
+from .components import ComponentName, ComponentOptions
 from .installers import Installers
 from .starters import Starters
 from .utils import topup_wallet, create_wallet, delete_wallet
@@ -22,6 +23,7 @@ class Resetters:
         self.starters = Starters(self.app_state)
         self.stoppers = Stoppers(self.app_state)
         self.installers = Installers(self.app_state)
+        self.install_tools = InstallTools(self.app_state)
 
     def reset_node(self):
         electrumsv_node.reset()
@@ -29,6 +31,7 @@ class Resetters:
 
     def reset_electrumx(self):
         logger.debug("Resetting state of RegTest electrumx server...")
+        # Todo - set repo and branch
         electrumx_data_dir = self.app_state.electrumx_data_dir
         if electrumx_data_dir.exists():
             shutil.rmtree(electrumx_data_dir)
@@ -43,7 +46,12 @@ class Resetters:
         self.app_state.start_set.add(ComponentName.ELECTRUMX)
         self.app_state.start_set.add(ComponentName.ELECTRUMSV)
 
-        self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
+        repo = self.app_state.start_options[ComponentOptions.REPO]
+        branch = self.app_state.start_options[ComponentOptions.BRANCH]
+
+        self.install_tools.setup_paths_and_shell_scripts_electrumsv()
+        self.app_state.installers.local_electrumsv(repo, branch)
+
         new_dir = self.installers.get_electrumsv_data_dir(id=component_id)
         port = self.installers.get_electrumsv_port()
         self.app_state.update_electrumsv_data_dir(new_dir, port)
