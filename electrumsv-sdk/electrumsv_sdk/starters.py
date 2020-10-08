@@ -135,8 +135,7 @@ class Starters:
         process_pid = electrumsv_node.start()
 
         id = self.app_state.start_options[ComponentOptions.ID]
-        component_data = self.component_store.component_data_by_id(id)
-        if not id or component_data.get('process_type') != ComponentType.NODE:
+        if not id:
             id = DEFAULT_ID_NODE
 
         component = Component(
@@ -171,8 +170,7 @@ class Starters:
         process = self.spawn_process(electrumx_server_script)
 
         id = self.app_state.start_options[ComponentOptions.ID]
-        component_data = self.component_store.component_data_by_id(id)
-        if not id or component_data.get('process_type') != ComponentType.ELECTRUMX:
+        if not id:
             id = DEFAULT_ID_ELECTRUMX
 
         component = Component(
@@ -283,8 +281,7 @@ class Starters:
             return self.start_electrumsv_daemon(is_first_run=False)
 
         id = self.app_state.start_options[ComponentOptions.ID]
-        component_data = self.component_store.component_data_by_id(id)
-        if not id or component_data.get('process_type') != ComponentType.ELECTRUMSV:
+        if not id:
             id = DEFAULT_ID_ELECTRUMSV
 
         logging_path = self.app_state.electrumsv_data_dir.joinpath("logs")
@@ -330,8 +327,7 @@ class Starters:
             sys.exit(1)
 
         id = self.app_state.start_options[ComponentOptions.ID]
-        component_data = self.component_store.component_data_by_id(id)
-        if not id or component_data.get('process_type') != ComponentType.STATUS_MONITOR:
+        if not id:
             id = DEFAULT_ID_STATUS
 
         component = Component(
@@ -368,8 +364,7 @@ class Starters:
         process = self.spawn_process(woc_script)
 
         id = self.app_state.start_options[ComponentOptions.ID]
-        component_data = self.component_store.component_data_by_id(id)
-        if not id or component_data.get('process_type') != ComponentType.WOC:
+        if not id:
             id = DEFAULT_ID_WOC
 
         component = Component(
@@ -387,12 +382,12 @@ class Starters:
         if not is_running:
             component.component_state = ComponentState.Failed
             logger.error("woc server failed to start")
-            self.component_store.update_status_file(component)
             sys.exit(1)
         else:
             component.component_state = ComponentState.Running
             logger.debug("Whatsonchain server online")
-            self.component_store.update_status_file(component)
+        self.component_store.update_status_file(component)
+        self.status_monitor_client.update_status(component)
         return process
 
     def start(self):

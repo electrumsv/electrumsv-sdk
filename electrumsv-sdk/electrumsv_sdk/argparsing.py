@@ -372,30 +372,17 @@ class ArgParser:
             start
             =====
             examples:
-            run electrumsv + electrumx + electrumsv-node
-                > electrumsv-sdk start --full-stack or
-                > electrumsv-sdk start --esv-ex-node
-
-            run electrumsv + electrumsv-indexer + electrumsv-node
-                > electrumsv-sdk start --esv-idx-node
-
-             -------------------------------------------------------
-            | esv = electrumsv daemon                               |
-            | ex = electrumx server                                 |
-            | node = electrumsv-node                                |
-            | idx = electrumsv-indexer (with pushdata-centric API)  |
-            | full-stack = defaults to 'esv-ex-node'                |
-             -------------------------------------------------------
-
-            input the needed mixture to suit your needs
+            run node + electrumx + electrumsv 
+                > electrumsv-sdk start node
+                > electrumsv-sdk start electrumx
+                > electrumsv-sdk start electrumsv
 
             dependencies are installed on-demand at run-time
 
-            specify a local or remote git repo and branch for each server e.g.
-                > electrumsv-sdk start --full-stack electrumsv repo=G:/electrumsv branch=develop
-
-            'repo' can take the form repo=https://github.com/electrumsv/electrumsv.git for a remote 
-            repo or repo=G:/electrumsv for a local dev repo
+            specify --repo as a local path or remote git url for each component type.
+                > electrumsv-sdk start --repo=G:\electrumsv electrumsv
+            specify --branch as either "master" or "features/my-feature-branch"
+                > electrumsv-sdk start --branch=master electrumsv
 
             all arguments are optional
 
