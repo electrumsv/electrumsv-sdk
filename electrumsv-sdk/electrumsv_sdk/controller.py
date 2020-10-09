@@ -122,4 +122,5 @@ class Controller:
         else:
             logger.info(f"Reset of: {self.app_state.start_options[ComponentOptions.ID]} complete.")
 
+        self.app_state.stop_set.add(ComponentName.STATUS_MONITOR)
         self.stoppers.stop()

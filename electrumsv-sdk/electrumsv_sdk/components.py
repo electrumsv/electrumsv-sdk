@@ -30,7 +30,6 @@ import enum
 import json
 import logging
 import os
-import sys
 from typing import Optional, List
 
 from electrumsv_sdk.utils import get_str_datetime

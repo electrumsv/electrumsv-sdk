@@ -236,6 +236,8 @@ class Starters:
         try:
             self.disable_rest_api_authentication()
         except FileNotFoundError:  # is_first_run = True
+            # Todo - might be better to simply copy-paste the required files to the directory
+            #  rather than starting and stopping ESV purely for generating the required files
             self.start_and_stop_ESV(electrumsv_server_script)  # generates config json file
             self.disable_rest_api_authentication()  # now this will work
             return self.start_electrumsv_daemon(is_first_run=True)

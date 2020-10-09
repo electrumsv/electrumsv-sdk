@@ -1,16 +1,18 @@
 import logging
 import os
 import shutil
+import subprocess
 import time
+from pathlib import Path
 
 from electrumsv_node import electrumsv_node
 
+from .utils import logger
 from .install_tools import InstallTools
 from .stoppers import Stoppers
 from .components import ComponentName, ComponentOptions
 from .installers import Installers
 from .starters import Starters
-from .utils import topup_wallet, create_wallet, delete_wallet
 
 logger = logging.getLogger("main")
 orm_logger = logging.getLogger("peewee")
@@ -24,6 +26,56 @@ class Resetters:
         self.stoppers = Stoppers(self.app_state)
         self.installers = Installers(self.app_state)
         self.install_tools = InstallTools(self.app_state)
+
+    def create_wallet(self, app_state, wallet_name: str = None):
+        try:
+            logger.debug("Creating wallet...")
+            if wallet_name is not None:
+                if not wallet_name.endswith(".sqlite"):
+                    wallet_name += ".sqlite"
+            else:
+                wallet_name = "worker1.sqlite"
+            password = "test"
+
+            command = (
+                f"electrumsv-sdk start --repo={app_state.start_options[ComponentOptions.REPO]} "
+                f"electrumsv create_wallet --wallet "
+                f"{app_state.electrumsv_regtest_wallets_dir.joinpath(wallet_name)} "
+                f"--walletpassword {password} --portable --no-password-check")
+
+            subprocess.run(command, shell=True, check=True)
+            logger.debug(f"New wallet created"
+                         f" at : {app_state.electrumsv_regtest_wallets_dir.joinpath(wallet_name)} ")
+        except Exception as e:
+            logger.exception("unexpected problem creating new wallet")
+
+    def delete_wallet(self, app_state):
+        esv_wallet_db_directory = app_state.electrumsv_regtest_wallets_dir
+        os.makedirs(esv_wallet_db_directory, exist_ok=True)
+
+        try:
+            time.sleep(1)
+            logger.debug("Deleting wallet...")
+            logger.debug(
+                "Wallet directory before: %s", os.listdir(esv_wallet_db_directory),
+            )
+            wallet_name = "worker1"
+            file_names = [
+                wallet_name + ".sqlite",
+                wallet_name + ".sqlite-shm",
+                wallet_name + ".sqlite-wal",
+            ]
+            for file_name in file_names:
+                file_path = esv_wallet_db_directory.joinpath(file_name)
+                if Path.exists(file_path):
+                    os.remove(file_path)
+            logger.debug(
+                "Wallet directory after: %s", os.listdir(esv_wallet_db_directory),
+            )
+        except Exception as e:
+            logger.exception(e)
+        else:
+            return
 
     def reset_node(self):
         electrumsv_node.reset()
@@ -40,34 +92,22 @@ class Resetters:
             os.makedirs(electrumx_data_dir, exist_ok=True)
         logger.debug("Reset of RegTest electrumx server completed successfully.")
 
-    def launch_esv_dependencies(self, component_id):
-        """ElectrumSV requires ElectrumX and Node to be running."""
-        self.app_state.start_set.add(ComponentName.NODE)
-        self.app_state.start_set.add(ComponentName.ELECTRUMX)
-        self.app_state.start_set.add(ComponentName.ELECTRUMSV)
-
+    def configure_electrumsv_paths(self, component_id):
         repo = self.app_state.start_options[ComponentOptions.REPO]
         branch = self.app_state.start_options[ComponentOptions.BRANCH]
-
         self.install_tools.setup_paths_and_shell_scripts_electrumsv()
         self.app_state.installers.local_electrumsv(repo, branch)
-
         new_dir = self.installers.get_electrumsv_data_dir(id=component_id)
         port = self.installers.get_electrumsv_port()
         self.app_state.update_electrumsv_data_dir(new_dir, port)
 
-        self.starters.start()
-        logger.debug("Allowing time for the electrumsv daemon to boot up - standby...")
-        time.sleep(7)
-
     def reset_electrumsv_wallet(self, component_id=None):
         """depends on having node and electrumx already running"""
-        self.launch_esv_dependencies(component_id)
+        self.configure_electrumsv_paths(component_id)
         logger.debug("Resetting state of RegTest electrumsv server...")
         if component_id is None:
             logger.warning("Note: No --id flag is specified. Therefore the default 'electrumsv1' "
                 "instance will be reset.")
-        delete_wallet(self.app_state)
-        create_wallet()
-        topup_wallet()
+        self.delete_wallet(self.app_state)
+        self.create_wallet(self.app_state)
         logger.debug("Reset of RegTest electrumsv wallet completed successfully")
