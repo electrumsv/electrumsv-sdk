@@ -27,14 +27,18 @@ class Resetters:
         self.installers = Installers(self.app_state)
         self.install_tools = InstallTools(self.app_state)
 
+    def normalize_wallet_name(self, wallet_name: str):
+        if wallet_name is not None:
+            if not wallet_name.endswith(".sqlite"):
+                wallet_name += ".sqlite"
+        else:
+            wallet_name = "worker1.sqlite"
+        return wallet_name
+
     def create_wallet(self, app_state, wallet_name: str = None):
         try:
             logger.debug("Creating wallet...")
-            if wallet_name is not None:
-                if not wallet_name.endswith(".sqlite"):
-                    wallet_name += ".sqlite"
-            else:
-                wallet_name = "worker1.sqlite"
+            wallet_name = self.normalize_wallet_name(wallet_name)
             password = "test"
 
             command = (
@@ -49,7 +53,8 @@ class Resetters:
         except Exception as e:
             logger.exception("unexpected problem creating new wallet")
 
-    def delete_wallet(self, app_state):
+    def delete_wallet(self, app_state, wallet_name: str = None):
+        wallet_name = self.normalize_wallet_name(wallet_name)
         esv_wallet_db_directory = app_state.electrumsv_regtest_wallets_dir
         os.makedirs(esv_wallet_db_directory, exist_ok=True)
 
@@ -59,11 +64,10 @@ class Resetters:
             logger.debug(
                 "Wallet directory before: %s", os.listdir(esv_wallet_db_directory),
             )
-            wallet_name = "worker1"
             file_names = [
-                wallet_name + ".sqlite",
-                wallet_name + ".sqlite-shm",
-                wallet_name + ".sqlite-wal",
+                wallet_name,
+                wallet_name + "-shm",
+                wallet_name + "-wal",
             ]
             for file_name in file_names:
                 file_path = esv_wallet_db_directory.joinpath(file_name)
