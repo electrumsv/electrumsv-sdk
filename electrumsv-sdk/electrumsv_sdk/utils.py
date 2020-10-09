@@ -1,15 +1,11 @@
 import datetime
-import json
 import logging
 import os
 import shlex
 import subprocess
 import sys
-import time
-from pathlib import Path
 
 import psutil
-import requests
 from electrumsv_node import electrumsv_node
 
 logger = logging.getLogger("utils")
@@ -68,19 +64,27 @@ def add_esv_custom_args(commandline_string, component_args, esv_data_dir):
     return commandline_string
 
 
+def add_esv_default_args(commandline_string, esv_data_dir, port):
+    commandline_string += (
+        f" --portable --dir {esv_data_dir} "
+        f"--regtest daemon -dapp restapi --v=debug --file-logging "
+        f"--restapi --restapi-port={port} --server=127.0.0.1:51001:t "
+    )
+    return commandline_string
+
+
 def make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
         component_args=None):
+    # if cli args are supplied to electrumsv then it gives a "clean slate" (discarding the default
+    # configuration. (but ensures that the --dir and --restapi flags are set if not already)
+    commandline_base_string = (
+        f"{sys.executable} {esv_script}"
+    )
     if component_args is not None:
-        commandline_string = (
-            f"{sys.executable} {esv_script}"
-        )
-        commandline_string = add_esv_custom_args(commandline_string, component_args, esv_data_dir)
+        commandline_string = add_esv_custom_args(commandline_base_string, component_args,
+            esv_data_dir)
     else:
-        commandline_string = (
-            f"{sys.executable} {esv_script} --portable --dir {esv_data_dir} "
-            f"--regtest daemon -dapp restapi --v=debug --file-logging "
-            f"--restapi --restapi-port={port} --server=127.0.0.1:51001:t "
-        )
+        commandline_string = add_esv_default_args(commandline_base_string, esv_data_dir, port)
 
     if sys.platform == "win32":
         commandline_string_split = shlex.split(commandline_string, posix=0)
@@ -128,51 +132,6 @@ def topup_wallet():
     result = electrumsv_node.call_any("generatetoaddress", nblocks, toaddress)
     if result.status_code == 200:
         logger.debug(f"Generated {nblocks}: {result.json()['result']} to {toaddress}")
-
-
-def create_wallet():
-    try:
-        logger.debug("Creating wallet...")
-        wallet_name = "worker1"
-        url = (
-            f"http://127.0.0.1:9999/v1/regtest/dapp/wallets/"
-            f"{wallet_name}.sqlite/create_new_wallet"
-        )
-        payload = {"password": "test"}
-        response = requests.post(url, data=json.dumps(payload))
-        response.raise_for_status()
-        logger.debug(f"New wallet created in {response.json()['value']['new_wallet']}")
-    except Exception as e:
-        logger.exception(response.text)
-
-
-def delete_wallet(app_state):
-    esv_wallet_db_directory = app_state.electrumsv_regtest_wallets_dir
-    os.makedirs(esv_wallet_db_directory, exist_ok=True)
-
-    try:
-        time.sleep(1)
-        logger.debug("Deleting wallet...")
-        logger.debug(
-            "Wallet directory before: %s", os.listdir(esv_wallet_db_directory),
-        )
-        wallet_name = "worker1"
-        file_names = [
-            wallet_name + ".sqlite",
-            wallet_name + ".sqlite-shm",
-            wallet_name + ".sqlite-wal",
-        ]
-        for file_name in file_names:
-            file_path = esv_wallet_db_directory.joinpath(file_name)
-            if Path.exists(file_path):
-                os.remove(file_path)
-        logger.debug(
-            "Wallet directory after: %s", os.listdir(esv_wallet_db_directory),
-        )
-    except Exception as e:
-        logger.exception(e)
-    else:
-        return
 
 
 def cast_str_int_args_to_int(node_args):
