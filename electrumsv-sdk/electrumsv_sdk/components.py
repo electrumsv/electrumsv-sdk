@@ -30,6 +30,7 @@ import enum
 import json
 import logging
 import os
+import sys
 from typing import Optional, List
 
 from electrumsv_sdk.utils import get_str_datetime
@@ -177,3 +178,12 @@ class ComponentStore:
         else:
             logger.error("component id not found")
             return {}
+
+    def derive_shell_script_path(self, component_name):
+        script_name = component_name
+
+        if sys.platform == "win32":
+            script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.bat")
+        elif sys.platform in ("linux", "darwin"):
+            script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.sh")
+        return script
