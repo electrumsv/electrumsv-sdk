@@ -268,9 +268,7 @@ class Starters:
         script_path = self.component_store.derive_shell_script_path(ComponentName.ELECTRUMSV)
         process = self.spawn_process(script_path)
         if is_first_run:
-            time.sleep(7)
             self.app_state.resetters.reset_electrumsv_wallet()  # create first-time wallet
-            time.sleep(1)
 
             if sys.platform in ("linux", "darwin"):
                 subprocess.run(f"pkill -P {process.pid}", shell=True)
