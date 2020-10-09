@@ -100,6 +100,7 @@ class Controller:
         if ComponentName.ELECTRUMSV in self.app_state.reset_set or len(
                 self.app_state.reset_set) == 0:
             self.resetters.reset_electrumsv_wallet()
+            self.app_state.stop_set.add(ComponentName.ELECTRUMSV)
 
     def reset(self):
         """No choice is given to the user at present - resets node, electrumx and electrumsv

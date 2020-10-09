@@ -162,12 +162,8 @@ class Starters:
 
     def start_electrumx_server(self):
         logger.debug(f"Starting RegTest electrumx server...")
-        if sys.platform == "win32":
-            electrumx_server_script = self.app_state.run_scripts_dir.joinpath("electrumx.bat")
-        else:
-            electrumx_server_script = self.app_state.run_scripts_dir.joinpath("electrumx.sh")
-
-        process = self.spawn_process(electrumx_server_script)
+        script_path = self.component_store.derive_shell_script_path(ComponentName.ELECTRUMX)
+        process = self.spawn_process(script_path)
 
         id = self.app_state.start_options[ComponentOptions.ID]
         if not id:
@@ -242,12 +238,7 @@ class Starters:
             self.disable_rest_api_authentication()  # now this will work
             return self.start_electrumsv_daemon(is_first_run=True)
 
-    def start_electrumsv_daemon(self, is_first_run=False):
-        """Todo - this currently uses ugly hacks with starting and stopping the ESV wallet
-         in order to:
-        1) generate the config files (so that it can be directly edited) - would be obviated by
-        fixing this: https://github.com/electrumsv/electrumsv/issues/111
-        2) newly created wallet doesn't seem to be fully useable until after stopping the daemon."""
+    def esv_check_node_and_electrumx_running(self):
         if not electrumsv_node.is_running():
             logger.debug("Electrumsv in RegTest mode requires a bitcoin node to be running... failed to "
                   "connect")
@@ -257,20 +248,25 @@ class Starters:
         if not is_running:
             logger.debug("Electrumsv in RegTest mode requires electrumx to be running... "
                          "failed to connect")
+
+    def start_electrumsv_daemon(self, is_first_run=False):
+        """Todo - this currently uses ugly hacks with starting and stopping the ESV wallet
+         in order to:
+        1) generate the config files (so that it can be directly edited) - would be obviated by
+        fixing this: https://github.com/electrumsv/electrumsv/issues/111
+        2) newly created wallet doesn't seem to be fully useable until after stopping the daemon."""
+        logger.debug(f"Starting RegTest electrumsv daemon...")
+        # Option (1) Only using offline cli interface to electrumsv
+        if len(self.app_state.component_args) != 0:
+            if self.app_state.component_args[0] in ['create_wallet', 'create_account', '--help']:
+                return
+
+        # Option (2) Running daemon or gui proper
+        self.esv_check_node_and_electrumx_running()
         self.ensure_restapi_auth_disabled()
 
-        logger.debug(f"Starting RegTest electrumsv daemon...")
-        if self.app_state.start_options[ComponentOptions.GUI]:
-            script_name = "electrumsv-gui"
-        else:
-            script_name = "electrumsv"
-
-        if sys.platform == "win32":
-            script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.bat")
-        elif sys.platform in ("linux", "darwin"):
-            script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.sh")
-
-        process = self.spawn_process(script)
+        script_path = self.component_store.derive_shell_script_path(ComponentName.ELECTRUMSV)
+        process = self.spawn_process(script_path)
         if is_first_run:
             time.sleep(7)
             self.app_state.resetters.reset_electrumsv_wallet()  # create first-time wallet
@@ -313,14 +309,11 @@ class Starters:
         return process
 
     def start_status_monitor(self):
-        if sys.platform == "win32":
-            status_monitor_script = self.app_state.run_scripts_dir.joinpath("status_monitor.bat")
-        elif sys.platform in ("linux", "darwin"):
-            status_monitor_script = self.app_state.run_scripts_dir.joinpath("status_monitor.sh")
-
         logger.debug(f"Starting status monitor daemon...")
         try:
-            process = self.spawn_process(status_monitor_script)
+            script_path = self.component_store.derive_shell_script_path(
+                ComponentName.STATUS_MONITOR)
+            process = self.spawn_process(script_path)
         except ComponentLaunchFailedError:
             log_files = os.listdir(self.app_state.status_monitor_logging_path)
             log_files.sort(reverse=True)  # get latest log file at index 0
@@ -354,16 +347,12 @@ class Starters:
         return process
 
     def start_woc_server(self):
-        if sys.platform == "win32":
-            woc_script = self.app_state.run_scripts_dir.joinpath("whatsonchain.bat")
-        elif sys.platform in ("linux", "darwin"):
-            woc_script = self.app_state.run_scripts_dir.joinpath("whatsonchain.sh")
-
         if not self.check_node_for_woc():
             sys.exit(1)
 
         logger.debug(f"Starting whatsonchain daemon...")
-        process = self.spawn_process(woc_script)
+        script_path = self.component_store.derive_shell_script_path(ComponentName.WOC)
+        process = self.spawn_process(script_path)
 
         id = self.app_state.start_options[ComponentOptions.ID]
         if not id:
@@ -418,7 +407,8 @@ class Starters:
                 sys.exit("Error: ElectrumSV requires Python version >= 3.7.8...")
 
             esv_process = self.start_electrumsv_daemon()
-            procs.append(esv_process.pid)
+            if esv_process:
+                procs.append(esv_process.pid)
 
         if ComponentName.WOC in self.app_state.start_set \
                 or len(self.app_state.start_set) == 0:
