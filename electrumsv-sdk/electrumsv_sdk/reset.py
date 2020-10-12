@@ -35,27 +35,28 @@ class Resetters:
             wallet_name = "worker1.sqlite"
         return wallet_name
 
-    def create_wallet(self, app_state, wallet_name: str = None):
+    def create_wallet(self, wallet_name: str = None):
         try:
             logger.debug("Creating wallet...")
             wallet_name = self.normalize_wallet_name(wallet_name)
             password = "test"
 
             command = (
-                f"electrumsv-sdk start --repo={app_state.start_options[ComponentOptions.REPO]} "
+                f"electrumsv-sdk start "
+                f"--repo={self.app_state.start_options[ComponentOptions.REPO]} "
                 f"electrumsv create_wallet --wallet "
-                f"{app_state.electrumsv_regtest_wallets_dir.joinpath(wallet_name)} "
+                f"{self.app_state.electrumsv_regtest_wallets_dir.joinpath(wallet_name)} "
                 f"--walletpassword {password} --portable --no-password-check")
 
             subprocess.run(command, shell=True, check=True)
-            logger.debug(f"New wallet created"
-                         f" at : {app_state.electrumsv_regtest_wallets_dir.joinpath(wallet_name)} ")
+            wallet_path = self.app_state.electrumsv_regtest_wallets_dir.joinpath(wallet_name)
+            logger.debug(f"New wallet created at : {wallet_path} ")
         except Exception as e:
             logger.exception("unexpected problem creating new wallet")
 
-    def delete_wallet(self, app_state, wallet_name: str = None):
+    def delete_wallet(self, wallet_name: str = None):
         wallet_name = self.normalize_wallet_name(wallet_name)
-        esv_wallet_db_directory = app_state.electrumsv_regtest_wallets_dir
+        esv_wallet_db_directory = self.app_state.electrumsv_regtest_wallets_dir
         os.makedirs(esv_wallet_db_directory, exist_ok=True)
 
         try:
@@ -112,6 +113,6 @@ class Resetters:
         if component_id is None:
             logger.warning("Note: No --id flag is specified. Therefore the default 'electrumsv1' "
                 "instance will be reset.")
-        self.delete_wallet(self.app_state)
-        self.create_wallet(self.app_state)
+        self.delete_wallet()
+        self.create_wallet()
         logger.debug("Reset of RegTest electrumsv wallet completed successfully")

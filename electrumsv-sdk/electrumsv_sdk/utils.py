@@ -102,7 +102,8 @@ def make_esv_daemon_script(base_cmd, env_vars, esv_data_dir, port):
     commandline_string = base_cmd + (
         f" --portable --dir {esv_data_dir} "
         f"--regtest daemon -dapp restapi --v=debug --file-logging "
-        f"--restapi --restapi-port={port} --server=127.0.0.1:51001:t "
+        f"--restapi --restapi-port={port} --server=127.0.0.1:51001:t --restapi-user rpcuser"
+        f" --restapi-password= "
     )
     make_shell_script_for_component(ComponentName.ELECTRUMSV, commandline_string, env_vars)
 

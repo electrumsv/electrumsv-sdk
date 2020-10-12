@@ -109,7 +109,7 @@ class Starters:
         return False
 
     def is_electrumsv_running(self):
-        for sleep_time in (3, 3, 3, 3):
+        for sleep_time in (3, 3, 3, 3, 3):
             try:
                 logger.debug("Polling electrumsv...")
                 result = requests.get("http://127.0.0.1:9999/")
@@ -195,11 +195,8 @@ class Starters:
         self.status_monitor_client.update_status(component)
         return process
 
-    def init_electrumsv_data_dir(self):
-        if not self.app_state.electrumsv_regtest_dir.exists():
-            shutil.copytree(str(self.app_state.electrumsv_data_dir_init),
-                            str(self.app_state.electrumsv_regtest_dir),
-                            ignore=shutil.ignore_patterns("*.gitignore"))
+    def init_electrumsv_wallet_dir(self):
+        os.makedirs(self.app_state.electrumsv_regtest_wallets_dir, exist_ok=True)
 
     def esv_check_node_and_electrumx_running(self):
         if not electrumsv_node.is_running():
@@ -226,7 +223,7 @@ class Starters:
 
         # Option (2) Running daemon or gui proper
         self.esv_check_node_and_electrumx_running()
-        self.init_electrumsv_data_dir()
+        self.init_electrumsv_wallet_dir()
 
         script_path = self.component_store.derive_shell_script_path(ComponentName.ELECTRUMSV)
         process = self.spawn_process(script_path)
