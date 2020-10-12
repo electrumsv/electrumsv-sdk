@@ -142,11 +142,13 @@ class InstallTools:
             checkout_branch(branch)
 
             process1 = subprocess.Popen(
-                f"{sys.executable} -m pip install -r {self.app_state.electrumsv_requirements_path}",
+                f"{sys.executable} -m pip install --user -r"
+                f" {self.app_state.electrumsv_requirements_path}",
                 shell=True)
             process1.wait()
             process2 = subprocess.Popen(
-                f"{sys.executable} -m pip install -r {self.app_state.electrumsv_binary_requirements_path} ",
+                f"{sys.executable} -m pip install --user -r"
+                f" {self.app_state.electrumsv_binary_requirements_path} ",
                 shell=True)
             process2.wait()
 
