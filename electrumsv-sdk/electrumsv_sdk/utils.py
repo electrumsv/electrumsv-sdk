@@ -112,12 +112,12 @@ def make_esv_gui_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
 
     if sys.platform == "win32":
         commandline_string_split = shlex.split(commandline_string, posix=0)
-        make_bat_file("electrumsv-gui.bat", commandline_string_split, electrumsv_env_vars)
+        make_bat_file("electrumsv.bat", commandline_string_split, electrumsv_env_vars)
 
     elif sys.platform in ["linux", "darwin"]:
         commandline_string_split = shlex.split(commandline_string, posix=1)
-        filename = "electrumsv-gui.sh"
-        make_bash_file("electrumsv-gui.sh", commandline_string_split, electrumsv_env_vars)
+        filename = "electrumsv.sh"
+        make_bash_file("electrumsv.sh", commandline_string_split, electrumsv_env_vars)
         os.system(f'chmod 777 {filename}')
 
 
