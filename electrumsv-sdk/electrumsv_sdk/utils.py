@@ -8,8 +8,9 @@ import sys
 import psutil
 from electrumsv_node import electrumsv_node
 
+from .components import ComponentName
+
 logger = logging.getLogger("utils")
-TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def checkout_branch(branch: str):
@@ -17,7 +18,10 @@ def checkout_branch(branch: str):
         subprocess.run(f"git checkout {branch}", shell=True, check=True)
 
 
-def make_bat_file(filename, commandline_string_split=[], env_vars={}, separate_lines=None):
+def make_bat_file(filename, commandline_string=None, env_vars=None, separate_lines=None):
+    if not env_vars:
+        env_vars = {}
+
     open(filename, "w").close()
     with open(filename, "a") as f:
         f.write("@echo off\n")
@@ -28,13 +32,18 @@ def make_bat_file(filename, commandline_string_split=[], env_vars={}, separate_l
             for line in separate_lines:
                 f.write(line)
 
-        for subcmd in commandline_string_split:
-            f.write(f"{subcmd}" + " ")
+        if commandline_string:
+            commandline_string_split = shlex.split(commandline_string, posix=0)
+            for subcmd in commandline_string_split:
+                f.write(f"{subcmd}" + " ")
         f.write("\n")
         f.write("pause\n")
 
 
-def make_bash_file(filename, commandline_string_split=[], env_vars={}, separate_lines=None):
+def make_bash_file(filename, commandline_string=None, env_vars=None, separate_lines=None):
+    if not env_vars:
+        env_vars = {}
+
     open(filename, "w").close()
     with open(filename, "a") as f:
         f.write("#!/bin/bash\n")
@@ -46,22 +55,22 @@ def make_bash_file(filename, commandline_string_split=[], env_vars={}, separate_
             for line in separate_lines:
                 f.write(line)
 
-        for subcmd in commandline_string_split:
-            f.write(f"{subcmd}" + " ")
+        if commandline_string:
+            commandline_string_split = shlex.split(commandline_string, posix=0)
+            for subcmd in commandline_string_split:
+                f.write(f"{subcmd}" + " ")
         f.write("\n")
         f.write("exit")
+    os.system(f'chmod 777 {filename}')
 
 
-def add_esv_custom_args(commandline_string, component_args, esv_data_dir):
-    additional_args = " ".join(component_args)
-    commandline_string += " " + additional_args
-    if "--dir" not in component_args:
-        commandline_string += " " + f"--dir {esv_data_dir}"
+def make_shell_script_for_component(component_name, commandline_string=None, env_vars=None,
+        separate_lines=None):
+    if sys.platform == "win32":
+        make_bat_file(component_name + ".bat", commandline_string, env_vars, separate_lines)
 
-    # so that polling works
-    if "--restapi" not in component_args:
-        commandline_string += " " + f"--restapi"
-    return commandline_string
+    elif sys.platform in ["linux", "darwin"]:
+        make_bash_file(component_name + ".sh", commandline_string, env_vars, separate_lines)
 
 
 def add_esv_default_args(commandline_string, esv_data_dir, port):
@@ -73,52 +82,37 @@ def add_esv_default_args(commandline_string, esv_data_dir, port):
     return commandline_string
 
 
-def make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
-        component_args=None):
-    # if cli args are supplied to electrumsv then it gives a "clean slate" (discarding the default
-    # configuration. (but ensures that the --dir and --restapi flags are set if not already)
-    commandline_base_string = (
-        f"{sys.executable} {esv_script}"
+def make_esv_custom_script(base_cmd, env_vars, component_args, esv_data_dir):
+    """if cli args are supplied to electrumsv then it gives a "clean slate" (discarding the default
+    configuration. (but ensures that the --dir and --restapi flags are set if not already)"""
+    commandline_string = base_cmd
+    additional_args = " ".join(component_args)
+    commandline_string += " " + additional_args
+    if "--dir" not in component_args:
+        commandline_string += " " + f"--dir {esv_data_dir}"
+
+    # so that polling works
+    if "--restapi" not in component_args:
+        commandline_string += " " + f"--restapi"
+
+    make_shell_script_for_component(ComponentName.ELECTRUMSV, commandline_string, env_vars)
+
+
+def make_esv_daemon_script(base_cmd, env_vars, esv_data_dir, port):
+    commandline_string = base_cmd + (
+        f" --portable --dir {esv_data_dir} "
+        f"--regtest daemon -dapp restapi --v=debug --file-logging "
+        f"--restapi --restapi-port={port} --server=127.0.0.1:51001:t "
     )
-    if component_args is not None:
-        commandline_string = add_esv_custom_args(commandline_base_string, component_args,
-            esv_data_dir)
-    else:
-        commandline_string = add_esv_default_args(commandline_base_string, esv_data_dir, port)
-
-    if sys.platform == "win32":
-        commandline_string_split = shlex.split(commandline_string, posix=0)
-        make_bat_file("electrumsv.bat", commandline_string_split, electrumsv_env_vars)
-
-    elif sys.platform in ["linux", "darwin"]:
-        commandline_string_split = shlex.split(commandline_string, posix=1)
-        filename = "electrumsv.sh"
-        make_bash_file(filename, commandline_string_split, electrumsv_env_vars)
-        os.system(f'chmod 777 {filename}')
+    make_shell_script_for_component(ComponentName.ELECTRUMSV, commandline_string, env_vars)
 
 
-def make_esv_gui_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
-        component_args=None):
-    if component_args is not None:
-        commandline_string = (
-            f"{sys.executable} {esv_script}"
-        )
-        commandline_string = add_esv_custom_args(commandline_string, component_args, esv_data_dir)
-    else:
-        commandline_string = (
-            f"{sys.executable} {esv_script} gui --regtest --restapi --restapi-port={port} "
-            f"--v=debug --file-logging --server=127.0.0.1:51001:t --dir {esv_data_dir}"
-        )
-
-    if sys.platform == "win32":
-        commandline_string_split = shlex.split(commandline_string, posix=0)
-        make_bat_file("electrumsv.bat", commandline_string_split, electrumsv_env_vars)
-
-    elif sys.platform in ["linux", "darwin"]:
-        commandline_string_split = shlex.split(commandline_string, posix=1)
-        filename = "electrumsv.sh"
-        make_bash_file("electrumsv.sh", commandline_string_split, electrumsv_env_vars)
-        os.system(f'chmod 777 {filename}')
+def make_esv_gui_script(base_cmd, env_vars, esv_data_dir, port):
+    commandline_string = base_cmd + (
+        f" gui --regtest --restapi --restapi-port={port} "
+        f"--v=debug --file-logging --server=127.0.0.1:51001:t --dir {esv_data_dir}"
+    )
+    make_shell_script_for_component(ComponentName.ELECTRUMSV, commandline_string, env_vars)
 
 
 def get_str_datetime():

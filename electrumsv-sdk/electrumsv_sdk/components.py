@@ -26,6 +26,7 @@ state=Running.
 
 - terminated components without using the SDK interface      state=Failed
 """
+import datetime
 import enum
 import json
 import logging
@@ -33,13 +34,16 @@ import os
 import sys
 from typing import Optional, List
 
-from electrumsv_sdk.utils import get_str_datetime
 from filelock import FileLock
 
-
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 logger = logging.getLogger("component-store")
+
+
+def get_str_datetime():
+    return datetime.datetime.now().strftime(TIME_FORMAT)
 
 
 class ComponentName:
