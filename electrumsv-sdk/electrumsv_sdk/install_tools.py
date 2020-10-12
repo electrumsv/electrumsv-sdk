@@ -1,6 +1,5 @@
 import logging
 import os
-import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -9,10 +8,10 @@ from .installers import Installers
 from .components import ComponentOptions, ComponentName
 from .utils import (
     checkout_branch,
+    make_esv_custom_script,
     make_esv_daemon_script,
     make_esv_gui_script,
-    make_bat_file,
-    make_bash_file,
+    make_shell_script_for_component,
 )
 
 logger = logging.getLogger("install-tools")
@@ -58,7 +57,7 @@ class InstallTools:
         path_to_dapp_example_apps = self.app_state.electrumsv_dir.joinpath("examples").joinpath(
             "applications"
         )
-        electrumsv_env_vars = {
+        esv_env_vars = {
             "PYTHONPATH": str(path_to_dapp_example_apps),
         }
         esv_script = str(self.app_state.electrumsv_dir.joinpath("electrum-sv"))
@@ -69,12 +68,13 @@ class InstallTools:
 
         logger.debug(f"esv_data_dir = {esv_data_dir}")
 
-        if not self.app_state.start_options[ComponentOptions.GUI]:
-            make_esv_daemon_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
-                component_args)
+        base_cmd = (f"{sys.executable} {esv_script}")
+        if component_args:
+            make_esv_custom_script(base_cmd, esv_env_vars, component_args, esv_data_dir)
+        elif not self.app_state.start_options[ComponentOptions.GUI]:
+            make_esv_daemon_script(base_cmd, esv_env_vars, esv_data_dir, port)
         else:
-            make_esv_gui_script(esv_script, electrumsv_env_vars, esv_data_dir, port,
-                component_args)
+            make_esv_gui_script(base_cmd, esv_env_vars, esv_data_dir, port)
 
     def generate_run_script_electrumx(self):
         os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
@@ -95,20 +95,8 @@ class InstallTools:
         commandline_string = (
             f"{sys.executable} {self.app_state.electrumx_dir.joinpath('electrumx_server')}"
         )
-
-        if sys.platform == "win32":
-            commandline_string_split = shlex.split(commandline_string, posix=0)
-            make_bat_file("electrumx.bat", commandline_string_split, electrumx_env_vars)
-        elif sys.platform == "linux":
-            commandline_string_split = shlex.split(commandline_string, posix=1)
-            filename = "electrumx.sh"
-            make_bash_file("electrumx.sh", commandline_string_split, electrumx_env_vars)
-            os.system(f"chmod 777 {filename}")
-        elif sys.platform == "darwin":
-            commandline_string_split = shlex.split(commandline_string, posix=1)
-            filename = "electrumx.sh"
-            make_bash_file("electrumx.sh", commandline_string_split, electrumx_env_vars)
-            os.system(f"chmod 777 {filename}")
+        make_shell_script_for_component(ComponentName.ELECTRUMX, commandline_string,
+            electrumx_env_vars)
 
     def generate_run_script_status_monitor(self):
         os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
@@ -117,20 +105,7 @@ class InstallTools:
         commandline_string = (
             f"{sys.executable} " f"{self.app_state.status_monitor_dir.joinpath('server.py')}"
         )
-
-        if sys.platform == "win32":
-            commandline_string_split = shlex.split(commandline_string, posix=0)
-            make_bat_file("status_monitor.bat", commandline_string_split, {})
-        elif sys.platform == "linux":
-            commandline_string_split = shlex.split(commandline_string, posix=1)
-            filename = "status_monitor.sh"
-            make_bash_file(filename, commandline_string_split, {})
-            os.system(f'chmod 777 {filename}')
-        elif sys.platform == "linux":
-            commandline_string_split = shlex.split(commandline_string, posix=1)
-            filename = "status_monitor.sh"
-            make_bash_file(filename, commandline_string_split, {})
-            os.system(f'chmod 777 {filename}')
+        make_shell_script_for_component(ComponentName.STATUS_MONITOR, commandline_string, {})
 
     def generate_run_script_woc(self):
         os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
@@ -139,17 +114,8 @@ class InstallTools:
         commandline_string1 = f"cd {self.app_state.woc_dir}\n"
         commandline_string2 = f"call npm start\n" if sys.platform == "win32" else f"npm start\n"
         separate_lines = [commandline_string1, commandline_string2]
-
-        if sys.platform == "win32":
-            make_bat_file("whatsonchain.bat", separate_lines=separate_lines)
-        elif sys.platform == "linux":
-            filename = "whatsonchain.sh"
-            make_bash_file(filename, separate_lines=separate_lines)
-            os.system(f'chmod 777 {filename}')
-        elif sys.platform == "darwin":
-            filename = "whatsonchain.sh"
-            make_bash_file(filename, separate_lines=separate_lines)
-            os.system(f'chmod 777 {filename}')
+        make_shell_script_for_component(ComponentName.WOC, commandline_string=None, env_vars=None,
+            separate_lines=separate_lines)
 
     def setup_paths_and_shell_scripts_electrumsv(self):
         repo = self.app_state.start_options[ComponentOptions.REPO]
