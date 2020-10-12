@@ -1,9 +1,11 @@
 import asyncio
 import json
 import logging
+import shutil
 import subprocess
 import sys
 import time
+from pathlib import Path
 from typing import Union
 import os
 
@@ -20,6 +22,7 @@ from .components import Component, ComponentName, ComponentType, ComponentState,
     ComponentOptions
 
 logger = logging.getLogger("starters")
+MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class ComponentLaunchFailedError(Exception):
@@ -192,51 +195,11 @@ class Starters:
         self.status_monitor_client.update_status(component)
         return process
 
-    def disable_rest_api_authentication(self):
-        path_to_config = self.app_state.electrumsv_regtest_config_path
-
-        config = {}
-        if path_to_config.exists():
-            with open(path_to_config, "r") as f:
-                config = json.load(f)
-        config["rpcpassword"] = ""
-        config["rpcuser"] = "user"
-
-        with open(path_to_config, "w") as f:
-            f.write(json.dumps(config, indent=4))
-
-    def start_and_stop_ESV(self, electrumsv_server_script):
-        # Ugly hack (first time run through need to start then stop ESV wallet to make config files)
-        logger.debug(
-            "starting RegTest electrumsv daemon for the first time - initializing wallet - "
-            "standby..."
-        )
-        if sys.platform == "win32":
-            script = self.app_state.run_scripts_dir.joinpath(f"{electrumsv_server_script}")
-        elif sys.platform in ("linux", "darwin"):
-            script = self.app_state.run_scripts_dir.joinpath(f"{electrumsv_server_script}")
-
-        process = self.spawn_process(script)
-        time.sleep(7)
-        if sys.platform in ("linux", "darwin"):
-            subprocess.run(f"pkill -P {process.pid}", shell=True)
-        elif sys.platform == 'win32':
-            subprocess.run(f"taskkill.exe /PID {process.pid} /T /F")
-
-    def ensure_restapi_auth_disabled(self):
-        if sys.platform == "win32":
-            electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.bat")
-        elif sys.platform in ("linux", "darwin"):
-            electrumsv_server_script = self.app_state.run_scripts_dir.joinpath("electrumsv.sh")
-
-        try:
-            self.disable_rest_api_authentication()
-        except FileNotFoundError:  # is_first_run = True
-            # Todo - might be better to simply copy-paste the required files to the directory
-            #  rather than starting and stopping ESV purely for generating the required files
-            self.start_and_stop_ESV(electrumsv_server_script)  # generates config json file
-            self.disable_rest_api_authentication()  # now this will work
-            return self.start_electrumsv_daemon(is_first_run=True)
+    def init_electrumsv_data_dir(self):
+        if not self.app_state.electrumsv_regtest_dir.exists():
+            shutil.copytree(str(self.app_state.electrumsv_data_dir_init),
+                            str(self.app_state.electrumsv_regtest_dir),
+                            ignore=shutil.ignore_patterns("*.gitignore"))
 
     def esv_check_node_and_electrumx_running(self):
         if not electrumsv_node.is_running():
@@ -263,7 +226,7 @@ class Starters:
 
         # Option (2) Running daemon or gui proper
         self.esv_check_node_and_electrumx_running()
-        self.ensure_restapi_auth_disabled()
+        self.init_electrumsv_data_dir()
 
         script_path = self.component_store.derive_shell_script_path(ComponentName.ELECTRUMSV)
         process = self.spawn_process(script_path)

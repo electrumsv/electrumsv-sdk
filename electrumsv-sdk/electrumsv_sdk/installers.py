@@ -142,16 +142,12 @@ class Installers:
                     self.app_state.electrumsv_dir.with_suffix(".bak"),
                 )
                 self.app_state.install_tools.install_electrumsv(url, branch)
-
-        os.makedirs(self.app_state.electrumsv_regtest_wallets_dir, exist_ok=True)
         self.app_state.install_tools.generate_run_scripts_electrumsv()
 
     def local_electrumsv(self, url, branch):
         new_dir = self.get_electrumsv_data_dir()
         port = self.get_electrumsv_port()
         self.app_state.update_electrumsv_data_dir(new_dir, port)
-
-        os.makedirs(self.app_state.electrumsv_regtest_wallets_dir, exist_ok=True)
         self.app_state.install_tools.generate_run_scripts_electrumsv()
 
     def remote_electrumx(self, url, branch):

@@ -67,6 +67,9 @@ class AppState:
         self.electrumsv_sdk_config_path = self.electrumsv_sdk_data_dir.joinpath("config.json")
 
         # electrumsv paths are set dynamically at startup - see: set_electrumsv_path()
+        self.electrumsv_data_dir_init = Path(MODULE_DIR).joinpath("components").joinpath(
+            "electrumsv").joinpath("data_dir_init").joinpath("regtest")
+
         self.electrumsv_dir = None
         self.electrumsv_data_dir = None
         self.electrumsv_regtest_dir = None
