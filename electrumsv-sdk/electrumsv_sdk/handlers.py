@@ -2,7 +2,6 @@ import logging
 import sys
 
 from .components import ComponentName, ComponentOptions
-from .install_tools import InstallTools
 from .installers import Installers
 
 logger = logging.getLogger("install-handlers")
@@ -25,9 +24,8 @@ class Handlers:
     """
 
     def __init__(self, app_state: "AppState"):
-        self.install_tools = InstallTools(app_state)
         self.app_state = app_state
-        self.installer = Installers(self.app_state)
+        self.installers = Installers(self.app_state)
 
     def validate_flags(self, parsed_args):
         flags_selected = [flag for flag, value in parsed_args.__dict__.items()
@@ -132,7 +130,7 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        self.installer.status_monitor()
+        self.installers.status_monitor()
 
     def handle_whatsonchain_args(self, _parsed_args):
         """takes no arguments"""
@@ -143,7 +141,7 @@ class Handlers:
                 len(self.app_state.start_set) != 0:
             return
 
-        self.installer.whatsonchain()
+        self.installers.whatsonchain()
 
     def handle_electrumsv_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
@@ -153,7 +151,7 @@ class Handlers:
                 len(self.app_state.start_set) != 0:
             return
 
-        self.installer.electrumsv()
+        self.installers.electrumsv()
 
     def handle_electrumx_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
@@ -163,7 +161,7 @@ class Handlers:
                 len(self.app_state.start_set) != 0:
             return
 
-        self.installer.electrumx()
+        self.installers.electrumx()
 
     def handle_electrumsv_node_args(self, _parsed_args):
         """not to be confused with node namespace:

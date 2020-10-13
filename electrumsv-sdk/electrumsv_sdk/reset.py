@@ -8,7 +8,6 @@ from pathlib import Path
 from electrumsv_node import electrumsv_node
 
 from .utils import logger
-from .install_tools import InstallTools
 from .stoppers import Stoppers
 from .components import ComponentOptions, ComponentName
 from .installers import Installers
@@ -25,7 +24,6 @@ class Resetters:
         self.starters = Starters(self.app_state)
         self.stoppers = Stoppers(self.app_state)
         self.installers = Installers(self.app_state)
-        self.install_tools = InstallTools(self.app_state)
 
     def normalize_wallet_name(self, wallet_name: str):
         if wallet_name is not None:
