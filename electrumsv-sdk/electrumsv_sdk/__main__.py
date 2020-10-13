@@ -37,7 +37,8 @@ def main():
     app_state.arparser.setup_argparser()
     app_state.arparser.manual_argparsing(sys.argv)
 
-    # Check & Install dependencies / or Configure state for 'Runners'
+    # Check & Install dependencies / or Configure state for main execution pathway
+    # indirectly calls the 'install()' entrypoint for the component with config based on cli args
     app_state.handlers.handle_install()
 
     # Call Relevant 'Runner'
@@ -50,11 +51,13 @@ def main():
     if app_state.NAMESPACE == app_state.RESET:
         app_state.controller.reset()
 
+    # Special built-in execution pathway (not part of plugin system)
     if app_state.NAMESPACE == app_state.NODE:
         app_state.controller.node()
 
     if app_state.NAMESPACE == app_state.STATUS:
         app_state.controller.status()
+
 
 if __name__ == "__main__":
     main()

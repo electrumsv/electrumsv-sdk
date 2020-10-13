@@ -82,16 +82,12 @@ class Handlers:
         # logging
         if parsed_args.new:
             logger.debug("new flag=set")
-
         if parsed_args.gui:
             logger.debug("gui flag=set")
-
         if id != "":
             logger.debug(f"id flag={parsed_args.id}")
-
         if repo != "":
             logger.debug(f"repo flag={self.app_state.start_options[ComponentOptions.REPO]}")
-
         if branch != "":
             logger.debug(f"branch flag={parsed_args.branch}")
 
@@ -112,10 +108,8 @@ class Handlers:
         # logging
         if id != "":
             logger.debug(f"id flag={parsed_args.id}")
-
         if repo != "":
             logger.debug(f"repo flag={self.app_state.start_options[ComponentOptions.REPO]}")
-
         if branch != "":
             logger.debug(f"branch flag={parsed_args.branch}")
 

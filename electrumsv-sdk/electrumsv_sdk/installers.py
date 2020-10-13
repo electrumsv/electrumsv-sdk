@@ -97,58 +97,6 @@ class Installers:
                 break
         return port
 
-    def remote_electrumsv(self, url, branch):
-        """3 possibilities:
-        (dir doesn't exists) -> install
-        (dir exists, url matches)
-        (dir exists, url does not match - it's a forked repo)
-        """
-        data_dir = self.get_component_data_dir_for_id(ComponentName.ELECTRUMSV,
-            self.app_state.electrumsv_dir)
-        port = self.get_electrumsv_port()
-        self.app_state.update_electrumsv_data_dir(data_dir, port)
-
-        if not self.app_state.electrumsv_dir.exists():
-            logger.debug(f"Installing electrumsv (url={url})")
-            self.app_state.installers.fetch_electrumsv(url, branch)
-
-        elif self.app_state.electrumsv_dir.exists():
-            os.chdir(self.app_state.electrumsv_dir)
-            result = subprocess.run(
-                f"git config --get remote.origin.url",
-                shell=True,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            if result.stdout.strip() == url:
-                logger.debug(f"Electrumsv is already installed (url={url})")
-                checkout_branch(branch)
-                subprocess.run(f"git pull", shell=True, check=True)
-                subprocess.run(
-                    f"{sys.executable} -m pip install -r "
-                    f"{self.app_state.electrumsv_requirements_path}",
-                    shell=True,
-                    check=True,
-                )
-                subprocess.run(
-                    f"{sys.executable} -m pip install -r "
-                    f"{self.app_state.electrumsv_binary_requirements_path}",
-                    shell=True,
-                    check=True,
-                )
-            if result.stdout.strip() != url:
-                existing_fork = self.app_state.electrumsv_dir
-                logger.debug(f"Alternate fork of electrumsv is already installed")
-                logger.debug(f"Moving existing fork (to '{existing_fork}.bak')")
-                logger.debug(f"Installing electrumsv (url={url})")
-                os.rename(
-                    self.app_state.electrumsv_dir,
-                    self.app_state.electrumsv_dir.with_suffix(".bak"),
-                )
-                self.app_state.installers.fetch_electrumsv(url, branch)
-
     def local_electrumsv(self, repo, branch):
         logger.debug(f"Installing local dependency for {ComponentName.ELECTRUMSV} "
                      f"at path: {repo}")
@@ -170,64 +118,163 @@ class Installers:
         self.electrumx_dir = Path(repo)
         self.electrumx_data_dir = self.electrumx_dir.joinpath("electrumx_data")
 
-    # ----- installation entry points ----- #
-    # 1) fetch (as needed) + install packages
-    # 2) generate run script
+    # ----- INSTALL PACKAGES (pip install // npm install etc.) ----- #
 
-    def electrumsv(self):
-        repo = self.app_state.start_options[ComponentOptions.REPO]
-        branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        if repo == "" or repo.startswith("https://"):  # default
-            repo = "https://github.com/electrumsv/electrumsv.git" if repo == "" else repo
-            self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
-            self.remote_electrumsv(repo, branch)
-        else:
-            self.local_electrumsv(repo, branch)
+    def packages_electrumsv(self, url, branch):
+        os.chdir(self.app_state.electrumsv_dir)
+        checkout_branch(branch)
 
-        self.app_state.installers.generate_run_scripts_electrumsv()
+        process1 = subprocess.Popen(
+            f"{sys.executable} -m pip install --user -r"
+            f" {self.app_state.electrumsv_requirements_path}",
+            shell=True)
+        process1.wait()
+        process2 = subprocess.Popen(
+            f"{sys.executable} -m pip install --user -r"
+            f" {self.app_state.electrumsv_binary_requirements_path} ",
+            shell=True)
+        process2.wait()
 
-    def electrumx(self):
-        """--repo and --branch flags affect the behaviour of the 'fetch' step"""
-        repo = self.app_state.start_options[ComponentOptions.REPO]
-        branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        if repo == "" or repo.startswith("https://"):  # default
-            repo = "https://github.com/kyuupichan/electrumx.git"
-            self.app_state.installers.fetch_electrumx(repo, branch)
-        else:
-            self.local_electrumx(repo, branch)
+    def packages_electrumx(self, url, branch):
+        """plyvel wheels are not available on windows so it is swapped out for plyvel-win32 to
+        make it work"""
+        os.chdir(self.app_state.electrumx_dir)
+        checkout_branch(branch)
+        requirements_path = self.app_state.electrumx_dir.joinpath('requirements.txt')
 
-        self.app_state.installers.generate_run_script_electrumx()
+        if sys.platform in ['linux', 'darwin']:
+            process = subprocess.Popen(
+                f"{sys.executable} -m pip install --user -r {requirements_path}", shell=True)
+            process.wait()
 
-    def node(self, branch):
-        """this one has a pip installer at https://pypi.org/project/electrumsv-node/ and
-        only official releases from pypi are supported"""
-        repo = self.app_state.start_options[ComponentOptions.REPO]
-        if not repo == "":  # default
-            logger.error("ignoring --repo flag for node - not applicable.")
+        elif sys.platform == 'win32':
+            temp_requirements = self.app_state.electrumx_dir.joinpath('requirements-temp.txt')
+            packages = []
+            with open(requirements_path, 'r') as f:
+                for line in f.readlines():
+                    if line.strip() == 'plyvel':
+                        continue
+                    packages.append(line)
+            packages.append('plyvel-win32')
+            with open(temp_requirements, 'w') as f:
+                f.writelines(packages)
+            process = subprocess.Popen(
+                f"{sys.executable} -m pip install --user -r {temp_requirements}", shell=True)
+            process.wait()
+            os.remove(temp_requirements)
 
-        self.app_state.installers.fetch_node()
-        # self.app_state.install_tools.generate_run_script_node()  # N/A
+    # ----- FETCH REMOTE REPO ----- #
 
-    def status_monitor(self):
-        """this is a locally hosted sub-repo so there is no 'fetch' step"""
-        repo = self.app_state.start_options[ComponentOptions.REPO]
-        if not repo == "":  # default
-            logger.error("ignoring --repo flag for status_monitor - not applicable.")
+    def fetch_electrumsv(self, url, branch):
+        """3 possibilities:
+        (dir doesn't exists) -> install
+        (dir exists, url matches)
+        (dir exists, url does not match - it's a forked repo)
+        """
+        data_dir = self.get_component_data_dir_for_id(ComponentName.ELECTRUMSV,
+            self.app_state.electrumsv_dir)
+        port = self.get_electrumsv_port()
+        self.app_state.update_electrumsv_data_dir(data_dir, port)
 
-        # fetch N/A - located inside of SDK
-        self.app_state.installers.generate_run_script_status_monitor()
+        if not self.app_state.electrumsv_dir.exists():
+            logger.debug(f"Installing electrumsv (url={url})")
+            os.chdir(self.app_state.depends_dir)
+            subprocess.run(f"git clone {url}", shell=True, check=True)
 
-    def whatsonchain(self):
-        self.fetch_whatsonchain(self.app_state.installers.app_state)
-        self.app_state.installers.generate_run_script_whatsonchain()
+        elif self.app_state.electrumsv_dir.exists():
+            os.chdir(self.app_state.electrumsv_dir)
+            result = subprocess.run(
+                f"git config --get remote.origin.url",
+                shell=True,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            if result.stdout.strip() == url:
+                logger.debug(f"Electrumsv is already installed (url={url})")
+                checkout_branch(branch)
+                subprocess.run(f"git pull", shell=True, check=True)
+            if result.stdout.strip() != url:
+                existing_fork = self.app_state.electrumsv_dir
+                logger.debug(f"Alternate fork of electrumsv is already installed")
+                logger.debug(f"Moving existing fork (to '{existing_fork}.bak')")
+                logger.debug(f"Installing electrumsv (url={url})")
+                os.rename(
+                    self.app_state.electrumsv_dir,
+                    self.app_state.electrumsv_dir.with_suffix(".bak"),
+                )
 
-    def indexer(self):
-        raise NotImplementedError("electrumsv_indexer installation is not supported yet.")
+    def fetch_electrumx(self, url, branch):
+        """3 possibilities:
+        (dir doesn't exists) -> install
+        (dir exists, url matches)
+        (dir exists, url does not match - it's a forked repo)
+        """
+        if not self.app_state.electrumx_dir.exists():
+            logger.debug(f"Installing electrumx (url={url})")
+
+        elif self.app_state.electrumx_dir.exists():
+            os.chdir(self.app_state.electrumx_dir)
+            result = subprocess.run(
+                f"git config --get remote.origin.url",
+                shell=True,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            if result.stdout.strip() == url:
+                logger.debug(f"Electrumx is already installed (url={url})")
+                checkout_branch(branch)
+                subprocess.run(f"git pull", shell=True, check=True)
+
+            if result.stdout.strip() != url:
+                existing_fork = self.app_state.electrumx_dir
+                logger.debug(f"Alternate fork of electrumx is already installed")
+                logger.debug(f"Moving existing fork (to '{existing_fork}.bak')")
+                logger.debug(f"Installing electrumsv (url={url})")
+                os.rename(
+                    self.app_state.electrumx_dir,
+                    self.app_state.electrumx_dir.with_suffix(".bak"),
+                )
+
+        if not self.app_state.electrumx_dir.exists():
+            os.makedirs(self.app_state.electrumx_dir, exist_ok=True)
+            os.makedirs(self.app_state.electrumx_data_dir, exist_ok=True)
+            os.chdir(self.app_state.depends_dir)
+            subprocess.run(f"git clone {url}", shell=True, check=True)
+
+            os.chdir(self.app_state.electrumx_dir)
+            checkout_branch(branch)
+
+    def fetch_node(self):
+        subprocess.run(f"{sys.executable} -m pip install electrumsv-node", shell=True, check=True)
+
+    def fetch_whatsonchain(self, url="https://github.com/AustEcon/woc-explorer.git",
+                           branch=''):
+
+        if not self.app_state.woc_dir.exists():
+            os.makedirs(self.app_state.woc_dir, exist_ok=True)
+            os.chdir(self.app_state.depends_dir)
+            subprocess.run(f"git clone {url}", shell=True, check=True)
+
+            os.chdir(self.app_state.woc_dir)
+            checkout_branch(branch)
+
+        os.chdir(self.app_state.woc_dir)
+        process = subprocess.Popen("call npm install\n" if sys.platform == "win32"
+                       else "npm install\n",
+                       shell=True)
+        process.wait()
+        process = subprocess.Popen("call npm run-script build\n" if sys.platform == "win32"
+                       else "npm run-script build\n",
+                       shell=True)
+        process.wait()
 
     def init_run_script_dir(self):
         os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
         os.chdir(self.app_state.run_scripts_dir)
-
 
     # ----- GENERATE SCRIPTS ----- #
 
@@ -291,96 +338,61 @@ class Installers:
         commandline_string2 = f"call npm start\n" if sys.platform == "win32" else f"npm start\n"
         separate_lines = [commandline_string1, commandline_string2]
         make_shell_script_for_component(ComponentName.WHATSONCHAIN,
-                                        commandline_string=None, env_vars=None, multiple_lines=separate_lines)
+            commandline_string=None, env_vars=None, multiple_lines=separate_lines)
 
-    # ----- INSTALL FUNCTIONS ----- #
+    # ----- INSTALLATION ENTRYPOINTS ----- #
+    # 1) fetch (as needed) and setup paths (perhaps to local repo)
+    # 2) pip install (or npm install) packages/dependencies
+    # 3) generate run script
 
-    def fetch_electrumsv(self, url, branch):
-        # Note - this is only so that it works "out-of-the-box". But for development
-        # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
-        if not self.app_state.electrumsv_dir.exists():
-            os.chdir(self.app_state.depends_dir)
-            subprocess.run(f"git clone {url}", shell=True, check=True)
+    def electrumsv(self):
+        repo = self.app_state.start_options[ComponentOptions.REPO]
+        branch = self.app_state.start_options[ComponentOptions.BRANCH]
+        if repo == "" or repo.startswith("https://"):  # default
+            repo = "https://github.com/electrumsv/electrumsv.git" if repo == "" else repo
+            self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
+            self.fetch_electrumsv(repo, branch)
+        else:
+            self.local_electrumsv(repo, branch)
 
-            os.chdir(self.app_state.electrumsv_dir)
-            checkout_branch(branch)
+        self.app_state.installers.packages_electrumsv(repo, branch)
+        self.app_state.installers.generate_run_scripts_electrumsv()
 
-            process1 = subprocess.Popen(
-                f"{sys.executable} -m pip install --user -r"
-                f" {self.app_state.electrumsv_requirements_path}",
-                shell=True)
-            process1.wait()
-            process2 = subprocess.Popen(
-                f"{sys.executable} -m pip install --user -r"
-                f" {self.app_state.electrumsv_binary_requirements_path} ",
-                shell=True)
-            process2.wait()
+    def electrumx(self):
+        """--repo and --branch flags affect the behaviour of the 'fetch' step"""
+        repo = self.app_state.start_options[ComponentOptions.REPO]
+        branch = self.app_state.start_options[ComponentOptions.BRANCH]
+        if repo == "" or repo.startswith("https://"):  # default
+            repo = "https://github.com/kyuupichan/electrumx.git"
+            self.app_state.installers.fetch_electrumx(repo, branch)
+        else:
+            self.local_electrumx(repo, branch)
 
-    def fetch_electrumx(self, url, branch):
-        """3 possibilities:
-        (dir doesn't exists) -> install
-        (dir exists, url matches)
-        (dir exists, url does not match - it's a forked repo)
-        """
-        if not self.app_state.electrumx_dir.exists():
-            logger.debug(f"Installing electrumx (url={url})")
+        self.app_state.installers.packages_electrumx(repo, branch)
+        self.app_state.installers.generate_run_script_electrumx()
 
-        elif self.app_state.electrumx_dir.exists():
-            os.chdir(self.app_state.electrumx_dir)
-            result = subprocess.run(
-                f"git config --get remote.origin.url",
-                shell=True,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            if result.stdout.strip() == url:
-                logger.debug(f"Electrumx is already installed (url={url})")
-                checkout_branch(branch)
-                subprocess.run(f"git pull", shell=True, check=True)
-                # Todo - cannot re-install requirements dynamically because of plyvel
-                #  awaiting a PR for electrumx
+    def node(self):
+        """this one has a pip installer at https://pypi.org/project/electrumsv-node/ and
+        only official releases from pypi are supported"""
+        repo = self.app_state.start_options[ComponentOptions.REPO]
+        if not repo == "":  # default
+            logger.error("ignoring --repo flag for node - not applicable.")
 
-            if result.stdout.strip() != url:
-                existing_fork = self.app_state.electrumx_dir
-                logger.debug(f"Alternate fork of electrumx is already installed")
-                logger.debug(f"Moving existing fork (to '{existing_fork}.bak')")
-                logger.debug(f"Installing electrumsv (url={url})")
-                os.rename(
-                    self.app_state.electrumx_dir,
-                    self.app_state.electrumx_dir.with_suffix(".bak"),
-                )
+        self.app_state.installers.fetch_node()
+        # self.app_state.install_tools.generate_run_script_node()  # N/A
 
-        if not self.app_state.electrumx_dir.exists():
-            os.makedirs(self.app_state.electrumx_dir, exist_ok=True)
-            os.makedirs(self.app_state.electrumx_data_dir, exist_ok=True)
-            os.chdir(self.app_state.depends_dir)
-            subprocess.run(f"git clone {url}", shell=True, check=True)
+    def status_monitor(self):
+        """this is a locally hosted sub-repo so there is no 'fetch' step"""
+        repo = self.app_state.start_options[ComponentOptions.REPO]
+        if not repo == "":  # default
+            logger.error("ignoring --repo flag for status_monitor - not applicable.")
 
-            os.chdir(self.app_state.electrumx_dir)
-            checkout_branch(branch)
+        # fetch N/A - located inside of SDK
+        self.app_state.installers.generate_run_script_status_monitor()
 
-    def fetch_node(self):
-        subprocess.run(f"{sys.executable} -m pip install electrumsv-node", shell=True, check=True)
+    def whatsonchain(self):
+        self.fetch_whatsonchain()
+        self.app_state.installers.generate_run_script_whatsonchain()
 
-    def fetch_whatsonchain(self, url="https://github.com/AustEcon/woc-explorer.git",
-                           branch=''):
-
-        if not self.app_state.woc_dir.exists():
-            os.makedirs(self.app_state.woc_dir, exist_ok=True)
-            os.chdir(self.app_state.depends_dir)
-            subprocess.run(f"git clone {url}", shell=True, check=True)
-
-            os.chdir(self.app_state.woc_dir)
-            checkout_branch(branch)
-
-        os.chdir(self.app_state.woc_dir)
-        process = subprocess.Popen("call npm install\n" if sys.platform == "win32"
-                       else "npm install\n",
-                       shell=True)
-        process.wait()
-        process = subprocess.Popen("call npm run-script build\n" if sys.platform == "win32"
-                       else "npm run-script build\n",
-                       shell=True)
-        process.wait()
+    def indexer(self):
+        raise NotImplementedError("electrumsv_indexer installation is not supported yet.")

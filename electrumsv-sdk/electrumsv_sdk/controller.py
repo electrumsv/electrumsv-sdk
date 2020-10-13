@@ -2,11 +2,11 @@ import pprint
 
 import logging
 import sys
+import time
 
 from electrumsv_node import electrumsv_node
 from electrumsv_sdk.components import ComponentName, ComponentStore, ComponentOptions, ComponentType
 
-from .constants import DEFAULT_ID_NODE, DEFAULT_ID_ELECTRUMX
 from .reset import Resetters
 from .installers import Installers
 from .handlers import Handlers
@@ -18,6 +18,8 @@ logger = logging.getLogger("runners")
 
 
 class Controller:
+    """Five main execution pathways (corresponding to 5 cli commands)"""
+
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
         self.starters = Starters(self.app_state)
@@ -28,12 +30,94 @@ class Controller:
         self.component_store = ComponentStore(self.app_state)
 
     def start(self):
-        self.starters.start()
+        logger.info("Starting component...")
+        open(self.app_state.electrumsv_sdk_data_dir / "spawned_pids", 'w').close()
+
+        procs = []
+
+        if not self.starters.is_status_monitor_running():
+            status_monitor_process = self.starters.start_status_monitor()
+            procs.append(status_monitor_process.pid)
+
+        if ComponentName.NODE in self.app_state.start_set \
+                or len(self.app_state.start_set) == 0:
+            self.starters.start_node()
+            time.sleep(2)
+
+        if ComponentName.ELECTRUMX in self.app_state.start_set \
+                or len(self.app_state.start_set) == 0:
+            electrumx_process = self.starters.start_electrumx()
+            procs.append(electrumx_process.pid)
+
+        if ComponentName.ELECTRUMSV in self.app_state.start_set \
+                or len(self.app_state.start_set) == 0:
+            if sys.version_info[:3] < (3, 7, 8):
+                sys.exit("Error: ElectrumSV requires Python version >= 3.7.8...")
+
+            esv_process = self.starters.start_electrumsv()
+            if esv_process:
+                procs.append(esv_process.pid)
+
+        if ComponentName.WHATSONCHAIN in self.app_state.start_set \
+                or len(self.app_state.start_set) == 0:
+            woc_process = self.starters.start_whatsonchain()
+            procs.append(woc_process.pid)
+
+        self.app_state.save_repo_paths()
 
     def stop(self):
-        self.stoppers.stop()
+        """if stop_set is empty, all processes terminate."""
+        # todo: make this granular enough to pick out instances of each component type
+
+        if ComponentName.NODE in self.app_state.stop_set or len(self.app_state.stop_set) == 0:
+            self.stoppers.stop_components_by_type(ComponentType.NODE)
+
+        if ComponentName.ELECTRUMSV in self.app_state.stop_set or len(self.app_state.stop_set) == 0:
+            self.stoppers.stop_components_by_type(ComponentType.ELECTRUMSV)
+
+        if ComponentName.ELECTRUMX in self.app_state.stop_set or len(self.app_state.stop_set) == 0:
+            self.stoppers.stop_components_by_type(ComponentType.ELECTRUMX)
+
+        if ComponentName.INDEXER in self.app_state.stop_set or len(self.app_state.stop_set) == 0:
+            self.stoppers.stop_components_by_type(ComponentType.INDEXER)
+
+        if ComponentName.STATUS_MONITOR in self.app_state.stop_set \
+                or len(self.app_state.stop_set) == 0:
+            self.stoppers.stop_components_by_type(ComponentType.STATUS_MONITOR)
+
+        if ComponentName.WHATSONCHAIN in self.app_state.stop_set \
+                or len(self.app_state.stop_set) == 0:
+            self.stoppers.stop_components_by_type(ComponentType.WOC)
+
+        logger.info(f"terminated: "
+                    f"{self.app_state.stop_set if len(self.app_state.stop_set) != 0 else 'all'}")
+
+    def reset(self):
+        """No choice is given to the user at present - resets node, electrumx and electrumsv
+        wallet. If stop_set is empty, all processes terminate."""
+        self.app_state.start_options[ComponentOptions.BACKGROUND] = True
+
+        component_id = self.app_state.start_options[ComponentOptions.ID]
+        if self.app_state.start_options[ComponentOptions.ID] != "":
+            if len(self.app_state.reset_set) != 0:
+                logger.debug(f"The '--id' flag is specified, therefore ignoring the component "
+                             f"type(s): {self.app_state.reset_set}")
+            self.resetters.reset_component_by_id(component_id)
+        else:
+            self.resetters.reset_component_by_type()
+
+        if self.app_state.start_options[ComponentOptions.ID] == "":
+            logger.info(f"Reset of: "
+                f"{self.app_state.reset_set if len(self.app_state.reset_set) != 0 else 'all'} "
+                        f"complete.")
+        else:
+            logger.info(f"Reset of: {self.app_state.start_options[ComponentOptions.ID]} complete.")
+
+        self.app_state.stop_set.add(ComponentName.STATUS_MONITOR)
+        self.stop()
 
     def node(self):
+        """Essentially bitcoin-cli interface to RPC API that works 'out of the box' / zero config"""
         self.app_state.node_args = cast_str_int_args_to_int(self.app_state.node_args)
         assert electrumsv_node.is_running(), (
             "bitcoin node must be running to respond to rpc methods. "
@@ -51,77 +135,3 @@ class Controller:
     def status(self):
         status = self.component_store.get_status()
         pprint.pprint(status, indent=4)
-
-    def reset_component_by_id(self, component_id):
-        if self.app_state.start_options[ComponentOptions.ID] != "":
-            if len(self.app_state.reset_set) != 0:
-                logger.debug(f"The '--id' flag is specified "
-                             f"- ignoring the component type(s) {self.app_state.reset_set}")
-
-        component_data = self.component_store.component_data_by_id(component_id)
-        if component_data == {}:
-            sys.exit(1)
-
-        if component_data.get('process_type') == ComponentType.NODE:
-            logger.debug(f"There is only one 'id' for this component type - resetting the "
-                         f"default node id={DEFAULT_ID_NODE}")
-            self.resetters.reset_node()
-
-        elif component_data.get('process_type') == ComponentType.ELECTRUMX:
-            logger.debug(f"There is only one 'id' for this component type - resetting the "
-                         f"default electrumx id={DEFAULT_ID_ELECTRUMX}")
-            self.resetters.reset_electrumx()
-
-        elif component_data.get('process_type') == ComponentType.ELECTRUMSV:
-            self.resetters.reset_electrumsv_wallet(component_id)
-
-        elif component_data.get('process_type') == ComponentType.INDEXER:
-            logger.debug(f"The Indexer component type is not supported at this time.")
-
-        elif component_data.get('process_type') == ComponentType.STATUS_MONITOR:
-            logger.error("resetting the status monitor is not supported at this time...")
-
-    def reset_component_by_type(self):
-        if ComponentName.NODE in self.app_state.reset_set or len(self.app_state.reset_set) == 0:
-            self.resetters.reset_node()
-
-        if ComponentName.ELECTRUMX in self.app_state.reset_set or len(
-                self.app_state.reset_set) == 0:
-            self.resetters.reset_electrumx()
-
-        if ComponentName.INDEXER in self.app_state.reset_set or len(
-                self.app_state.reset_set) == 0:
-            logger.error("resetting indexer is not supported at this time...")
-
-        if ComponentName.STATUS_MONITOR in self.app_state.reset_set \
-                or len(self.app_state.reset_set) == 0:
-            logger.error("resetting the status monitor is not supported at this time...")
-
-        if ComponentName.ELECTRUMSV in self.app_state.reset_set or len(
-                self.app_state.reset_set) == 0:
-            self.resetters.reset_electrumsv_wallet()
-            self.app_state.stop_set.add(ComponentName.ELECTRUMSV)
-
-    def reset(self):
-        """No choice is given to the user at present - resets node, electrumx and electrumsv
-        wallet. If stop_set is empty, all processes terminate."""
-        self.app_state.start_options[ComponentOptions.BACKGROUND] = True
-
-        component_id = self.app_state.start_options[ComponentOptions.ID]
-        if self.app_state.start_options[ComponentOptions.ID] != "":
-            if len(self.app_state.reset_set) != 0:
-                logger.debug(f"The '--id' flag is specified, therefore ignoring the component "
-                             f"type(s): {self.app_state.reset_set}")
-            self.reset_component_by_id(component_id)
-        else:
-            self.reset_component_by_type()
-
-        if self.app_state.start_options[ComponentOptions.ID] == "":
-            logger.info(f"Reset of: "
-                f"{self.app_state.reset_set if len(self.app_state.reset_set) != 0 else 'all'} "
-                        f"complete.")
-        else:
-            logger.info(f"Reset of: {self.app_state.start_options[ComponentOptions.ID]} complete.")
-
-        self.app_state.stop_set.add(ComponentName.STATUS_MONITOR)
-        self.stoppers.stop()

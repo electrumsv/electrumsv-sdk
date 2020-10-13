@@ -335,43 +335,6 @@ class Starters:
         self.status_monitor_client.update_status(component)
         return process
 
-    def start(self):
-        logger.info("Starting component...")
-        open(self.app_state.electrumsv_sdk_data_dir / "spawned_pids", 'w').close()
-
-        procs = []
-
-        if not self.is_status_monitor_running():
-            status_monitor_process = self.start_status_monitor()
-            procs.append(status_monitor_process.pid)
-
-        if ComponentName.NODE in self.app_state.start_set \
-                or len(self.app_state.start_set) == 0:
-            self.start_node()
-            time.sleep(2)
-
-        if ComponentName.ELECTRUMX in self.app_state.start_set \
-                or len(self.app_state.start_set) == 0:
-            electrumx_process = self.start_electrumx()
-            procs.append(electrumx_process.pid)
-
-        if ComponentName.ELECTRUMSV in self.app_state.start_set \
-                or len(self.app_state.start_set) == 0:
-            if sys.version_info[:3] < (3, 7, 8):
-                sys.exit("Error: ElectrumSV requires Python version >= 3.7.8...")
-
-            esv_process = self.start_electrumsv()
-            if esv_process:
-                procs.append(esv_process.pid)
-
-        if ComponentName.WHATSONCHAIN in self.app_state.start_set \
-                or len(self.app_state.start_set) == 0:
-
-            woc_process = self.start_whatsonchain()
-            procs.append(woc_process.pid)
-
-        self.app_state.save_repo_paths()
-
     def is_woc_server_running(self):
         for timeout in (3, 3, 3, 3, 3):
             try:

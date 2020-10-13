@@ -1,2 +1,1 @@
-plyvel>=1.2.0
 pysqlite3-binary
