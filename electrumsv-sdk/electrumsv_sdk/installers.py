@@ -29,7 +29,8 @@ class Installers:
     def is_not_new_and_id(self, id, new) -> bool:
         return id != "" and not new
 
-    def get_electrumsv_data_dir(self, id=None):
+    def get_component_data_dir_for_id(self, component_name: ComponentName, component_data_dir:
+            Path, id=None):
         """to run multiple instances of electrumsv requires multiple data directories (with
         separate lock files)"""
         new = self.app_state.start_options[ComponentOptions.NEW]
@@ -40,8 +41,9 @@ class Installers:
         if self.is_new_and_no_id(id, new):
             count = 1
             while True:
-                self.app_state.start_options[ComponentOptions.ID] = id = "electrumsv" + str(count)
-                new_dir = self.app_state.electrumsv_dir.joinpath(id)
+                self.app_state.start_options[ComponentOptions.ID] = id = \
+                    str(component_name) + str(count)
+                new_dir = component_data_dir.joinpath(id)
                 if not new_dir.exists():
                     break
                 else:
@@ -58,8 +60,8 @@ class Installers:
         elif self.is_not_new_and_id(id, new):
             new_dir = self.app_state.electrumsv_dir.joinpath(id)
             if not new_dir.exists():
-                logger.debug(f"User-specified electrumsv data directory: {new_dir} does not exist ("
-                      f"either use the --new flag or choose a pre-existing id.")
+                logger.debug(f"User-specified electrumsv data directory: {new_dir} does not exist"
+                             f" and so will be created anew.")
             logger.debug(f"Using user-specified electrumsv data dir ({id})")
 
         elif self.is_not_new_and_no_id(id, new):
@@ -99,7 +101,8 @@ class Installers:
         (dir exists, url matches)
         (dir exists, url does not match - it's a forked repo)
         """
-        data_dir = self.get_electrumsv_data_dir()
+        data_dir = self.get_component_data_dir_for_id(ComponentName.ELECTRUMSV,
+            self.app_state.electrumsv_dir)
         port = self.get_electrumsv_port()
         self.app_state.update_electrumsv_data_dir(data_dir, port)
 
@@ -143,14 +146,43 @@ class Installers:
                     self.app_state.electrumsv_dir.with_suffix(".bak"),
                 )
                 self.app_state.install_tools.fetch_electrumsv(url, branch)
-        self.app_state.install_tools.generate_run_scripts_electrumsv()
 
-    def local_electrumsv(self, url, branch):
-        new_dir = self.get_electrumsv_data_dir()
+    def local_electrumsv(self, repo, branch):
+        logger.debug(f"Installing local dependency for {ComponentName.ELECTRUMSV} "
+                     f"at path: {repo}")
+        assert Path(repo).exists(), f"the path {repo} does not exist!"
+        if branch != "":
+            subprocess.run(f"git checkout {branch}", shell=True, check=True)
+        self.app_state.set_electrumsv_path(Path(repo))
+        new_dir = self.get_component_data_dir_for_id(ComponentName.ELECTRUMSV,
+            self.app_state.electrumsv_dir)
         port = self.get_electrumsv_port()
         self.app_state.update_electrumsv_data_dir(new_dir, port)
-        self.app_state.install_tools.generate_run_scripts_electrumsv()
 
+    def local_electrumx(self, repo, branch):
+        logger.debug(f"Installing local dependency for {ComponentName.ELECTRUMX} "
+                     f"at path: {repo}")
+        assert Path(repo).exists(), f"the path {repo} does not exist!"
+        if branch != "":
+            subprocess.run(f"git checkout {branch}", shell=True, check=True)
+        self.electrumx_dir = Path(repo)
+        self.electrumx_data_dir = self.electrumx_dir.joinpath("electrumx_data")
+
+    # ----- installation entry points ----- #
+    # 1) fetch (as needed) + install packages
+    # 2) generate run script
+
+    def electrumsv(self):
+        repo = self.app_state.start_options[ComponentOptions.REPO]
+        branch = self.app_state.start_options[ComponentOptions.BRANCH]
+        if repo == "" or repo.startswith("https://"):  # default
+            repo = "https://github.com/electrumsv/electrumsv.git" if repo == "" else repo
+            self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
+            self.remote_electrumsv(repo, branch)
+        else:
+            self.local_electrumsv(repo, branch)
+
+        self.app_state.install_tools.generate_run_scripts_electrumsv()
 
     def electrumx(self):
         """--repo and --branch flags affect the behaviour of the 'fetch' step"""
@@ -160,9 +192,7 @@ class Installers:
             repo = "https://github.com/kyuupichan/electrumx.git"
             self.app_state.install_tools.fetch_electrumx(repo, branch)
         else:
-            self.electrumx_dir = Path(repo)
-            self.electrumx_data_dir = self.electrumx_dir.joinpath("electrumx_data")
-            self.app_state.install_tools.generate_run_script_electrumx()
+            self.local_electrumx(repo, branch)
 
         self.app_state.install_tools.generate_run_script_electrumx()
 
@@ -187,5 +217,7 @@ class Installers:
 
     def whatsonchain(self):
         self.app_state.install_tools.fetch_whatsonchain()
-        self.app_state.install_tools.generate_run_scripts_whatsonchain()
+        self.app_state.install_tools.generate_run_script_whatsonchain()
 
+    def indexer(self):
+        raise NotImplementedError("electrumsv_indexer installation is not supported yet.")

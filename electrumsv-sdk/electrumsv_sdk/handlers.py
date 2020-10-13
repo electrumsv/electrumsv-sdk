@@ -153,7 +153,7 @@ class Handlers:
                 len(self.app_state.start_set) != 0:
             return
 
-        self.install_tools.setup_paths_and_shell_scripts_electrumsv()
+        self.installer.electrumsv()
 
     def handle_electrumx_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
@@ -187,17 +187,7 @@ class Handlers:
         if not ComponentName.INDEXER in self.app_state.start_set:
             return
 
-        raise NotImplementedError("electrumsv_indexer installation is not supported yet.")
-
-        repo = self.app_state.start_options[ComponentOptions.REPO]  # pylint: disable=W0101
-        branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        if repo == "":  # default
-            repo = "????"
-            self.install_tools.install_from_remote_repo(ComponentName.INDEXER, repo, branch)
-        elif repo.startswith("https://"):
-            self.install_tools.install_from_remote_repo(ComponentName.INDEXER, repo, branch)
-        else:
-            self.install_tools.install_from_local_repo(ComponentName.INDEXER, repo, branch)
+        self.app_state.installers.indexer()
 
     def handle_status_monitor_args(self, _parsed_args):
         return

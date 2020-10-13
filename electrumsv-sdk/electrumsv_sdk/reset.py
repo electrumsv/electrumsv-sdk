@@ -10,7 +10,7 @@ from electrumsv_node import electrumsv_node
 from .utils import logger
 from .install_tools import InstallTools
 from .stoppers import Stoppers
-from .components import ComponentOptions
+from .components import ComponentOptions, ComponentName
 from .installers import Installers
 from .starters import Starters
 
@@ -100,9 +100,10 @@ class Resetters:
     def configure_electrumsv_paths(self, component_id):
         repo = self.app_state.start_options[ComponentOptions.REPO]
         branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        self.install_tools.setup_paths_and_shell_scripts_electrumsv()
+        self.installers.electrumsv()
         self.app_state.installers.local_electrumsv(repo, branch)
-        new_dir = self.installers.get_electrumsv_data_dir(id=component_id)
+        new_dir = self.installers.get_component_data_dir_for_id(
+            ComponentName.ELECTRUMSV, self.app_state.electrumsv_dir, id=component_id)
         port = self.installers.get_electrumsv_port()
         self.app_state.update_electrumsv_data_dir(new_dir, port)
 

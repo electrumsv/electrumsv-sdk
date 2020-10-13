@@ -22,34 +22,6 @@ class InstallTools:
         self.app_state = app_state
         self.installers = Installers(self.app_state)
 
-    def install_from_local_repo(self, package_name, path, branch):
-        try:
-            logger.debug(f"Installing local dependency for {package_name} at path: {path}")
-            assert Path(path).exists(), f"the path {path} to {package_name} does not exist!"
-            if branch != "":
-                subprocess.run(f"git checkout {branch}", shell=True, check=True)
-
-            if package_name == ComponentName.ELECTRUMSV:
-                self.installers.local_electrumsv(path, branch)
-
-            if package_name == ComponentName.ELECTRUMX:
-                self.installers.local_electrumx(path, branch)
-
-        except Exception as e:
-            raise e
-
-    def install_from_remote_repo(self, package_name, url, branch):
-        logger.debug(f"Installing remote dependency for {package_name} at {url}")
-
-        if package_name == ComponentName.ELECTRUMSV:
-            self.installers.remote_electrumsv(url, branch)
-
-        if package_name == ComponentName.ELECTRUMX:
-            self.installers.remote_electrumx(url, branch)
-
-        if package_name == ComponentName.NODE:
-            self.installers.node(branch)
-
     # ----- SCRIPT GENERATORS ----- #
 
     def init_run_script_dir(self):
@@ -117,20 +89,6 @@ class InstallTools:
         separate_lines = [commandline_string1, commandline_string2]
         make_shell_script_for_component(ComponentName.WHATSONCHAIN,
                                         commandline_string=None, env_vars=None, multiple_lines=separate_lines)
-
-    def setup_paths_and_shell_scripts_electrumsv(self):
-        repo = self.app_state.start_options[ComponentOptions.REPO]
-        branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        if repo == "":  # default
-            repo_default = "https://github.com/electrumsv/electrumsv.git"
-            self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
-            self.install_from_remote_repo(ComponentName.ELECTRUMSV, repo_default, branch)
-        elif repo.startswith("https://"):
-            self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
-            self.install_from_remote_repo(ComponentName.ELECTRUMSV, repo, branch)
-        else:
-            self.app_state.set_electrumsv_path(Path(repo))
-            self.install_from_local_repo(ComponentName.ELECTRUMSV, repo, branch)
 
     # ----- INSTALL FUNCTIONS ----- #
 
