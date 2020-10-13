@@ -16,7 +16,6 @@ from .argparsing import ArgParser
 from .components import ComponentName, ComponentOptions
 from .controller import Controller
 from .handlers import Handlers
-from .install_tools import InstallTools
 from .reset import Resetters
 from .status_monitor_client import StatusMonitorClient
 
@@ -42,7 +41,6 @@ class AppState:
         self.arparser = ArgParser(self)
         self.controller = Controller(self)
         self.handlers = Handlers(self)
-        self.install_tools = InstallTools(self)
         self.installers = Installers(self)
         self.resetters = Resetters(self)
         self.status_monitor_client = StatusMonitorClient(self)

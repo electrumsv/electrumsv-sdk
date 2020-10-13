@@ -4,7 +4,7 @@ import sys
 
 from electrumsv_node import electrumsv_node
 
-from .components import ComponentType, ComponentStore, ComponentName
+from .components import ComponentType, ComponentStore
 
 logger = logging.getLogger("stoppers")
 
@@ -29,30 +29,3 @@ class Stoppers:
                     subprocess.run(f"pkill -P {component['pid']}", shell=True)
                 elif sys.platform == "win32":
                     subprocess.run(f"taskkill.exe /PID {component['pid']} /T /F")
-
-    def stop(self):
-        """if stop_set is empty, all processes terminate."""
-        # todo: make this granular enough to pick out instances of each component type
-
-        if ComponentName.NODE in self.app_state.stop_set or len(self.app_state.stop_set) == 0:
-            self.stop_components_by_type(ComponentType.NODE)
-
-        if ComponentName.ELECTRUMSV in self.app_state.stop_set or len(self.app_state.stop_set) == 0:
-            self.stop_components_by_type(ComponentType.ELECTRUMSV)
-
-        if ComponentName.ELECTRUMX in self.app_state.stop_set or len(self.app_state.stop_set) == 0:
-            self.stop_components_by_type(ComponentType.ELECTRUMX)
-
-        if ComponentName.INDEXER in self.app_state.stop_set or len(self.app_state.stop_set) == 0:
-            self.stop_components_by_type(ComponentType.INDEXER)
-
-        if ComponentName.STATUS_MONITOR in self.app_state.stop_set \
-                or len(self.app_state.stop_set) == 0:
-            self.stop_components_by_type(ComponentType.STATUS_MONITOR)
-
-        if ComponentName.WOC in self.app_state.stop_set \
-                or len(self.app_state.stop_set) == 0:
-            self.stop_components_by_type(ComponentType.WOC)
-
-        logger.info(f"terminated: "
-                    f"{self.app_state.stop_set if len(self.app_state.stop_set) != 0 else 'all'}")

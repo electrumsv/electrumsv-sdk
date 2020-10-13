@@ -41,6 +41,7 @@ jobs:
           # https://docs.pylint.org/en/1.6.0/run.html#exit-codes
           echo "##vso[task.complete result=Failed;]DONE"
         fi
+      continueOnError: true
       displayName: 'pylint'
     - script: |
         sudo apt-get update

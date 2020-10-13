@@ -159,7 +159,7 @@ class Starters:
 
         # process handle not returned because node is stopped via rpc
 
-    def start_electrumx_server(self):
+    def start_electrumx(self):
         logger.debug(f"Starting RegTest electrumx server...")
         script_path = self.component_store.derive_shell_script_path(ComponentName.ELECTRUMX)
         process = self.spawn_process(script_path)
@@ -205,7 +205,7 @@ class Starters:
             logger.debug("Electrumsv in RegTest mode requires electrumx to be running... "
                          "failed to connect")
 
-    def start_electrumsv_daemon(self, is_first_run=False):
+    def start_electrumsv(self, is_first_run=False):
         """Todo - this currently uses ugly hacks with starting and stopping the ESV wallet
          in order to:
         1) generate the config files (so that it can be directly edited) - would be obviated by
@@ -230,7 +230,7 @@ class Starters:
                 subprocess.run(f"pkill -P {process.pid}", shell=True)
             elif sys.platform == "win32":
                 subprocess.run(f"taskkill.exe /PID {process.pid} /T /F", check=True)
-            return self.start_electrumsv_daemon(is_first_run=False)
+            return self.start_electrumsv(is_first_run=False)
 
         id = self.app_state.start_options[ComponentOptions.ID]
         if not id:
@@ -300,12 +300,12 @@ class Starters:
         self.component_store.update_status_file(component)
         return process
 
-    def start_woc_server(self):
+    def start_whatsonchain(self):
         if not self.check_node_for_woc():
             sys.exit(1)
 
         logger.debug(f"Starting whatsonchain daemon...")
-        script_path = self.component_store.derive_shell_script_path(ComponentName.WOC)
+        script_path = self.component_store.derive_shell_script_path(ComponentName.WHATSONCHAIN)
         process = self.spawn_process(script_path)
 
         id = self.app_state.start_options[ComponentOptions.ID]
@@ -334,43 +334,6 @@ class Starters:
         self.component_store.update_status_file(component)
         self.status_monitor_client.update_status(component)
         return process
-
-    def start(self):
-        logger.info("Starting component...")
-        open(self.app_state.electrumsv_sdk_data_dir / "spawned_pids", 'w').close()
-
-        procs = []
-
-        if not self.is_status_monitor_running():
-            status_monitor_process = self.start_status_monitor()
-            procs.append(status_monitor_process.pid)
-
-        if ComponentName.NODE in self.app_state.start_set \
-                or len(self.app_state.start_set) == 0:
-            self.start_node()
-            time.sleep(2)
-
-        if ComponentName.ELECTRUMX in self.app_state.start_set \
-                or len(self.app_state.start_set) == 0:
-            electrumx_process = self.start_electrumx_server()
-            procs.append(electrumx_process.pid)
-
-        if ComponentName.ELECTRUMSV in self.app_state.start_set \
-                or len(self.app_state.start_set) == 0:
-            if sys.version_info[:3] < (3, 7, 8):
-                sys.exit("Error: ElectrumSV requires Python version >= 3.7.8...")
-
-            esv_process = self.start_electrumsv_daemon()
-            if esv_process:
-                procs.append(esv_process.pid)
-
-        if ComponentName.WOC in self.app_state.start_set \
-                or len(self.app_state.start_set) == 0:
-
-            woc_process = self.start_woc_server()
-            procs.append(woc_process.pid)
-
-        self.app_state.save_repo_paths()
 
     def is_woc_server_running(self):
         for timeout in (3, 3, 3, 3, 3):
