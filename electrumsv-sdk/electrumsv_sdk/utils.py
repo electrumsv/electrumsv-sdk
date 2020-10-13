@@ -162,3 +162,7 @@ def trace_pid(command):
     # take highest pid number (most recently allocated) if there are multiple instances
     process_handle = psutil.Process(processes[-1])
     return process_handle
+
+
+def is_remote_repo(repo: str):
+    return repo == "" or repo.startswith("https://")

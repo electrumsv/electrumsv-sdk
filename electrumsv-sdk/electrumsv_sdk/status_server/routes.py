@@ -14,7 +14,11 @@ async def get_status(app, request):
         with app.file_lock:
             if COMPONENT_STATE_PATH.exists():
                 with open(COMPONENT_STATE_PATH, "r") as f:
-                    component_state = json.loads(f.read())
+                    data = f.read()
+                    if data == '':
+                        component_state = {}
+                    else:
+                        component_state = json.loads(data)
         return Response.json(json.dumps(component_state))
     except Exception as e:
         logger.exception(e)

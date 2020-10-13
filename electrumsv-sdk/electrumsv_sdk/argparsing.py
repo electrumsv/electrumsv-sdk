@@ -12,7 +12,7 @@ import sys
 import textwrap
 from argparse import RawTextHelpFormatter
 
-from .components import ComponentName, COMPONENTS
+from .components import ComponentName, ComponentStore
 
 logger = logging.getLogger("argparsing")
 
@@ -21,6 +21,7 @@ class ArgParser:
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
         self.set_help_text()
+        self.component_store = ComponentStore(self.app_state)
 
     def parse_first_arg(self, arg, cur_cmd_name, subcommand_indices):
         if arg == "start":
@@ -86,7 +87,7 @@ class ArgParser:
                     if arg in ComponentName.__dict__.values():
                         self.app_state.start_set.add(arg)
                     else:
-                        logger.error(f"Must select from: {COMPONENTS}")
+                        logger.error(f"Must select from: {self.component_store.datadir_map}")
                         sys.exit()
                     component_selected = True
                     continue
@@ -243,7 +244,7 @@ class ArgParser:
             help="human-readable identifier for component (e.g. 'electrumsv1')",
         )
 
-        # Stop based on ComponentType
+        # Stop based on ComponentName
         subparsers = stop_parser.add_subparsers(help="subcommand", required=False)
         electrumsv_node = subparsers.add_parser(ComponentName.NODE, help="stop node")
         electrumx = subparsers.add_parser(ComponentName.ELECTRUMX, help="stop electrumx")
@@ -284,7 +285,7 @@ class ArgParser:
             help="git repo branch (optional)"
         )
 
-        # Stop based on ComponentType
+        # Stop based on ComponentName
         subparsers = reset_parser.add_subparsers(help="subcommand", required=False)
         electrumsv_node = subparsers.add_parser(ComponentName.NODE, help="reset node")
         electrumx = subparsers.add_parser(ComponentName.ELECTRUMX, help="reset electrumx")

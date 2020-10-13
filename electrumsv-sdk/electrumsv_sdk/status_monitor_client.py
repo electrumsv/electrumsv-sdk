@@ -4,7 +4,7 @@ import time
 
 import requests
 
-from .constants import STATUS_MONITOR_API
+from .constants import STATUS_MONITOR_GET_STATUS, STATUS_MONITOR_UPDATE_STATUS
 from .components import Component
 
 
@@ -15,7 +15,7 @@ class StatusMonitorClient:
 
     def get_status(self):
         try:
-            result = requests.get(STATUS_MONITOR_API + "/get_status")
+            result = requests.get(STATUS_MONITOR_GET_STATUS + "/get_status")
             result.raise_for_status()
             return json.loads(result.json())
         except requests.exceptions.ConnectionError as e:
@@ -26,8 +26,8 @@ class StatusMonitorClient:
         logging.debug(f"updating status monitor with component data: {component}")
         for sleep_time in (3, 3, 3):
             try:
-                result = requests.post(STATUS_MONITOR_API + "/update_status",
-                    json=component.to_dict())
+                result = requests.post(STATUS_MONITOR_UPDATE_STATUS,
+                                       json=component.to_dict())
                 result.raise_for_status()
                 return result
             except Exception as e:

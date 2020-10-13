@@ -5,8 +5,10 @@ import sys
 import time
 
 from electrumsv_node import electrumsv_node
-from electrumsv_sdk.components import ComponentName, ComponentStore, ComponentOptions, ComponentType
 
+from electrumsv_sdk.components import ComponentStore, ComponentOptions, ComponentName
+
+from .constants import STATUS_MONITOR_GET_STATUS
 from .reset import Resetters
 from .installers import Installers
 from .handlers import Handlers
@@ -35,7 +37,8 @@ class Controller:
 
         procs = []
 
-        if not self.starters.is_status_monitor_running():
+        if not self.starters.is_component_running(ComponentName.STATUS_MONITOR,
+                STATUS_MONITOR_GET_STATUS, 3, 0.5):
             status_monitor_process = self.starters.start_status_monitor()
             procs.append(status_monitor_process.pid)
 
@@ -70,24 +73,24 @@ class Controller:
         # todo: make this granular enough to pick out instances of each component type
 
         if ComponentName.NODE in self.app_state.stop_set or len(self.app_state.stop_set) == 0:
-            self.stoppers.stop_components_by_type(ComponentType.NODE)
+            self.stoppers.stop_components_by_name(ComponentName.NODE)
 
         if ComponentName.ELECTRUMSV in self.app_state.stop_set or len(self.app_state.stop_set) == 0:
-            self.stoppers.stop_components_by_type(ComponentType.ELECTRUMSV)
+            self.stoppers.stop_components_by_name(ComponentName.ELECTRUMSV)
 
         if ComponentName.ELECTRUMX in self.app_state.stop_set or len(self.app_state.stop_set) == 0:
-            self.stoppers.stop_components_by_type(ComponentType.ELECTRUMX)
+            self.stoppers.stop_components_by_name(ComponentName.ELECTRUMX)
 
         if ComponentName.INDEXER in self.app_state.stop_set or len(self.app_state.stop_set) == 0:
-            self.stoppers.stop_components_by_type(ComponentType.INDEXER)
+            self.stoppers.stop_components_by_name(ComponentName.INDEXER)
 
         if ComponentName.STATUS_MONITOR in self.app_state.stop_set \
                 or len(self.app_state.stop_set) == 0:
-            self.stoppers.stop_components_by_type(ComponentType.STATUS_MONITOR)
+            self.stoppers.stop_components_by_name(ComponentName.STATUS_MONITOR)
 
         if ComponentName.WHATSONCHAIN in self.app_state.stop_set \
                 or len(self.app_state.stop_set) == 0:
-            self.stoppers.stop_components_by_type(ComponentType.WOC)
+            self.stoppers.stop_components_by_name(ComponentName.WHATSONCHAIN)
 
         logger.info(f"terminated: "
                     f"{self.app_state.stop_set if len(self.app_state.stop_set) != 0 else 'all'}")

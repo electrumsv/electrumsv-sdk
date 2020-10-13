@@ -4,17 +4,16 @@ import subprocess
 import sys
 import time
 import os
+from pathlib import Path
 
 import aiorpcx
 import requests
 from electrumsv_node import electrumsv_node
 
 from .utils import trace_pid, trace_processes_for_cmd
-from .constants import STATUS_MONITOR_API, DEFAULT_ID_ELECTRUMSV, DEFAULT_ID_ELECTRUMX, \
-    DEFAULT_ID_NODE, DEFAULT_ID_STATUS, DEFAULT_ID_WOC
 from .status_monitor_client import StatusMonitorClient
 
-from .components import Component, ComponentName, ComponentType, ComponentState, ComponentStore, \
+from .components import Component, ComponentName, ComponentState, ComponentStore, \
     ComponentOptions
 
 logger = logging.getLogger("starters")
@@ -104,13 +103,13 @@ class Starters:
             await asyncio.sleep(sleep_time)
         return False
 
-    def is_electrumsv_running(self):
-        for sleep_time in (3, 3, 3, 3, 3):
+    def is_component_running(self, component_name: ComponentName, status_endpoint: str, retries:
+            int=6, duration: float=1.0, timeout: float=0.5) -> bool:
+        for sleep_time in [duration] * retries:
+            logger.debug(f"Polling {component_name}...")
             try:
-                logger.debug("Polling electrumsv...")
-                result = requests.get("http://127.0.0.1:9999/")
+                result = requests.get(status_endpoint, timeout=timeout)
                 result.raise_for_status()
-                assert result.json()["status"] == "success"
                 return True
             except Exception as e:
                 pass
@@ -118,34 +117,16 @@ class Starters:
             time.sleep(sleep_time)
         return False
 
-    def is_status_monitor_running(self) -> bool:
-        for sleep_time in (0.5, 0.5, 0.5):
-            try:
-                result = requests.get(STATUS_MONITOR_API + "/get_status", timeout=0.5)
-                result.raise_for_status()
-                return True
-            except requests.exceptions.ConnectionError as e:
-                pass
-
-            time.sleep(sleep_time)
-        return False
-
     def start_node(self):
+        component_name = ComponentName.NODE
         process_pid = electrumsv_node.start()
+        id = self.app_state.get_id(component_name)
+        logging_path = Path(electrumsv_node.DEFAULT_DATA_PATH)\
+            .joinpath("regtest").joinpath("bitcoind.log")
 
-        id = self.app_state.start_options[ComponentOptions.ID]
-        if not id:
-            id = DEFAULT_ID_NODE
-
-        component = Component(
-            id=id,
-            pid=process_pid,
-            process_type=ComponentType.NODE,
-            endpoint="http://127.0.0.1:18332",
-            component_state=ComponentState.NONE,
-            location=None,
-            metadata={},
-            logging_path=None,
+        component = Component(id, process_pid, component_name, electrumsv_node.BITCOIND_PATH,
+            f"http://rpcuser:rpcpassword@127.0.0.1:18332", logging_path=logging_path,
+            metadata={"datadir": electrumsv_node.DEFAULT_DATA_PATH}
         )
         if not electrumsv_node.is_node_running():
             component.component_state = ComponentState.Failed
@@ -160,21 +141,14 @@ class Starters:
         # process handle not returned because node is stopped via rpc
 
     def start_electrumx(self):
+        component_name = ComponentName.ELECTRUMX
         logger.debug(f"Starting RegTest electrumx server...")
         script_path = self.component_store.derive_shell_script_path(ComponentName.ELECTRUMX)
         process = self.spawn_process(script_path)
-
-        id = self.app_state.start_options[ComponentOptions.ID]
-        if not id:
-            id = DEFAULT_ID_ELECTRUMX
-
-        component = Component(
-            id=id,
-            pid=process.pid,
-            process_type=ComponentType.ELECTRUMX,
-            endpoint="http://127.0.0.1:51001",
-            component_state=ComponentState.NONE,
+        id = self.app_state.get_id(component_name)
+        component = Component(id, process.pid, ComponentName.ELECTRUMX,
             location=str(self.app_state.electrumx_dir),
+            status_endpoint="http://127.0.0.1:51001",
             metadata={"data_dir": str(self.app_state.electrumx_data_dir)},
             logging_path=None,
         )
@@ -212,6 +186,8 @@ class Starters:
         fixing this: https://github.com/electrumsv/electrumsv/issues/111
         2) newly created wallet doesn't seem to be fully useable until after stopping the daemon."""
         logger.debug(f"Starting RegTest electrumsv daemon...")
+        component_name = ComponentName.ELECTRUMSV
+
         # Option (1) Only using offline cli interface to electrumsv
         if len(self.app_state.component_args) != 0:
             if self.app_state.component_args[0] in ['create_wallet', 'create_account', '--help']:
@@ -221,7 +197,7 @@ class Starters:
         self.esv_check_node_and_electrumx_running()
         self.init_electrumsv_wallet_dir()
 
-        script_path = self.component_store.derive_shell_script_path(ComponentName.ELECTRUMSV)
+        script_path = self.component_store.derive_shell_script_path(component_name)
         process = self.spawn_process(script_path)
         if is_first_run:
             self.app_state.resetters.reset_electrumsv_wallet()  # create first-time wallet
@@ -232,24 +208,17 @@ class Starters:
                 subprocess.run(f"taskkill.exe /PID {process.pid} /T /F", check=True)
             return self.start_electrumsv(is_first_run=False)
 
-        id = self.app_state.start_options[ComponentOptions.ID]
-        if not id:
-            id = DEFAULT_ID_ELECTRUMSV
-
+        id = self.app_state.get_id(component_name)
         logging_path = self.app_state.electrumsv_data_dir.joinpath("logs")
+        metadata = {"config": str(self.app_state.electrumsv_regtest_config_path),
+                    "datadir": str(self.app_state.electrumsv_data_dir)}
 
-        component = Component(
-            id=id,
-            pid=process.pid,
-            process_type=ComponentType.ELECTRUMSV,
-            endpoint="http://127.0.0.1:9999",
-            component_state=ComponentState.NONE,
-            location=str(self.app_state.electrumsv_regtest_dir),
-            metadata={"config": str(self.app_state.electrumsv_regtest_config_path)},
-            logging_path=str(logging_path),
-        )
+        component = Component(id, process.pid, component_name,
+            str(self.app_state.electrumsv_regtest_dir), "http://127.0.0.1:9999", metadata=metadata,
+            logging_path=logging_path)
 
-        is_running = self.is_electrumsv_running()
+        is_running = self.is_component_running(component_name,
+                                               component.status_endpoint, 5, 2)
         if not is_running:
             component.component_state = ComponentState.Failed
             logger.error("Electrumsv failed to start")
@@ -263,10 +232,10 @@ class Starters:
         return process
 
     def start_status_monitor(self):
+        component_name = ComponentName.STATUS_MONITOR
         logger.debug(f"Starting status monitor daemon...")
         try:
-            script_path = self.component_store.derive_shell_script_path(
-                ComponentName.STATUS_MONITOR)
+            script_path = self.component_store.derive_shell_script_path(component_name)
             process = self.spawn_process(script_path)
         except ComponentLaunchFailedError:
             log_files = os.listdir(self.app_state.status_monitor_logging_path)
@@ -275,22 +244,12 @@ class Starters:
                          f"for details")
             sys.exit(1)
 
-        id = self.app_state.start_options[ComponentOptions.ID]
-        if not id:
-            id = DEFAULT_ID_STATUS
+        id = self.app_state.get_id(component_name)
+        component = Component(id, process.pid, component_name,
+            str(self.app_state.status_monitor_dir), "http://127.0.0.1:5000/api/status/get_status")
 
-        component = Component(
-            id=id,
-            pid=process.pid,
-            process_type=ComponentType.STATUS_MONITOR,
-            endpoint="http://127.0.0.1:api/status",
-            component_state=ComponentState.Running,
-            location=str(self.app_state.status_monitor_dir),
-            metadata={},
-            logging_path=None,
-        )
-
-        is_running = self.is_status_monitor_running()
+        is_running = self.is_component_running(component_name,
+                                               component.status_endpoint, 4, 0.5)
         if not is_running:
             component.component_state = ComponentState.Failed
             logger.error("Status_monitor failed to start")
@@ -301,29 +260,17 @@ class Starters:
         return process
 
     def start_whatsonchain(self):
+        component_name = ComponentName.WHATSONCHAIN
+        logger.debug(f"Starting whatsonchain daemon...")
         if not self.check_node_for_woc():
             sys.exit(1)
 
-        logger.debug(f"Starting whatsonchain daemon...")
-        script_path = self.component_store.derive_shell_script_path(ComponentName.WHATSONCHAIN)
+        script_path = self.component_store.derive_shell_script_path(component_name)
         process = self.spawn_process(script_path)
-
-        id = self.app_state.start_options[ComponentOptions.ID]
-        if not id:
-            id = DEFAULT_ID_WOC
-
-        component = Component(
-            id=id,
-            pid=process.pid,
-            process_type=ComponentType.WOC,
-            endpoint="http://127.0.0.1:api/status",
-            component_state=ComponentState.Running,
-            location=str(self.app_state.woc_dir),
-            metadata={},
-            logging_path=None,
-        )
-
-        is_running = self.is_woc_server_running()
+        id = self.app_state.get_id(component_name)
+        component = Component(id, process.pid, component_name,
+            str(self.app_state.woc_dir), "http://127.0.0.1:3002")
+        is_running = self.is_component_running(component_name, component.status_endpoint, 5, 3, 1.0)
         if not is_running:
             component.component_state = ComponentState.Failed
             logger.error("woc server failed to start")
@@ -334,18 +281,6 @@ class Starters:
         self.component_store.update_status_file(component)
         self.status_monitor_client.update_status(component)
         return process
-
-    def is_woc_server_running(self):
-        for timeout in (3, 3, 3, 3, 3):
-            try:
-                result = requests.get("http://localhost:3002", timeout=1.0)
-                result.raise_for_status()
-                if result.status_code == 200:
-                    return True
-            except Exception as e:
-                time.sleep(timeout)
-                continue
-        return False
 
     def check_node_for_woc(self):
         if not electrumsv_node.is_running():
