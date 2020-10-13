@@ -10,10 +10,12 @@ from typing import Dict, List, Set
 
 from electrumsv_node import electrumsv_node
 
+from .starters import Starters
+from .stoppers import Stoppers
 from .installers import Installers
-from .constants import DEFAULT_ID_ELECTRUMSV, DEFAULT_PORT_ELECTRUMSV
+from .constants import DEFAULT_PORT_ELECTRUMSV
 from .argparsing import ArgParser
-from .components import ComponentName, ComponentOptions
+from .components import ComponentName, ComponentOptions, ComponentStore
 from .controller import Controller
 from .handlers import Handlers
 from .reset import Resetters
@@ -38,7 +40,10 @@ class AppState:
 
         self.electrumsv_sdk_data_dir = data_dir
 
+        self.component_store = ComponentStore(self)
         self.arparser = ArgParser(self)
+        self.starters = Starters(self)
+        self.stoppers = Stoppers(self)
         self.controller = Controller(self)
         self.handlers = Handlers(self)
         self.installers = Installers(self)
@@ -64,7 +69,7 @@ class AppState:
         self.run_scripts_dir = self.electrumsv_sdk_data_dir.joinpath("run_scripts")
         self.electrumsv_sdk_config_path = self.electrumsv_sdk_data_dir.joinpath("config.json")
 
-        # electrumsv paths are set dynamically at startup - see: set_electrumsv_path()
+        # electrumsv paths are set dynamically at startup - see: set_electrumsv_paths()
         self.electrumsv_data_dir_init = Path(MODULE_DIR).joinpath("components").joinpath(
             "electrumsv").joinpath("data_dir_init").joinpath("regtest")
 
@@ -75,9 +80,6 @@ class AppState:
         self.electrumsv_regtest_wallets_dir = None
         self.electrumsv_requirements_path = None
         self.electrumsv_binary_requirements_path = None
-
-        self.electrumx_dir = self.depends_dir.joinpath("electrumx")
-        self.electrumx_data_dir = self.depends_dir.joinpath("electrumx_data")
 
         self.woc_dir = self.depends_dir.joinpath("woc-explorer")
 
@@ -101,12 +103,19 @@ class AppState:
         self.start_options[ComponentOptions.REPO] = ""
         self.start_options[ComponentOptions.BRANCH] = ""
 
-    def set_electrumsv_path(self, electrumsv_dir: Path):
+    def get_id(self, component_name: ComponentName):
+        id = self.start_options[ComponentOptions.ID]
+        if not id:  # Default component_name
+            id = component_name + "1"
+        return id
+
+    def set_electrumsv_paths(self, electrumsv_dir: Path):
         """This is set dynamically at startup. It is *only persisted for purposes of the 'reset'
         command. The trade-off is that the electrumsv 'repo' will need to be specified anew every
         time the SDK 'start' command is run."""
         self.electrumsv_dir = electrumsv_dir
-        self.update_electrumsv_data_dir(self.electrumsv_dir.joinpath(DEFAULT_ID_ELECTRUMSV),
+        id = self.get_id(ComponentName.ELECTRUMSV)
+        self.update_electrumsv_data_dir(self.electrumsv_dir.joinpath(id),
             DEFAULT_PORT_ELECTRUMSV)
         self.electrumsv_requirements_path = (
             self.electrumsv_dir.joinpath("contrib")
@@ -144,9 +153,9 @@ class AppState:
             config = json.loads(f.read())
             electrumsv_dir = config.get("electrumsv_dir")
             if electrumsv_dir:
-                self.set_electrumsv_path(Path(electrumsv_dir))
+                self.set_electrumsv_paths(Path(electrumsv_dir))
             else:
-                self.set_electrumsv_path(Path(self.depends_dir.joinpath("electrumsv")))
+                self.set_electrumsv_paths(Path(self.depends_dir.joinpath("electrumsv")))
 
     def purge_prev_installs_if_exist(self):
         def remove_readonly(func, path, excinfo):  # .git is read-only

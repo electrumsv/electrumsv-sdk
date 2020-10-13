@@ -7,10 +7,10 @@ import errno
 from pathlib import Path
 
 
-from .constants import DEFAULT_ID_ELECTRUMSV, DEFAULT_PORT_ELECTRUMSV
-from .components import ComponentOptions, ComponentName
+from .constants import DEFAULT_PORT_ELECTRUMSV
+from .components import ComponentOptions, ComponentName, ComponentStore
 from .utils import checkout_branch, make_shell_script_for_component, make_esv_gui_script, \
-    make_esv_daemon_script, make_esv_custom_script
+    make_esv_daemon_script, make_esv_custom_script, is_remote_repo
 
 logger = logging.getLogger("installers")
 
@@ -18,61 +18,7 @@ logger = logging.getLogger("installers")
 class Installers:
     def __init__(self, app_state):
         self.app_state = app_state
-
-    def is_new_and_no_id(self, id, new) -> bool:
-        return id == "" and new
-
-    def is_new_and_id(self, id, new) -> bool:
-        return id != "" and new
-
-    def is_not_new_and_no_id(self, id, new) -> bool:
-        return id == "" and not new
-
-    def is_not_new_and_id(self, id, new) -> bool:
-        return id != "" and not new
-
-    def get_component_data_dir_for_id(self, component_name: ComponentName, component_data_dir:
-            Path, id=None):
-        """to run multiple instances of electrumsv requires multiple data directories (with
-        separate lock files)"""
-        new = self.app_state.start_options[ComponentOptions.NEW]
-        if not id:
-            id = self.app_state.start_options[ComponentOptions.ID]
-
-        # autoincrement (electrumsv1 -> electrumsv2 -> electrumsv3...)
-        if self.is_new_and_no_id(id, new):
-            count = 1
-            while True:
-                self.app_state.start_options[ComponentOptions.ID] = id = \
-                    str(component_name) + str(count)
-                new_dir = component_data_dir.joinpath(id)
-                if not new_dir.exists():
-                    break
-                else:
-                    count += 1
-            logger.debug(f"Using new user-specified electrumsv data dir ({id})")
-
-        elif self.is_new_and_id(id, new):
-            new_dir = self.app_state.electrumsv_dir.joinpath(id)
-            if new_dir.exists():
-                logger.debug(f"User-specified electrumsv data directory: {new_dir} already exists ("
-                      f"either drop the --new flag or choose a unique identifier).")
-            logger.debug(f"Using user-specified electrumsv data dir ({id})")
-
-        elif self.is_not_new_and_id(id, new):
-            new_dir = self.app_state.electrumsv_dir.joinpath(id)
-            if not new_dir.exists():
-                logger.debug(f"User-specified electrumsv data directory: {new_dir} does not exist"
-                             f" and so will be created anew.")
-            logger.debug(f"Using user-specified electrumsv data dir ({id})")
-
-        elif self.is_not_new_and_no_id(id, new):
-            id = DEFAULT_ID_ELECTRUMSV
-            new_dir = self.app_state.electrumsv_dir.joinpath(id)
-            logger.debug(f"Using default electrumsv data dir ({DEFAULT_ID_ELECTRUMSV})")
-
-        logger.debug(f"Electrumsv data dir = {new_dir}")
-        return new_dir
+        self.component_store = ComponentStore(self.app_state)
 
     def port_is_in_use(self, port) -> bool:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -96,27 +42,6 @@ class Installers:
             else:
                 break
         return port
-
-    def local_electrumsv(self, repo, branch):
-        logger.debug(f"Installing local dependency for {ComponentName.ELECTRUMSV} "
-                     f"at path: {repo}")
-        assert Path(repo).exists(), f"the path {repo} does not exist!"
-        if branch != "":
-            subprocess.run(f"git checkout {branch}", shell=True, check=True)
-        self.app_state.set_electrumsv_path(Path(repo))
-        new_dir = self.get_component_data_dir_for_id(ComponentName.ELECTRUMSV,
-            self.app_state.electrumsv_dir)
-        port = self.get_electrumsv_port()
-        self.app_state.update_electrumsv_data_dir(new_dir, port)
-
-    def local_electrumx(self, repo, branch):
-        logger.debug(f"Installing local dependency for {ComponentName.ELECTRUMX} "
-                     f"at path: {repo}")
-        assert Path(repo).exists(), f"the path {repo} does not exist!"
-        if branch != "":
-            subprocess.run(f"git checkout {branch}", shell=True, check=True)
-        self.electrumx_dir = Path(repo)
-        self.electrumx_data_dir = self.electrumx_dir.joinpath("electrumx_data")
 
     # ----- INSTALL PACKAGES (pip install // npm install etc.) ----- #
 
@@ -171,11 +96,6 @@ class Installers:
         (dir exists, url matches)
         (dir exists, url does not match - it's a forked repo)
         """
-        data_dir = self.get_component_data_dir_for_id(ComponentName.ELECTRUMSV,
-            self.app_state.electrumsv_dir)
-        port = self.get_electrumsv_port()
-        self.app_state.update_electrumsv_data_dir(data_dir, port)
-
         if not self.app_state.electrumsv_dir.exists():
             logger.debug(f"Installing electrumsv (url={url})")
             os.chdir(self.app_state.depends_dir)
@@ -340,20 +260,46 @@ class Installers:
         make_shell_script_for_component(ComponentName.WHATSONCHAIN,
             commandline_string=None, env_vars=None, multiple_lines=separate_lines)
 
+    # ----- SET COMPONENT PATHS ----- #
+    def configure_paths_and_maps_electrumsv(self, repo, branch):
+        if is_remote_repo(repo):
+            self.app_state.set_electrumsv_paths(self.app_state.depends_dir.joinpath("electrumsv"))
+        else:
+            logger.debug(f"Installing local dependency {ComponentName.ELECTRUMSV} at {repo}")
+            assert Path(repo).exists(), f"the path {repo} does not exist!"
+            if branch != "":
+                checkout_branch(branch)
+            self.app_state.set_electrumsv_paths(Path(repo))
+        data_dir = self.component_store.autoincrement_data_dir_for_id(ComponentName.ELECTRUMSV,
+                data_dir_parent=self.app_state.electrumsv_dir)
+        port = self.get_electrumsv_port()
+        self.app_state.update_electrumsv_data_dir(data_dir, port)
+
+    def configure_paths_and_maps_electrumx(self, repo, branch):
+        if is_remote_repo(repo):
+            self.app_state.electrumx_dir = self.app_state.depends_dir.joinpath("electrumx")
+        else:
+            logger.debug(f"Installing local dependency {ComponentName.ELECTRUMX} at {repo}")
+            assert Path(repo).exists(), f"the path {repo} does not exist!"
+            if branch != "":
+                checkout_branch(branch)
+            self.electrumx_dir = Path(repo)
+        self.app_state.electrumx_data_dir = self.app_state.depends_dir.joinpath("electrumx_data")
+
+
     # ----- INSTALLATION ENTRYPOINTS ----- #
-    # 1) fetch (as needed) and setup paths (perhaps to local repo)
+    # 0) configure_paths_and_maps  # Todo - should obviate 'local_<component_name>()
+    # 1) fetch (as needed)
     # 2) pip install (or npm install) packages/dependencies
     # 3) generate run script
 
     def electrumsv(self):
         repo = self.app_state.start_options[ComponentOptions.REPO]
         branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        if repo == "" or repo.startswith("https://"):  # default
+        self.configure_paths_and_maps_electrumsv(repo, branch)
+        if is_remote_repo(repo):
             repo = "https://github.com/electrumsv/electrumsv.git" if repo == "" else repo
-            self.app_state.set_electrumsv_path(self.app_state.depends_dir.joinpath("electrumsv"))
             self.fetch_electrumsv(repo, branch)
-        else:
-            self.local_electrumsv(repo, branch)
 
         self.app_state.installers.packages_electrumsv(repo, branch)
         self.app_state.installers.generate_run_scripts_electrumsv()
@@ -362,11 +308,10 @@ class Installers:
         """--repo and --branch flags affect the behaviour of the 'fetch' step"""
         repo = self.app_state.start_options[ComponentOptions.REPO]
         branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        if repo == "" or repo.startswith("https://"):  # default
+        self.configure_paths_and_maps_electrumx(repo, branch)
+        if is_remote_repo(repo):
             repo = "https://github.com/kyuupichan/electrumx.git"
             self.app_state.installers.fetch_electrumx(repo, branch)
-        else:
-            self.local_electrumx(repo, branch)
 
         self.app_state.installers.packages_electrumx(repo, branch)
         self.app_state.installers.generate_run_script_electrumx()
@@ -391,6 +336,9 @@ class Installers:
         self.app_state.installers.generate_run_script_status_monitor()
 
     def whatsonchain(self):
+        repo = self.app_state.start_options[ComponentOptions.REPO]
+        if not repo == "":  # default
+            logger.error("ignoring --repo flag for whatsonchain - not applicable.")
         self.fetch_whatsonchain()
         self.app_state.installers.generate_run_script_whatsonchain()
 

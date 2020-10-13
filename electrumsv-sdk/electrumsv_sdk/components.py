@@ -32,7 +32,8 @@ import json
 import logging
 import os
 import sys
-from typing import Optional, List
+from pathlib import Path
+from typing import Optional, List, Union
 
 from filelock import FileLock
 
@@ -54,10 +55,8 @@ class ComponentName:
     ELECTRUMSV = "electrumsv"
     INDEXER = "indexer"
 
-
-COMPONENTS = [ComponentName.WHATSONCHAIN, ComponentName.STATUS_MONITOR, ComponentName.NODE,
-              ComponentName.ELECTRUMX, ComponentName.ELECTRUMSV, ComponentName.INDEXER]
-
+    def __add__(self, val):
+        return str(self) + str(val)
 
 class ComponentOptions:
     NEW = "new"
@@ -66,15 +65,6 @@ class ComponentOptions:
     ID = "id"
     REPO = "repo"
     BRANCH = "branch"
-
-
-class ComponentType(enum.IntEnum):
-    NODE = 1
-    ELECTRUMX = 2
-    ELECTRUMSV = 3
-    INDEXER = 4
-    STATUS_MONITOR = 5
-    WOC = 6
 
 
 class ComponentState(enum.IntEnum):
@@ -89,33 +79,34 @@ class ComponentState(enum.IntEnum):
 class Component:
     def __init__(
         self,
-        id: int,
+        id: str,
         pid: int,
-        process_type: ComponentType,
-        endpoint: str,
-        component_state: ComponentState,
-        location: Optional[str],
+        component_type: ComponentName,
+        location: Union[str, Path],
+        status_endpoint: str,
+        component_state: Optional[ComponentState]=ComponentState.Running,
         metadata: Optional[dict] = None,
-        logging_path: Optional[str] = None,
+        logging_path: Optional[Union[str, Path]] = None,
     ):
         self.id = id  # human-readable identifier for instance
         self.pid = pid
-        self.process_type = process_type
-        self.endpoint = endpoint
+        self.component_type = component_type
+        self.status_endpoint = status_endpoint
         self.component_state = component_state
-        self.location = location
+        self.location = str(location)
         self.metadata = metadata
-        self.logging_path = logging_path
+        self.logging_path = str(logging_path)
         self.last_updated = get_str_datetime()
 
     def __repr__(self):
         return (
             f"Component(id={self.id}, pid={self.pid}, "
-            f"process_type={self.process_type}, "
-            f"endpoint={self.endpoint}, "
+            f"component_type={self.component_type}, "
+            f"status_endpoint={self.status_endpoint}, "
             f"component_state={self.component_state.name}, "
             f"location={self.location}, metadata={self.metadata}, "
-            f"logging_path={self.logging_path}, last_updated={self.last_updated})"
+            f"logging_path={self.logging_path}, "
+            f"last_updated={self.last_updated})"
         )
 
     def to_dict(self):
@@ -134,6 +125,68 @@ class ComponentStore:
         self.lock_path = app_state.electrumsv_sdk_data_dir / "component_state.json.lock"
         self.file_lock = FileLock(self.lock_path, timeout=1)
         self.component_state_path = app_state.electrumsv_sdk_data_dir / self.file_path
+        # Todo populate datadir_map via plugin system
+        self.datadir_map = {
+            ComponentName.WHATSONCHAIN: None,
+            ComponentName.STATUS_MONITOR: None,
+            ComponentName.NODE: None,
+            ComponentName.ELECTRUMX: None,
+            ComponentName.ELECTRUMSV: None,
+            ComponentName.INDEXER: None
+        }
+
+    def autoincrement_data_dir_for_id(self, component_name: ComponentName, data_dir_parent:
+            Path, id=None):
+        # Todo - use this generically for node and electrumsv
+        """to run multiple instances of a component requires multiple data directories"""
+        def is_new_and_no_id(id, new) -> bool:
+            return id == "" and new
+        def is_new_and_id(id, new) -> bool:
+            return id != "" and new
+        def is_not_new_and_no_id(id, new) -> bool:
+            return id == "" and not new
+        def is_not_new_and_id(id, new) -> bool:
+            return id != "" and not new
+
+        new = self.app_state.start_options[ComponentOptions.NEW]
+        if not id:
+            id = self.app_state.start_options[ComponentOptions.ID]
+
+        # autoincrements (electrumsv1 -> electrumsv2 -> electrumsv3...) until empty space is found
+        if is_new_and_no_id(id, new):
+            count = 1
+            while True:
+                self.app_state.start_options[ComponentOptions.ID] = id = \
+                    str(component_name) + str(count)
+                new_dir = data_dir_parent.joinpath(id)
+                if not new_dir.exists():
+                    break
+                else:
+                    count += 1
+            logger.debug(f"Using new user-specified electrumsv data dir ({id})")
+
+        elif is_new_and_id(id, new):
+            new_dir = self.app_state.electrumsv_dir.joinpath(id)
+            if new_dir.exists():
+                logger.debug(f"User-specified electrumsv data directory: {new_dir} already exists ("
+                      f"either drop the --new flag or choose a unique identifier).")
+                sys.exit(1)
+            logger.debug(f"Using user-specified electrumsv data dir ({new_dir})")
+
+        elif is_not_new_and_id(id, new):
+            new_dir = self.app_state.electrumsv_dir.joinpath(id)
+            if not new_dir.exists():
+                logger.debug(f"User-specified electrumsv data directory: {new_dir} does not exist"
+                             f" and so will be created anew.")
+            logger.debug(f"Using user-specified electrumsv data dir ({new_dir})")
+
+        elif is_not_new_and_no_id(id, new):
+            id = self.app_state.get_id(component_name)
+            new_dir = self.app_state.electrumsv_dir.joinpath(id)
+            logger.debug(f"Using default electrumsv data dir ({new_dir})")
+
+        logger.debug(f"Electrumsv data dir = {new_dir}")
+        return new_dir
 
     def get_status(self):
         filelock_logger = logging.getLogger("filelock")
@@ -174,7 +227,7 @@ class ComponentStore:
         with open(self.component_state_path, "w") as f:
             f.write(json.dumps(component_state, indent=4))
 
-    def component_data_by_id(self, component_id):
+    def component_status_data_by_id(self, component_id):
         component_state = self.get_status()
         for component in component_state:
             if component.get('id') == component_id:
