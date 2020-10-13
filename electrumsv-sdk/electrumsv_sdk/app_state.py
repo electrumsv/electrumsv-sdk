@@ -163,8 +163,8 @@ class AppState:
             os.makedirs(self.run_scripts_dir, exist_ok=True)
 
     def handle_first_ever_run(self):
-        """nukes previously installed dependencies and .bat/.sh scripts for the first ever run of the
-        electrumsv-sdk."""
+        """nukes previously installed dependencies and .bat/.sh scripts for the first ever run of
+        the electrumsv-sdk."""
         try:
             with open(self.electrumsv_sdk_config_path, "r") as f:
                 config = json.loads(f.read())

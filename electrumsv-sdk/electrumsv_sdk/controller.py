@@ -6,7 +6,7 @@ import sys
 from electrumsv_node import electrumsv_node
 from electrumsv_sdk.components import ComponentName, ComponentStore, ComponentOptions, ComponentType
 
-from .constants import DEFAULT_ID_NODE, DEFAULT_ID_STATUS, DEFAULT_ID_ELECTRUMX
+from .constants import DEFAULT_ID_NODE, DEFAULT_ID_ELECTRUMX
 from .reset import Resetters
 from .installers import Installers
 from .handlers import Handlers

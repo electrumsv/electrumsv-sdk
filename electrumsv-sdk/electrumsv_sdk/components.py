@@ -179,9 +179,9 @@ class ComponentStore:
         for component in component_state:
             if component.get('id') == component_id:
                 return component
-        else:
-            logger.error("component id not found")
-            return {}
+
+        logger.error("component id not found")
+        return {}
 
     def derive_shell_script_path(self, component_name):
         script_name = component_name

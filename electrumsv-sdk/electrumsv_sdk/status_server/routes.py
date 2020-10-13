@@ -1,7 +1,7 @@
 import json
 import logging
 
-from constants import COMPONENT_STATE_PATH
+from constants import COMPONENT_STATE_PATH  # pylint: disable=E0611
 from trinket import Request, Response
 
 logger = logging.getLogger("trinket-routes")
@@ -42,8 +42,8 @@ async def unsubscribe(app, request):
 
 # /api/status/subscribe
 async def subscribe(app, request, websocket):
+    """subscribe for status updates"""
     try:
-        """subscribe for status updates"""
         host = request.socket._socket.getpeername()[0]
         port = request.socket._socket.getpeername()[1]
         logger.debug(f"Got websocket connection: host={host}, port={port}")

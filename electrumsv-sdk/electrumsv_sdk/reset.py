@@ -10,7 +10,7 @@ from electrumsv_node import electrumsv_node
 from .utils import logger
 from .install_tools import InstallTools
 from .stoppers import Stoppers
-from .components import ComponentName, ComponentOptions
+from .components import ComponentOptions
 from .installers import Installers
 from .starters import Starters
 

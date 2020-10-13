@@ -26,7 +26,8 @@ class StatusMonitorClient:
         logging.debug(f"updating status monitor with component data: {component}")
         for sleep_time in (3, 3, 3):
             try:
-                result = requests.post(STATUS_MONITOR_API + "/update_status", json=component.to_dict())
+                result = requests.post(STATUS_MONITOR_API + "/update_status",
+                    json=component.to_dict())
                 result.raise_for_status()
                 return result
             except Exception as e:

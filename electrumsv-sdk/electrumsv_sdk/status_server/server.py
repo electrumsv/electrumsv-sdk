@@ -11,7 +11,7 @@ import logging
 import logging.handlers
 import signal
 
-from constants import FILE_LOCK_PATH
+from constants import FILE_LOCK_PATH  # pylint: disable=E0611
 from curio.monitor import Monitor
 from filelock import FileLock
 from trinket import Trinket
@@ -91,7 +91,7 @@ class StatusServer:
         self.server = trinket_logging_setup(Trinket())
         self.add_api_routes(self.server)
         server = ServerRunner(host="localhost", port=5000)
-        tasks = [
+        _tasks = [
             await curio.spawn(server.serve, self.server),
             await curio.spawn(self.publish_status_update),
         ]

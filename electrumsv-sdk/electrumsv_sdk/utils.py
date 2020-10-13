@@ -1,4 +1,3 @@
-import datetime
 import logging
 import os
 import shlex
@@ -116,10 +115,6 @@ def make_esv_gui_script(base_cmd, env_vars, esv_data_dir, port):
     make_shell_script_for_component(ComponentName.ELECTRUMSV, commandline_string, env_vars)
 
 
-def get_str_datetime():
-    return datetime.datetime.now().strftime(TIME_FORMAT)
-
-
 def topup_wallet():
     logger.debug("Topping up wallet...")
     nblocks = 1
@@ -151,11 +146,12 @@ def trace_processes_for_cmd(command):
             pass
     return processes
 
+
 def trace_pid(command):
     """
     Linux workaround:
-    - gnome-terminal only ever returns back an ephemeral pid and makes it basically impossible to retrieve
-    the pid of spawned tasks inside of the new window.
+    - gnome-terminal only ever returns back an ephemeral pid and makes it basically impossible
+    to retrieve the pid of spawned tasks inside of the new window.
 
     Workaround adapted from:
     'https://stackoverflow.com/questions/55880659/

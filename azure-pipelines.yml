@@ -28,14 +28,26 @@ jobs:
       displayName: 'prepare for electrumsv'
       workingDirectory: electrumsv-sdk/
     - script: |
+        python3 -m pip install wheel
+        python3 -m pip install -e .
+        python3 -m pip install pytest pytest-cov
+      displayName: 'install sdk'
+      workingDirectory: electrumsv-sdk/
+    - script: |
+        python3 -m pip install -U pylint
+        python3 -m pylint --rcfile ./.pylintrc ./electrumsv-sdk
+        if [ $? -gt 0 ]
+        then
+          # https://docs.pylint.org/en/1.6.0/run.html#exit-codes
+          echo "##vso[task.complete result=Failed;]DONE"
+        fi
+      displayName: 'pylint'
+    - script: |
         sudo apt-get update
         sudo apt install npm nodejs
       displayName: 'prepare for whatsonchain'
       workingDirectory: electrumsv-sdk/
     - script: |
-        python3 -m pip install wheel
-        python3 -m pip install -e .
-        python3 -m pip install pytest pytest-cov
         electrumsv-sdk start --background node
         electrumsv-sdk start --background electrumx
         electrumsv-sdk start --background --new electrumsv
