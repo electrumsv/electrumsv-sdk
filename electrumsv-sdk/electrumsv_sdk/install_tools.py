@@ -50,15 +50,15 @@ class InstallTools:
         if package_name == ComponentName.NODE:
             self.installers.node(branch)
 
-    def generate_run_script_for_component(self, component_name: ComponentName):
+    # ----- SCRIPT GENERATORS ----- #
+
+    def init_run_script_dir(self):
         os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
         os.chdir(self.app_state.run_scripts_dir)
 
-
-
     def generate_run_scripts_electrumsv(self):
         """makes both the daemon script and a script for running the GUI"""
-        self.generate_run_script_for_component(ComponentName.ELECTRUMSV)
+        self.init_run_script_dir()
         path_to_dapp_example_apps = self.app_state.electrumsv_dir.joinpath("examples").joinpath(
             "applications"
         )
@@ -82,7 +82,7 @@ class InstallTools:
             make_esv_gui_script(base_cmd, esv_env_vars, esv_data_dir, port)
 
     def generate_run_script_electrumx(self):
-        self.generate_run_script_for_component(ComponentName.ELECTRUMX)
+        self.init_run_script_dir()
         electrumx_env_vars = {
             "DB_DIRECTORY": str(self.app_state.electrumx_data_dir),
             "DAEMON_URL": "http://rpcuser:rpcpassword@127.0.0.1:18332",
@@ -103,21 +103,20 @@ class InstallTools:
             electrumx_env_vars)
 
     def generate_run_script_status_monitor(self):
-        self.generate_run_script_for_component(ComponentName.STATUS_MONITOR)
-
+        self.init_run_script_dir()
         commandline_string = (
             f"{sys.executable} " f"{self.app_state.status_monitor_dir.joinpath('server.py')}"
         )
         make_shell_script_for_component(ComponentName.STATUS_MONITOR, commandline_string, {})
 
-    def generate_run_script_woc(self):
-        self.generate_run_script_for_component(ComponentName.WHATSONCHAIN)
+    def generate_run_script_whatsonchain(self):
+        self.init_run_script_dir()
 
         commandline_string1 = f"cd {self.app_state.woc_dir}\n"
         commandline_string2 = f"call npm start\n" if sys.platform == "win32" else f"npm start\n"
         separate_lines = [commandline_string1, commandline_string2]
-        make_shell_script_for_component(ComponentName.WHATSONCHAIN, commandline_string=None, env_vars=None,
-                                        separate_lines=separate_lines)
+        make_shell_script_for_component(ComponentName.WHATSONCHAIN,
+                                        commandline_string=None, env_vars=None, multiple_lines=separate_lines)
 
     def setup_paths_and_shell_scripts_electrumsv(self):
         repo = self.app_state.start_options[ComponentOptions.REPO]
@@ -133,7 +132,9 @@ class InstallTools:
             self.app_state.set_electrumsv_path(Path(repo))
             self.install_from_local_repo(ComponentName.ELECTRUMSV, repo, branch)
 
-    def install_electrumsv(self, url, branch):
+    # ----- INSTALL FUNCTIONS ----- #
+
+    def fetch_electrumsv(self, url, branch):
         # Note - this is only so that it works "out-of-the-box". But for development
         # should use a dedicated electrumsv repo and specify it via cli arguments (not implemented)
         if not self.app_state.electrumsv_dir.exists():
@@ -154,7 +155,41 @@ class InstallTools:
                 shell=True)
             process2.wait()
 
-    def install_electrumx(self, url, branch):
+    def fetch_electrumx(self, url, branch):
+        """3 possibilities:
+        (dir doesn't exists) -> install
+        (dir exists, url matches)
+        (dir exists, url does not match - it's a forked repo)
+        """
+        if not self.app_state.electrumx_dir.exists():
+            logger.debug(f"Installing electrumx (url={url})")
+
+        elif self.app_state.electrumx_dir.exists():
+            os.chdir(self.app_state.electrumx_dir)
+            result = subprocess.run(
+                f"git config --get remote.origin.url",
+                shell=True,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            if result.stdout.strip() == url:
+                logger.debug(f"Electrumx is already installed (url={url})")
+                checkout_branch(branch)
+                subprocess.run(f"git pull", shell=True, check=True)
+                # Todo - cannot re-install requirements dynamically because of plyvel
+                #  awaiting a PR for electrumx
+
+            if result.stdout.strip() != url:
+                existing_fork = self.app_state.electrumx_dir
+                logger.debug(f"Alternate fork of electrumx is already installed")
+                logger.debug(f"Moving existing fork (to '{existing_fork}.bak')")
+                logger.debug(f"Installing electrumsv (url={url})")
+                os.rename(
+                    self.app_state.electrumx_dir,
+                    self.app_state.electrumx_dir.with_suffix(".bak"),
+                )
 
         if not self.app_state.electrumx_dir.exists():
             os.makedirs(self.app_state.electrumx_dir, exist_ok=True)
@@ -164,15 +199,14 @@ class InstallTools:
 
             os.chdir(self.app_state.electrumx_dir)
             checkout_branch(branch)
-        self.generate_run_script_electrumx()
 
-    def install_status_monitor(self):
-        self.generate_run_script_status_monitor()
+    def fetch_status_monitor(self):
+        pass
 
-    def install_node(self):
+    def fetch_node(self):
         subprocess.run(f"{sys.executable} -m pip install electrumsv-node", shell=True, check=True)
 
-    def install_woc(self, url="https://github.com/AustEcon/woc-explorer.git", branch=''):
+    def fetch_whatsonchain(self, url="https://github.com/AustEcon/woc-explorer.git", branch=''):
 
         if not self.app_state.woc_dir.exists():
             os.makedirs(self.app_state.woc_dir, exist_ok=True)
@@ -191,4 +225,3 @@ class InstallTools:
                        else "npm run-script build\n",
                        shell=True)
         process.wait()
-        self.generate_run_script_woc()

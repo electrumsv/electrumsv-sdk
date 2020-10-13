@@ -1,5 +1,5 @@
 def install(app_state):
-    app_state.install_tools.install_status_monitor()
+    app_state.install_tools.fetch_status_monitor()
 
 
 def start(app_state):

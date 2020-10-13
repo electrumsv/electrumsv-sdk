@@ -64,12 +64,12 @@ def make_bash_file(filename, commandline_string=None, env_vars=None, separate_li
 
 
 def make_shell_script_for_component(component_name, commandline_string=None, env_vars=None,
-        separate_lines=None):
+        multiple_lines=None):
     if sys.platform == "win32":
-        make_bat_file(component_name + ".bat", commandline_string, env_vars, separate_lines)
+        make_bat_file(component_name + ".bat", commandline_string, env_vars, multiple_lines)
 
     elif sys.platform in ["linux", "darwin"]:
-        make_bash_file(component_name + ".sh", commandline_string, env_vars, separate_lines)
+        make_bash_file(component_name + ".sh", commandline_string, env_vars, multiple_lines)
 
 
 def add_esv_default_args(commandline_string, esv_data_dir, port):

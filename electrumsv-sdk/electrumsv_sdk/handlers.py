@@ -143,7 +143,7 @@ class Handlers:
                 len(self.app_state.start_set) != 0:
             return
 
-        self.installer.woc()
+        self.installer.whatsonchain()
 
     def handle_electrumsv_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
@@ -163,15 +163,7 @@ class Handlers:
                 len(self.app_state.start_set) != 0:
             return
 
-        repo = self.app_state.start_options[ComponentOptions.REPO]
-        branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        if repo == "":  # default
-            repo = "https://github.com/kyuupichan/electrumx.git"
-            self.install_tools.install_from_remote_repo(ComponentName.ELECTRUMX, repo, branch)
-        elif repo.startswith("https://"):
-            self.install_tools.install_from_remote_repo(ComponentName.ELECTRUMX, repo, branch)
-        else:
-            self.install_tools.install_from_local_repo(ComponentName.ELECTRUMX, repo, branch)
+        self.installer.electrumx()
 
     def handle_electrumsv_node_args(self, _parsed_args):
         """not to be confused with node namespace:
@@ -186,15 +178,7 @@ class Handlers:
                 len(self.app_state.start_set) != 0:
             return
 
-        repo = self.app_state.start_options[ComponentOptions.REPO]
-        branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        if repo == "":  # default
-            repo = "https://github.com/electrumsv/electrumsv_node.git"
-            self.install_tools.install_from_remote_repo(ComponentName.NODE, repo, branch)
-        elif repo.startswith("https://"):
-            self.install_tools.install_from_remote_repo(ComponentName.NODE, repo, branch)
-        else:
-            self.install_tools.install_from_local_repo(ComponentName.NODE, repo, branch)
+        self.app_state.installers.node()
 
     def handle_indexer_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
