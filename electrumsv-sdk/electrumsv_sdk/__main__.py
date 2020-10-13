@@ -3,7 +3,7 @@ import os
 import platform
 import sys
 
-from electrumsv_sdk.app_state import AppState
+from electrumsv_sdk.app_state import AppState  # pylint: disable=E0401
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',
     level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')

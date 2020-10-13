@@ -205,12 +205,12 @@ class Handlers:
 
         raise NotImplementedError("electrumsv_indexer installation is not supported yet.")
 
-        repo = self.app_state.start_options[ComponentOptions.REPO]
+        repo = self.app_state.start_options[ComponentOptions.REPO]  # pylint: disable=W0101
         branch = self.app_state.start_options[ComponentOptions.BRANCH]
         if repo == "":  # default
             repo = "????"
             self.install_tools.install_from_remote_repo(ComponentName.INDEXER, repo, branch)
-        elif parsed_args.repo.startswith("https://"):
+        elif repo.startswith("https://"):
             self.install_tools.install_from_remote_repo(ComponentName.INDEXER, repo, branch)
         else:
             self.install_tools.install_from_local_repo(ComponentName.INDEXER, repo, branch)

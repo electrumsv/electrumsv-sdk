@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 import os
 
-import setuptools
 from setuptools import find_packages, setup
-from setuptools.command.install import install
-from setuptools.dist import Distribution
 import sys
 
 
@@ -23,8 +20,7 @@ py -3.8 -m pip uninstall electrumsv-sdk
 
 and install the one you want:
 py -3.8 -m pip install electrumsv-sdk
-
-"""
+"""  # pylint: disable=W0105
 
 __version__ = '0.0.18'
 

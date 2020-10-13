@@ -1,12 +1,8 @@
 import asyncio
-import json
 import logging
-import shutil
 import subprocess
 import sys
 import time
-from pathlib import Path
-from typing import Union
 import os
 
 import aiorpcx
@@ -15,7 +11,7 @@ from electrumsv_node import electrumsv_node
 
 from .utils import trace_pid, trace_processes_for_cmd
 from .constants import STATUS_MONITOR_API, DEFAULT_ID_ELECTRUMSV, DEFAULT_ID_ELECTRUMX, \
-    DEFAULT_ID_NODE, DEFAULT_ID_STATUS, DEFAULT_ID_INDEXER, DEFAULT_ID_WOC
+    DEFAULT_ID_NODE, DEFAULT_ID_STATUS, DEFAULT_ID_WOC
 from .status_monitor_client import StatusMonitorClient
 
 from .components import Component, ComponentName, ComponentType, ComponentState, ComponentStore, \
@@ -200,8 +196,8 @@ class Starters:
 
     def esv_check_node_and_electrumx_running(self):
         if not electrumsv_node.is_running():
-            logger.debug("Electrumsv in RegTest mode requires a bitcoin node to be running... failed to "
-                  "connect")
+            logger.debug("Electrumsv in RegTest mode requires a bitcoin node to be running... "
+                         "failed to connect")
             sys.exit()
 
         is_running = asyncio.run(self.is_electrumx_running())

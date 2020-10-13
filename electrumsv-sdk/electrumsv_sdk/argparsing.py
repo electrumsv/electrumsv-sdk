@@ -12,8 +12,7 @@ import sys
 import textwrap
 from argparse import RawTextHelpFormatter
 
-from electrumsv_sdk.components import ComponentName, ComponentOptions, COMPONENTS
-from electrumsv_sdk.esv_argparsing_facade import extend_esv_parser
+from .components import ComponentName, COMPONENTS
 
 logger = logging.getLogger("argparsing")
 
@@ -165,7 +164,6 @@ class ArgParser:
 
     def add_subparser_electrumsv(self, subparsers):
         electrumsv = subparsers.add_parser(ComponentName.ELECTRUMSV, help="start electrumsv")
-        extend_esv_parser(electrumsv)
         return subparsers, electrumsv
 
     def add_subparser_electrumsv_node(self, subparsers):
@@ -366,13 +364,13 @@ class ArgParser:
             - "node"
             - "status"
 
-            The "start" command is the most feature-rich and launches servers as background 
+            The "start" command is the most feature-rich and launches servers as background
             processes (see next):
 
             start
             =====
             examples:
-            run node + electrumx + electrumsv 
+            run node + electrumx + electrumsv
                 > electrumsv-sdk start node
                 > electrumsv-sdk start electrumx
                 > electrumsv-sdk start electrumsv
@@ -392,9 +390,9 @@ class ArgParser:
 
             reset
             =====
-            resets server state. e.g. 
+            resets server state. e.g.
             - bitcoin node state is reset back to genesis
-            - electrumx state is reset back to genesis 
+            - electrumx state is reset back to genesis
             - electrumsv RegTest wallet history is erased to match blockchain state e.g.
                 > electrumsv-sdk reset
 

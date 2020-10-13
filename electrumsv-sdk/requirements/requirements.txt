@@ -1,6 +1,10 @@
 electrumsv-node>=0.0.8
-requests
-filelock
+requests>=2.24.0
+filelock>=3.0.12
 curio==0.9
 trinket==0.1.5
-psutil
+psutil>=5.6.6
+setuptools>=49.6.0
+aiorpcX>=0.18.4
+bitcoinX>=0.2.4
+peewee>=3.13.3
