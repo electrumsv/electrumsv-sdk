@@ -47,7 +47,7 @@ def get_str_datetime():
 
 
 class ComponentName:
-    WOC = "whatsonchain"
+    WHATSONCHAIN = "whatsonchain"
     STATUS_MONITOR = "status_monitor"
     NODE = "node"
     ELECTRUMX = "electrumx"
@@ -55,7 +55,7 @@ class ComponentName:
     INDEXER = "indexer"
 
 
-COMPONENTS = [ComponentName.WOC, ComponentName.STATUS_MONITOR, ComponentName.NODE,
+COMPONENTS = [ComponentName.WHATSONCHAIN, ComponentName.STATUS_MONITOR, ComponentName.NODE,
               ComponentName.ELECTRUMX, ComponentName.ELECTRUMSV, ComponentName.INDEXER]
 
 

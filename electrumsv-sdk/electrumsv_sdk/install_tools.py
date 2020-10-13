@@ -50,10 +50,15 @@ class InstallTools:
         if package_name == ComponentName.NODE:
             self.installers.node(branch)
 
-    def generate_run_scripts_electrumsv(self):
-        """makes both the daemon script and a script for running the GUI"""
+    def generate_run_script_for_component(self, component_name: ComponentName):
         os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
         os.chdir(self.app_state.run_scripts_dir)
+
+
+
+    def generate_run_scripts_electrumsv(self):
+        """makes both the daemon script and a script for running the GUI"""
+        self.generate_run_script_for_component(ComponentName.ELECTRUMSV)
         path_to_dapp_example_apps = self.app_state.electrumsv_dir.joinpath("examples").joinpath(
             "applications"
         )
@@ -77,8 +82,7 @@ class InstallTools:
             make_esv_gui_script(base_cmd, esv_env_vars, esv_data_dir, port)
 
     def generate_run_script_electrumx(self):
-        os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
-        os.chdir(self.app_state.run_scripts_dir)
+        self.generate_run_script_for_component(ComponentName.ELECTRUMX)
         electrumx_env_vars = {
             "DB_DIRECTORY": str(self.app_state.electrumx_data_dir),
             "DAEMON_URL": "http://rpcuser:rpcpassword@127.0.0.1:18332",
@@ -99,8 +103,7 @@ class InstallTools:
             electrumx_env_vars)
 
     def generate_run_script_status_monitor(self):
-        os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
-        os.chdir(self.app_state.run_scripts_dir)
+        self.generate_run_script_for_component(ComponentName.STATUS_MONITOR)
 
         commandline_string = (
             f"{sys.executable} " f"{self.app_state.status_monitor_dir.joinpath('server.py')}"
@@ -108,14 +111,13 @@ class InstallTools:
         make_shell_script_for_component(ComponentName.STATUS_MONITOR, commandline_string, {})
 
     def generate_run_script_woc(self):
-        os.makedirs(self.app_state.run_scripts_dir, exist_ok=True)
-        os.chdir(self.app_state.run_scripts_dir)
+        self.generate_run_script_for_component(ComponentName.WHATSONCHAIN)
 
         commandline_string1 = f"cd {self.app_state.woc_dir}\n"
         commandline_string2 = f"call npm start\n" if sys.platform == "win32" else f"npm start\n"
         separate_lines = [commandline_string1, commandline_string2]
-        make_shell_script_for_component(ComponentName.WOC, commandline_string=None, env_vars=None,
-            separate_lines=separate_lines)
+        make_shell_script_for_component(ComponentName.WHATSONCHAIN, commandline_string=None, env_vars=None,
+                                        separate_lines=separate_lines)
 
     def setup_paths_and_shell_scripts_electrumsv(self):
         repo = self.app_state.start_options[ComponentOptions.REPO]
@@ -167,13 +169,12 @@ class InstallTools:
     def install_status_monitor(self):
         self.generate_run_script_status_monitor()
 
-    def install_bitcoin_node(self):
+    def install_node(self):
         subprocess.run(f"{sys.executable} -m pip install electrumsv-node", shell=True, check=True)
 
     def install_woc(self, url="https://github.com/AustEcon/woc-explorer.git", branch=''):
 
         if not self.app_state.woc_dir.exists():
-            os.makedirs(self.app_state.woc_dir, exist_ok=True)
             os.makedirs(self.app_state.woc_dir, exist_ok=True)
             os.chdir(self.app_state.depends_dir)
             subprocess.run(f"git clone {url}", shell=True, check=True)

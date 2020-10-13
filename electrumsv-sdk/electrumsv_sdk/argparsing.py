@@ -184,7 +184,7 @@ class ArgParser:
         return subparsers, status_monitor
 
     def add_subparser_woc(self, subparsers):
-        woc = subparsers.add_parser(ComponentName.WOC, help="start whatsonchain explorer")
+        woc = subparsers.add_parser(ComponentName.WHATSONCHAIN, help="start whatsonchain explorer")
         return subparsers, woc
 
     def add_start_parser_args(self, start_parser):

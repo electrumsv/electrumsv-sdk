@@ -305,7 +305,7 @@ class Starters:
             sys.exit(1)
 
         logger.debug(f"Starting whatsonchain daemon...")
-        script_path = self.component_store.derive_shell_script_path(ComponentName.WOC)
+        script_path = self.component_store.derive_shell_script_path(ComponentName.WHATSONCHAIN)
         process = self.spawn_process(script_path)
 
         id = self.app_state.start_options[ComponentOptions.ID]
@@ -364,7 +364,7 @@ class Starters:
             if esv_process:
                 procs.append(esv_process.pid)
 
-        if ComponentName.WOC in self.app_state.start_set \
+        if ComponentName.WHATSONCHAIN in self.app_state.start_set \
                 or len(self.app_state.start_set) == 0:
 
             woc_process = self.start_whatsonchain()

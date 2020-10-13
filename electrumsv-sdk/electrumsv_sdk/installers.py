@@ -193,7 +193,7 @@ class Installers:
 
     def node(self, branch):
         """this one has a pip installer at https://pypi.org/project/electrumsv-node/"""
-        self.app_state.install_tools.install_bitcoin_node()
+        self.app_state.install_tools.install_node()
 
     def status_monitor(self):
         """purely for generating the .bat / .sh script"""
