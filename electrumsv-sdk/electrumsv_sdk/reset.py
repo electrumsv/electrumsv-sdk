@@ -42,8 +42,8 @@ class Resetters:
             password = "test"
 
             command = (
-                f"electrumsv-sdk start "
-                f"--repo={self.app_state.start_options[ComponentOptions.REPO]} "
+                f"electrumsv-sdk start --background --repo"
+                f"={self.app_state.start_options[ComponentOptions.REPO]} "
                 f"electrumsv create_wallet --wallet {wallet_path} "
                 f"--walletpassword {password} --portable --no-password-check")
 
@@ -111,53 +111,22 @@ class Resetters:
         self.create_wallet()
         logger.debug("Reset of RegTest electrumsv wallet completed successfully")
 
-    def reset_component_by_id(self, component_id):
-        if self.app_state.start_options[ComponentOptions.ID] != "":
-            if len(self.app_state.reset_set) != 0:
-                logger.debug(f"The '--id' flag is specified "
-                             f"- ignoring the component type(s) {self.app_state.reset_set}")
-
-        component_data = self.component_store.component_status_data_by_id(component_id)
-        component_name = component_data.get('component_type')
-        if component_data == {}:
-            sys.exit(1)
-
-        if component_data.get('component_type') == ComponentName.NODE:
-            logger.debug(f"There is only one 'id' for this component type - resetting the "
-                         f"default node id={component_id}")
+    def reset_component(self, component_name: ComponentName, component_id=None):
+        if ComponentName.NODE == component_name:
             self.reset_node()
 
-        elif component_data.get('component_type') == ComponentName.ELECTRUMX:
-            logger.debug(f"There is only one 'id' for this component type - resetting the "
-                         f"default electrumx id={component_id}")
+        if ComponentName.ELECTRUMX == component_name:
             self.reset_electrumx()
 
-        elif component_data.get('component_type') == ComponentName.ELECTRUMSV:
+        if ComponentName.ELECTRUMSV == component_name:
             self.reset_electrumsv_wallet(component_id)
+            if component_id:
+                subprocess.run(f"electrumsv-sdk stop --id={component_id}")
+            else:
+                subprocess.run(f"electrumsv-sdk stop electrumsv")
 
-        elif component_data.get('component_type') == ComponentName.INDEXER:
-            logger.debug(f"The Indexer component type is not supported at this time.")
-
-        elif component_data.get('component_type') == ComponentName.STATUS_MONITOR:
-            logger.error("resetting the status monitor is not supported at this time...")
-
-    def reset_component_by_type(self):
-        if ComponentName.NODE in self.app_state.reset_set or len(self.app_state.reset_set) == 0:
-            self.reset_node()
-
-        if ComponentName.ELECTRUMX in self.app_state.reset_set or len(
-                self.app_state.reset_set) == 0:
-            self.reset_electrumx()
-
-        if ComponentName.INDEXER in self.app_state.reset_set or len(
-                self.app_state.reset_set) == 0:
+        if ComponentName.INDEXER == component_name:
             logger.error("resetting indexer is not supported at this time...")
 
-        if ComponentName.STATUS_MONITOR in self.app_state.reset_set \
-                or len(self.app_state.reset_set) == 0:
+        if ComponentName.STATUS_MONITOR == component_name:
             logger.error("resetting the status monitor is not supported at this time...")
-
-        if ComponentName.ELECTRUMSV in self.app_state.reset_set or len(
-                self.app_state.reset_set) == 0:
-            self.reset_electrumsv_wallet()
-            self.app_state.stop_set.add(ComponentName.ELECTRUMSV)
