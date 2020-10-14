@@ -87,7 +87,7 @@ class ArgParser:
                     if arg in ComponentName.__dict__.values():
                         self.app_state.start_set.add(arg)
                     else:
-                        logger.error(f"Must select from: {self.component_store.datadir_map}")
+                        logger.error(f"Must select from: {self.component_store.component_list}")
                         sys.exit()
                     component_selected = True
                     continue
