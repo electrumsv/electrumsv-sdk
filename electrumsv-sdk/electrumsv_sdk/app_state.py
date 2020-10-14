@@ -39,6 +39,7 @@ class AppState:
             data_dir = Path.home() / ".electrumsv-sdk"
 
         self.electrumsv_sdk_data_dir = data_dir
+        self.plugin_dir = Path(MODULE_DIR).joinpath("components")
 
         self.component_store = ComponentStore(self)
         self.arparser = ArgParser(self)
