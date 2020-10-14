@@ -3,6 +3,7 @@ import os
 import shlex
 import subprocess
 import sys
+from pathlib import Path
 
 import psutil
 from electrumsv_node import electrumsv_node
@@ -10,7 +11,7 @@ from electrumsv_node import electrumsv_node
 from .components import ComponentName
 
 logger = logging.getLogger("utils")
-
+MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def checkout_branch(branch: str):
     if branch != "":
@@ -166,3 +167,12 @@ def trace_pid(command):
 
 def is_remote_repo(repo: str):
     return repo == "" or repo.startswith("https://")
+
+
+def read_sdk_version():
+    with open(Path(MODULE_DIR).joinpath('__init__.py'), 'r') as f:
+        for line in f:
+            if line.startswith('__version__'):
+                version = line.strip().split('= ')[1].strip("'")
+                break
+    return version

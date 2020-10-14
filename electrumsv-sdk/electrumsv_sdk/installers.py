@@ -49,15 +49,16 @@ class Installers:
         os.chdir(self.app_state.electrumsv_dir)
         checkout_branch(branch)
 
-        process1 = subprocess.Popen(
-            f"{sys.executable} -m pip install --user -r"
-            f" {self.app_state.electrumsv_requirements_path}",
-            shell=True)
+        if sys.platform in ['win32', 'darwin']:
+            cmd1 = f"{sys.executable} -m pip install --user -r {self.app_state.electrumsv_requirements_path}"
+            cmd2 = f"{sys.executable} -m pip install --user -r {self.app_state.electrumsv_binary_requirements_path}"
+        elif sys.platform == 'linux':
+            cmd1 = f"sudo {sys.executable} -m pip install --force -r {self.app_state.electrumsv_requirements_path}"
+            cmd2 = f"sudo {sys.executable} -m pip install --force -r {self.app_state.electrumsv_binary_requirements_path}"
+
+        process1 = subprocess.Popen(cmd1, shell=True)
         process1.wait()
-        process2 = subprocess.Popen(
-            f"{sys.executable} -m pip install --user -r"
-            f" {self.app_state.electrumsv_binary_requirements_path} ",
-            shell=True)
+        process2 = subprocess.Popen(cmd2, shell=True)
         process2.wait()
 
     def packages_electrumx(self, url, branch):
@@ -69,7 +70,7 @@ class Installers:
 
         if sys.platform in ['linux', 'darwin']:
             process = subprocess.Popen(
-                f"{sys.executable} -m pip install --user -r {requirements_path}", shell=True)
+                f"sudo {sys.executable} -m pip install --user --force --no-cache -r {requirements_path}", shell=True)
             process.wait()
 
         elif sys.platform == 'win32':
