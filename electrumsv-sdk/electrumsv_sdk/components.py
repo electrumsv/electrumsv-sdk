@@ -125,17 +125,10 @@ class ComponentStore:
         self.lock_path = app_state.electrumsv_sdk_data_dir / "component_state.json.lock"
         self.file_lock = FileLock(self.lock_path, timeout=1)
         self.component_state_path = app_state.electrumsv_sdk_data_dir / self.file_path
-        # Todo populate datadir_map via plugin system
-        self.datadir_map = {
-            ComponentName.WHATSONCHAIN: None,
-            ComponentName.STATUS_MONITOR: None,
-            ComponentName.NODE: None,
-            ComponentName.ELECTRUMX: None,
-            ComponentName.ELECTRUMSV: None,
-            ComponentName.INDEXER: None
-        }
+        # todo include extention plugin directory (in AppData/Local/ElectrumSV-SDK/components)
+        self.component_list = os.listdir(self.app_state.plugin_dir)
 
-    def autoincrement_data_dir_for_id(self, component_name: ComponentName, data_dir_parent:
+    def get_component_data_dir(self, component_name: ComponentName, data_dir_parent:
             Path, id=None):
         # Todo - use this generically for node and electrumsv
         """to run multiple instances of a component requires multiple data directories"""

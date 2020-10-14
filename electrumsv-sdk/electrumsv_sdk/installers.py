@@ -270,8 +270,8 @@ class Installers:
             if branch != "":
                 checkout_branch(branch)
             self.app_state.set_electrumsv_paths(Path(repo))
-        data_dir = self.component_store.autoincrement_data_dir_for_id(ComponentName.ELECTRUMSV,
-                data_dir_parent=self.app_state.electrumsv_dir)
+        data_dir = self.component_store.get_component_data_dir(ComponentName.ELECTRUMSV,
+                                                               data_dir_parent=self.app_state.electrumsv_dir)
         port = self.get_electrumsv_port()
         self.app_state.update_electrumsv_data_dir(data_dir, port)
 
