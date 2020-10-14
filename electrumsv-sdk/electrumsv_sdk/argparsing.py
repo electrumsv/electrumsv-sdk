@@ -46,9 +46,11 @@ class ArgParser:
             subcommand_indices[self.app_state.STATUS] = []
         elif arg == "--help":
             subcommand_indices[self.app_state.TOP_LEVEL].append(0)
+        elif arg == "--version":
+            subcommand_indices[self.app_state.TOP_LEVEL].append(0)
         else:
             logger.error("First argument must be one of: "
-                "[start, stop, reset, node, " "status, --help]")
+                "[start, stop, reset, node, status, --help, --version]")
             sys.exit()
         return cur_cmd_name, subcommand_indices
 
@@ -85,7 +87,7 @@ class ArgParser:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
                     if arg in ComponentName.__dict__.values():
-                        self.app_state.start_set.add(arg)
+                        self.app_state.selected_start_component = arg
                     else:
                         logger.error(f"Must select from: {self.component_store.component_list}")
                         sys.exit()
@@ -108,7 +110,7 @@ class ArgParser:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
                     if arg in ComponentName.__dict__.values():
-                        self.app_state.stop_set.add(arg)
+                        self.app_state.selected_stop_component = arg
                     else:
                         logger.error("Must select from: node, electrumx, electrumsv, indexer, "
                               "status_monitor]")
@@ -127,10 +129,9 @@ class ArgParser:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
                     if arg in ComponentName.__dict__.values():
-                        self.app_state.reset_set.add(arg)
+                        self.app_state.selected_reset_component = arg
                     else:
-                        logger.error("Must select from: node, electrumx, electrumsv, indexer, "
-                              "status_monitor]")
+                        logger.error(f"Must select from: {self.component_store.component_list}")
                         sys.exit()
                     component_selected = True
                     continue
@@ -317,10 +318,17 @@ class ArgParser:
         )
         return status_parser
 
+    def add_global_flags(self, top_level_parser):
+        top_level_parser.add_argument(
+            "--version", action="store_true", dest="version", default=False,
+            help="version information",
+        )
+
     def setup_argparser(self):
         top_level_parser = argparse.ArgumentParser(
             description=self.help_text, formatter_class=RawTextHelpFormatter
         )
+        self.add_global_flags(top_level_parser)
 
         namespaces = top_level_parser.add_subparsers(help="namespaces", required=False)
         start_parser, start_namespace_subcommands = self.add_start_argparser(namespaces)

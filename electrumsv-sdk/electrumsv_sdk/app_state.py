@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 import stat
 import sys
-from typing import Dict, List, Set
+from typing import Dict, List, Optional
 
 from electrumsv_node import electrumsv_node
 
@@ -90,11 +90,11 @@ class AppState:
             "status_monitor")
         os.makedirs(self.status_monitor_logging_path, exist_ok=True)
 
-        self.start_set: Set[ComponentName] = set()
-        self.start_options: Dict[ComponentName] = {}
-        self.stop_set: Set[ComponentName] = set()
-        self.reset_set: Set[ComponentName] = set()
+        self.selected_start_component: Optional[ComponentName] = None
+        self.selected_stop_component: Optional[ComponentName] = None
+        self.selected_reset_component: Optional[ComponentName] = None
 
+        self.start_options: Dict[ComponentName] = {}
         self.node_args = None
 
         self.start_options[ComponentOptions.NEW] = False

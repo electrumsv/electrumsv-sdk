@@ -31,28 +31,21 @@ class Starters:
         self.status_monitor_client = StatusMonitorClient(self.app_state)
         self.component_store = ComponentStore(self.app_state)
 
-    def spawn_process(self, command):
+    def spawn_process(self, command: str):
         if self.app_state.start_options[ComponentOptions.BACKGROUND]:
             return self.spawn_in_background(command)
         else:
             return self.spawn_in_new_console(command)
 
-    def spawn_in_background(self, command):
+    def run_command_current_shell(self, command: str):
+        subprocess.run(command, shell=True, check=True)
+
+    def run_command_background(self, command: str):
         if sys.platform in ('linux', 'darwin'):
-            len_processes_before = len(trace_processes_for_cmd(command))
-
-            process = subprocess.Popen(f"nohup {command} &", shell=True,
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT)
-            process.wait()
-            time.sleep(1)  # allow brief time window for process to fail at startup
-
-            len_processes_after = len(trace_processes_for_cmd(command))
-            if len_processes_before == len_processes_after:
-                logger.error(f"failed to launch command: {command}")
-                raise ComponentLaunchFailedError()
-
-            process_handle = trace_pid(command)
+            process_handle = subprocess.Popen(f"nohup {command} &", shell=True,
+                                       stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                       stderr=subprocess.STDOUT)
+            process_handle.wait()
             return process_handle
         elif sys.platform == 'win32':
             logger.info(
@@ -63,30 +56,59 @@ class Starters:
             )
             return process_handle
 
-    def spawn_in_new_console(self, command):
+    def run_command_new_window(self, command: str):
         if sys.platform in ('linux', 'darwin'):
-            len_processes_before = len(trace_processes_for_cmd(command))
-
             # todo gnome-terminal part will not work cross-platform for spawning new terminals
-            process = subprocess.Popen(f"gnome-terminal -- {command}", shell=True,
+            process_handle = subprocess.Popen(f"gnome-terminal -- {command}", shell=True,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            process.wait()
-            time.sleep(1)  # allow brief time window for process to fail at startup
-
-            len_processes_after = len(trace_processes_for_cmd(command))
-            if len_processes_before == len_processes_after:
-                logger.error(f"failed to launch command: {command}. On linux cloud servers try "
-                             f"using the --background flag e.g. electrumsv-sdk start "
-                             f"--background node.")
-                raise ComponentLaunchFailedError()
-
-            process_handle = trace_pid(command)
+            process_handle.wait()
             return process_handle
 
         elif sys.platform == 'win32':
-            process_handle = subprocess.Popen(
-                f"{command}", creationflags=subprocess.CREATE_NEW_CONSOLE
-            )
+            process_handle = self.run_command_background(command)
+            return process_handle
+
+    def linux_trace_pid(self, command: str, num_processes_before: int):
+        num_processes_after = len(trace_processes_for_cmd(command))
+        if num_processes_before == num_processes_after:
+            raise ComponentLaunchFailedError()
+
+        process_handle = trace_pid(command)
+        return process_handle
+
+    def spawn_in_background(self, command):
+        """for long-running processes / servers - on linux there is a process id tracing step because Popen returns
+        a pid for a detached process (not the one we actually want)"""
+        if sys.platform in ('linux', 'darwin'):
+            num_processes_before = len(trace_processes_for_cmd(command))
+            self.run_command_background(command)
+            time.sleep(1)  # allow brief time window for process to fail at startup
+
+            process_handle = self.linux_trace_pid(command, num_processes_before)
+            return process_handle
+
+        elif sys.platform == 'win32':
+            process_handle = self.run_command_background(command)
+            return process_handle
+
+    def spawn_in_new_console(self, command):
+        """for long-running processes / servers - on linux there is a process id tracing step because Popen returns
+        a pid for a detached process (not the one we actually want)"""
+        if sys.platform in ('linux', 'darwin'):
+            num_processes_before = len(trace_processes_for_cmd(command))
+            try:
+                self.run_command_new_window(command)
+            except ComponentLaunchFailedError:
+                logger.error(f"failed to launch long-running process: {command}. On linux cloud servers try "
+                             f"using the --background flag e.g. electrumsv-sdk start --background node.")
+                raise
+            time.sleep(1)  # allow brief time window for process to fail at startup
+
+            process_handle = self.linux_trace_pid(command, num_processes_before)
+            return process_handle
+
+        elif sys.platform == 'win32':
+            process_handle = self.run_command_new_window(command)
             return process_handle
 
     async def is_electrumx_running(self):

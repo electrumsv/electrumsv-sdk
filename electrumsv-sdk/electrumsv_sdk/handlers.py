@@ -1,6 +1,8 @@
 import logging
+import platform
 import sys
 
+from .utils import read_sdk_version
 from .components import ComponentName, ComponentOptions
 from .installers import Installers
 
@@ -40,6 +42,11 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.TOP_LEVEL:
             return
 
+        if parsed_args.version:
+            logger.info("ElectrumSV Software Development Kit")
+            logger.info(f"Python version {platform.python_version()}-{platform.architecture()[0]}")
+            logger.info(f"SDK version {read_sdk_version()}")
+
         # print("TOP LEVEL ARGS HANDLER")
         # print(f"parsed_args={parsed_args}")
 
@@ -75,7 +82,7 @@ class Handlers:
             return parsed_args.new or parsed_args.gui or id != "" or repo != "" or branch != ""
 
         if has_startup_flags():
-            if len(self.app_state.start_set) == 0:
+            if len(self.app_state.selected_start_component) == 0:
                 logger.error("must select a component type when specifying startup flags")
                 sys.exit()
 
@@ -131,8 +138,7 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        if not ComponentName.WHATSONCHAIN in self.app_state.start_set and \
-                len(self.app_state.start_set) != 0:
+        if not ComponentName.WHATSONCHAIN == self.app_state.selected_start_component:
             return
 
         self.installers.whatsonchain()
@@ -141,8 +147,7 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        if not ComponentName.ELECTRUMSV in self.app_state.start_set and \
-                len(self.app_state.start_set) != 0:
+        if not ComponentName.ELECTRUMSV == self.app_state.selected_start_component:
             return
 
         self.installers.electrumsv()
@@ -151,8 +156,7 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        if not ComponentName.ELECTRUMX in self.app_state.start_set and \
-                len(self.app_state.start_set) != 0:
+        if not ComponentName.ELECTRUMX == self.app_state.selected_start_component:
             return
 
         self.installers.electrumx()
@@ -166,8 +170,7 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        if not ComponentName.NODE in self.app_state.start_set and \
-                len(self.app_state.start_set) != 0:
+        if not ComponentName.NODE == self.app_state.selected_start_component:
             return
 
         self.app_state.installers.node()
@@ -176,7 +179,7 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        if not ComponentName.INDEXER in self.app_state.start_set:
+        if not ComponentName.INDEXER == self.app_state.selected_start_component:
             return
 
         self.app_state.installers.indexer()

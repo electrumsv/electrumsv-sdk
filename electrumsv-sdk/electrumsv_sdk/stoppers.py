@@ -24,7 +24,7 @@ class Stoppers:
             if component_name == ComponentName.NODE:
                 continue
 
-            elif component["component_type"] == component_name:
+            elif component.get("component_type") == component_name:
                 if sys.platform in ("linux", "darwin"):
                     subprocess.run(f"pkill -P {component['pid']}", shell=True)
                 elif sys.platform == "win32":

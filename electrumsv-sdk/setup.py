@@ -22,7 +22,12 @@ and install the one you want:
 py -3.8 -m pip install electrumsv-sdk
 """  # pylint: disable=W0105
 
-__version__ = '0.0.18'
+
+with open('electrumsv_sdk/__init__.py', 'r') as f:
+    for line in f:
+        if line.startswith('__version__'):
+            version = line.strip().split('= ')[1].strip("'")
+            break
 
 
 def _locate_requirements():
@@ -41,7 +46,7 @@ def _locate_requirements():
 
 setup(
     name='electrumsv-sdk',
-    version=__version__,
+    version=version,
     install_requires=_locate_requirements(),
     description='ElectrumSV SDK',
     long_description=open('README.rst', 'r').read(),
@@ -51,7 +56,7 @@ setup(
     maintainer='Roger Taylor',
     maintainer_email='roger.taylor.email@gmail.com',
     url='https://github.com/electrumsv/electrumsv-sdk',
-    download_url='https://github.com/electrumsv/electrumsv-sdk/tarball/{}'.format(__version__),
+    download_url='https://github.com/electrumsv/electrumsv-sdk/tarball/{}'.format(version),
     license='Open BSV',
     keywords=[
         'bitcoinsv',
