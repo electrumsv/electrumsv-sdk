@@ -129,7 +129,7 @@ class ComponentStore:
         self.component_list = os.listdir(self.app_state.plugin_dir)
 
     def get_component_data_dir(self, component_name: ComponentName, data_dir_parent:
-            Path, id=None):
+            Path, id: str):
         # Todo - use this generically for node and electrumsv
         """to run multiple instances of a component requires multiple data directories"""
         def is_new_and_no_id(id, new) -> bool:
@@ -142,8 +142,6 @@ class ComponentStore:
             return id != "" and not new
 
         new = self.app_state.start_options[ComponentOptions.NEW]
-        if not id:
-            id = self.app_state.start_options[ComponentOptions.ID]
 
         # autoincrements (electrumsv1 -> electrumsv2 -> electrumsv3...) until empty space is found
         if is_new_and_no_id(id, new):

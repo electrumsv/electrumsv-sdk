@@ -16,6 +16,8 @@ def fetch_whatsonchain(app_state, url="https://github.com/AustEcon/woc-explorer.
         os.chdir(app_state.woc_dir)
         checkout_branch(branch)
 
+
+def packages_whatsonchain(app_state):
     os.chdir(app_state.woc_dir)
     process = subprocess.Popen("call npm install\n" if sys.platform == "win32"
                                else "npm install\n",

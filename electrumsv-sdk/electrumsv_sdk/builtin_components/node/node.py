@@ -1,6 +1,5 @@
 import logging
 import os
-from pathlib import Path
 
 from electrumsv_sdk.components import ComponentOptions
 
@@ -19,7 +18,7 @@ def install(app_state):
     if not repo == "":  # default
         logger.error("ignoring --repo flag for node - not applicable.")
 
-    # 1) configure_paths_and_maps - (NOT APPLICABLE)
+    # 1) configure_paths_and_datadir - (NOT APPLICABLE)  # Todo - need to add this
     # 2) fetch (as needed) - (SEE BELOW)
     fetch_node(app_state)
     # 3) pip install (or npm install) packages/dependencies - (NOT APPLICABLE)

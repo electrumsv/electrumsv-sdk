@@ -25,7 +25,33 @@ def get_electrumsv_port():
     return port
 
 
-def configure_paths_and_maps_electrumsv(app_state, repo, branch):
+def set_electrumsv_paths(app_state, electrumsv_dir: Path):
+    """This is set dynamically at startup. It is *only persisted for purposes of the 'reset'
+    command. The trade-off is that the electrumsv 'repo' will need to be specified anew every
+    time the SDK 'start' command is run."""
+    app_state.electrumsv_dir = electrumsv_dir
+    id = app_state.get_id(COMPONENT_NAME)
+    data_dir = app_state.component_store.get_component_data_dir(COMPONENT_NAME,
+        data_dir_parent=app_state.electrumsv_dir, id=id)
+    app_state.electrumsv_data_dir = data_dir
+    app_state.electrumsv_regtest_dir = app_state.electrumsv_data_dir.joinpath("regtest")
+    app_state.electrumsv_regtest_config_path = app_state.electrumsv_regtest_dir.joinpath("config")
+    app_state.electrumsv_regtest_wallets_dir = app_state.electrumsv_regtest_dir.joinpath("wallets")
+
+    app_state.electrumsv_requirements_path = (
+        app_state.electrumsv_dir.joinpath("contrib")
+        .joinpath("deterministic-build")
+        .joinpath("requirements.txt")
+    )
+    app_state.electrumsv_binary_requirements_path = (
+        app_state.electrumsv_dir.joinpath("contrib")
+        .joinpath("deterministic-build")
+        .joinpath("requirements-binaries.txt")
+    )
+    app_state.electrumsv_port = get_electrumsv_port()
+
+
+def configure_paths_and_datadir_electrumsv(app_state, repo, branch):
     if is_remote_repo(repo):
         app_state.set_electrumsv_paths(app_state.depends_dir.joinpath("electrumsv"))
     else:
@@ -34,11 +60,6 @@ def configure_paths_and_maps_electrumsv(app_state, repo, branch):
         if branch != "":
             checkout_branch(branch)
         app_state.set_electrumsv_paths(Path(repo))
-    data_dir = app_state.component_store.get_component_data_dir(COMPONENT_NAME,
-                                                           data_dir_parent=app_state.electrumsv_dir)
-    port = get_electrumsv_port()
-    app_state.update_electrumsv_data_dir(data_dir, port)
-
 
 def fetch_electrumsv(app_state, url, branch):
     """3 possibilities:
