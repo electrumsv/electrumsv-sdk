@@ -9,7 +9,7 @@ SHUTDOWN
 - on shutdown of an 'SDK component'                          state=Stopped
 
 STATUS-MONITOR (server)
-- pings SDK components periodically to see if they
+- pings SDK builtin_components periodically to see if they
 are still online
 
 - if state=Running & reachable then                          state=Running
@@ -24,7 +24,7 @@ regardless of which state they are in.
 - If state=Failed but the service becomes reachable subsequently, the status will return to
 state=Running.
 
-- terminated components without using the SDK interface      state=Failed
+- terminated builtin_components without using the SDK interface      state=Failed
 """
 import datetime
 import enum
@@ -125,7 +125,7 @@ class ComponentStore:
         self.lock_path = app_state.electrumsv_sdk_data_dir / "component_state.json.lock"
         self.file_lock = FileLock(self.lock_path, timeout=1)
         self.component_state_path = app_state.electrumsv_sdk_data_dir / self.file_path
-        # todo include extention plugin directory (in AppData/Local/ElectrumSV-SDK/components)
+        # todo include extention plugin directory (in AppData/Local/ElectrumSV-SDK/builtin_components)
         self.component_list = os.listdir(self.app_state.plugin_dir)
 
     def get_component_data_dir(self, component_name: ComponentName, data_dir_parent:

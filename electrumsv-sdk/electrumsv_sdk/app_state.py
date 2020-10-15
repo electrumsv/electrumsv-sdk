@@ -13,7 +13,6 @@ from electrumsv_node import electrumsv_node
 
 from .starters import Starters
 from .stoppers import Stoppers
-from .installers import Installers
 from .constants import DEFAULT_PORT_ELECTRUMSV
 from .argparsing import ArgParser
 from .components import ComponentName, ComponentOptions, ComponentStore
@@ -40,7 +39,7 @@ class AppState:
             data_dir = Path.home() / ".electrumsv-sdk"
 
         self.electrumsv_sdk_data_dir = data_dir
-        self.plugin_dir = Path(MODULE_DIR).joinpath("components")
+        self.plugin_dir = Path(MODULE_DIR).joinpath("builtin_components")
 
         self.component_store = ComponentStore(self)
         self.arparser = ArgParser(self)
@@ -48,7 +47,6 @@ class AppState:
         self.stoppers = Stoppers(self)
         self.controller = Controller(self)
         self.handlers = Handlers(self)
-        self.installers = Installers(self)
         self.resetters = Resetters(self)
         self.status_monitor_client = StatusMonitorClient(self)
 
@@ -80,7 +78,7 @@ class AppState:
         self.electrumsv_sdk_config_path = self.electrumsv_sdk_data_dir.joinpath("config.json")
 
         # electrumsv paths are set dynamically at startup - see: set_electrumsv_paths()
-        self.electrumsv_data_dir_init = Path(MODULE_DIR).joinpath("components").joinpath(
+        self.electrumsv_data_dir_init = Path(MODULE_DIR).joinpath("builtin_components").joinpath(
             "electrumsv").joinpath("data_dir_init").joinpath("regtest")
 
         self.electrumsv_dir = None
@@ -220,3 +218,7 @@ class AppState:
             logger.debug("Purging completed successfully")
 
             electrumsv_node.reset()
+
+    def init_run_script_dir(self):
+        os.makedirs(self.run_scripts_dir, exist_ok=True)
+        os.chdir(self.run_scripts_dir)

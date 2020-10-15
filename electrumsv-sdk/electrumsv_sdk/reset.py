@@ -9,7 +9,6 @@ from electrumsv_node import electrumsv_node
 
 from .stoppers import Stoppers
 from .components import ComponentOptions, ComponentStore, ComponentName
-from .installers import Installers
 from .starters import Starters
 
 logger = logging.getLogger("resetters")
@@ -22,7 +21,6 @@ class Resetters:
         self.app_state = app_state
         self.starters = Starters(self.app_state)
         self.stoppers = Stoppers(self.app_state)
-        self.installers = Installers(self.app_state)
         self.component_store = ComponentStore(self.app_state)
 
     def normalize_wallet_name(self, wallet_name: str):
@@ -87,7 +85,7 @@ class Resetters:
         logger.debug("Resetting state of RegTest electrumx server...")
         repo = self.app_state.start_options[ComponentOptions.REPO]
         branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        self.installers.configure_paths_and_maps_electrumx(repo, branch)
+        # self.installers.configure_paths_and_maps_electrumx(repo, branch)
 
         electrumx_data_dir = self.app_state.electrumx_data_dir
         if electrumx_data_dir.exists():
@@ -101,7 +99,7 @@ class Resetters:
         """depends on having node and electrumx already running"""
         repo = self.app_state.start_options[ComponentOptions.REPO]
         branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        self.app_state.installers.configure_paths_and_maps_electrumsv(repo, branch)
+        # self.app_state.installers.configure_paths_and_maps_electrumsv(repo, branch)
         logger.debug("Resetting state of RegTest electrumsv server...")
         if component_id is None:
             logger.warning("Note: No --id flag is specified. Therefore the default 'electrumsv1' "

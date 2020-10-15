@@ -4,7 +4,6 @@ import sys
 
 from .utils import read_sdk_version
 from .components import ComponentName, ComponentOptions
-from .installers import Installers
 
 logger = logging.getLogger("install-handlers")
 
@@ -27,7 +26,6 @@ class Handlers:
 
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
-        self.installers = Installers(self.app_state)
 
     def validate_flags(self, parsed_args):
         flags_selected = [flag for flag, value in parsed_args.__dict__.items()
@@ -131,8 +129,6 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
-        self.installers.status_monitor()
-
     def handle_whatsonchain_args(self, _parsed_args):
         """takes no arguments"""
         if not self.app_state.NAMESPACE == self.app_state.START:
@@ -141,8 +137,6 @@ class Handlers:
         if not ComponentName.WHATSONCHAIN == self.app_state.selected_start_component:
             return
 
-        self.installers.whatsonchain()
-
     def handle_electrumsv_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
@@ -150,16 +144,12 @@ class Handlers:
         if not ComponentName.ELECTRUMSV == self.app_state.selected_start_component:
             return
 
-        self.installers.electrumsv()
-
     def handle_electrumx_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
 
         if not ComponentName.ELECTRUMX == self.app_state.selected_start_component:
             return
-
-        self.installers.electrumx()
 
     def handle_electrumsv_node_args(self, _parsed_args):
         """not to be confused with node namespace:
@@ -173,8 +163,6 @@ class Handlers:
         if not ComponentName.NODE == self.app_state.selected_start_component:
             return
 
-        self.app_state.installers.node()
-
     def handle_indexer_args(self, _parsed_args):
         if not self.app_state.NAMESPACE == self.app_state.START:
             return
@@ -182,14 +170,12 @@ class Handlers:
         if not ComponentName.INDEXER == self.app_state.selected_start_component:
             return
 
-        self.app_state.installers.indexer()
-
     def handle_status_monitor_args(self, _parsed_args):
         return
 
     # ----- HANDLERS ENTRY POINT ----- #
 
-    def handle_install(self):
+    def handle_cli_args(self):
         for cmd, parsed_args in self.app_state.subcmd_parsed_args_map.items():
             func = getattr(self, "handle_" + cmd + "_args")
             func(parsed_args)

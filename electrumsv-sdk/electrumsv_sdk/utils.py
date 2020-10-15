@@ -1,6 +1,8 @@
+import errno
 import logging
 import os
 import shlex
+import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -73,49 +75,6 @@ def make_shell_script_for_component(component_name, commandline_string=None, env
         make_bash_file(component_name + ".sh", commandline_string, env_vars, multiple_lines)
 
 
-def add_esv_default_args(commandline_string, esv_data_dir, port):
-    commandline_string += (
-        f" --portable --dir {esv_data_dir} "
-        f"--regtest daemon -dapp restapi --v=debug --file-logging "
-        f"--restapi --restapi-port={port} --server=127.0.0.1:51001:t "
-    )
-    return commandline_string
-
-
-def make_esv_custom_script(base_cmd, env_vars, component_args, esv_data_dir):
-    """if cli args are supplied to electrumsv then it gives a "clean slate" (discarding the default
-    configuration. (but ensures that the --dir and --restapi flags are set if not already)"""
-    commandline_string = base_cmd
-    additional_args = " ".join(component_args)
-    commandline_string += " " + additional_args
-    if "--dir" not in component_args:
-        commandline_string += " " + f"--dir {esv_data_dir}"
-
-    # so that polling works
-    if "--restapi" not in component_args:
-        commandline_string += " " + f"--restapi"
-
-    make_shell_script_for_component(ComponentName.ELECTRUMSV, commandline_string, env_vars)
-
-
-def make_esv_daemon_script(base_cmd, env_vars, esv_data_dir, port):
-    commandline_string = base_cmd + (
-        f" --portable --dir {esv_data_dir} "
-        f"--regtest daemon -dapp restapi --v=debug --file-logging "
-        f"--restapi --restapi-port={port} --server=127.0.0.1:51001:t --restapi-user rpcuser"
-        f" --restapi-password= "
-    )
-    make_shell_script_for_component(ComponentName.ELECTRUMSV, commandline_string, env_vars)
-
-
-def make_esv_gui_script(base_cmd, env_vars, esv_data_dir, port):
-    commandline_string = base_cmd + (
-        f" gui --regtest --restapi --restapi-port={port} "
-        f"--v=debug --file-logging --server=127.0.0.1:51001:t --dir {esv_data_dir}"
-    )
-    make_shell_script_for_component(ComponentName.ELECTRUMSV, commandline_string, env_vars)
-
-
 def topup_wallet():
     logger.debug("Topping up wallet...")
     nblocks = 1
@@ -176,3 +135,17 @@ def read_sdk_version():
                 version = line.strip().split('= ')[1].strip("'")
                 break
     return version
+
+
+def port_is_in_use(port) -> bool:
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind(("127.0.0.1", port))
+        return False
+    except socket.error as e:
+        if e.errno == errno.EADDRINUSE:
+            logger.debug("Port is already in use")
+            return True
+        else:
+            logger.debug(e)
+    s.close()

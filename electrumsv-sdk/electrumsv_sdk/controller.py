@@ -3,6 +3,7 @@ import pprint
 import logging
 import sys
 import time
+import importlib
 
 from electrumsv_node import electrumsv_node
 
@@ -10,7 +11,6 @@ from electrumsv_sdk.components import ComponentStore, ComponentOptions, Componen
 
 from .constants import STATUS_MONITOR_GET_STATUS
 from .reset import Resetters
-from .installers import Installers
 from .handlers import Handlers
 from .starters import Starters
 from .stoppers import Stoppers
@@ -28,8 +28,12 @@ class Controller:
         self.stoppers = Stoppers(self.app_state)
         self.resetters = Resetters(self.app_state)
         self.handlers = Handlers(self.app_state)
-        self.installers = Installers(self.app_state)
         self.component_store = ComponentStore(self.app_state)
+
+    def install(self):
+        component = importlib.import_module(f'.{self.app_state.selected_start_component}',
+                                            package='electrumsv_sdk.builtin_components')
+        component.install(self.app_state)
 
     def start(self):
         logger.info("Starting component...")
@@ -49,7 +53,6 @@ class Controller:
         if ComponentName.ELECTRUMSV == self.app_state.selected_start_component:
             if sys.version_info[:3] < (3, 7, 8):
                 sys.exit("Error: ElectrumSV requires Python version >= 3.7.8...")
-
             self.starters.start_electrumsv()
 
         if ComponentName.WHATSONCHAIN == self.app_state.selected_start_component:

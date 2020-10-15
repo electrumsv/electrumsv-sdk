@@ -34,17 +34,18 @@ def main():
 
     # Check & Install dependencies / or Configure state for main execution pathway
     # indirectly calls the 'install()' entrypoint for the component with config based on cli args
-    app_state.handlers.handle_install()
+    app_state.handlers.handle_cli_args()
 
     # Call Relevant 'Runner'
     if app_state.NAMESPACE == app_state.START:
-        app_state.controller.start()
+        app_state.controller.install()  # -> install() entrypoint of plugin
+        app_state.controller.start()  # -> start() entrypoint of plugin
 
     if app_state.NAMESPACE == app_state.STOP:
-        app_state.controller.stop()
+        app_state.controller.stop()  # -> stop() entrypoint of plugin
 
     if app_state.NAMESPACE == app_state.RESET:
-        app_state.controller.reset()
+        app_state.controller.reset()  # -> reset() entrypoint of plugin
 
     # Special built-in execution pathway (not part of plugin system)
     if app_state.NAMESPACE == app_state.NODE:
