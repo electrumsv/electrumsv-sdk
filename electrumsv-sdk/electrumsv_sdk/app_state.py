@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import os
+import subprocess
 from pathlib import Path
 import shutil
 import stat
@@ -50,6 +51,14 @@ class AppState:
         self.installers = Installers(self)
         self.resetters = Resetters(self)
         self.status_monitor_client = StatusMonitorClient(self)
+
+        if sys.platform in ['linux', 'darwin']:
+            self.linux_venv_dir = self.electrumsv_sdk_data_dir.joinpath("sdk_venv")
+            self.python = self.linux_venv_dir.joinpath("bin").joinpath("python")
+            self.starters.run_command_current_shell(
+                f"{sys.executable} -m venv {self.linux_venv_dir}")
+        else:
+            self.python = sys.executable
 
         # namespaces
         self.NAMESPACE = ""  # 'start', 'stop' or 'reset'
@@ -170,6 +179,20 @@ class AppState:
             shutil.rmtree(self.run_scripts_dir, onerror=remove_readonly)
             os.makedirs(self.run_scripts_dir, exist_ok=True)
 
+    def setup_python_venv(self):
+        logger.debug("Setting up python virtualenv (linux/unix only)")
+        sdk_data_dir = Path.home() / ".electrumsv-sdk"
+        linux_venv_dir = sdk_data_dir.joinpath("sdk_venv")
+        python = linux_venv_dir.joinpath("bin").joinpath("python3")
+        sdk_requirements_path = Path(MODULE_DIR).parent.joinpath("requirements")\
+            .joinpath("requirements.txt")
+        sdk_requirements_linux_path = Path(MODULE_DIR).parent.joinpath("requirements").joinpath(
+            "requirements-linux.txt")
+        subprocess.run(f"sudo {python} -m pip install -r {sdk_requirements_path}",
+                       shell=True, check=True)
+        subprocess.run(f"sudo {python} -m pip install -r {sdk_requirements_linux_path}",
+                       shell=True, check=True)
+
     def handle_first_ever_run(self):
         """nukes previously installed dependencies and .bat/.sh scripts for the first ever run of
         the electrumsv-sdk."""
@@ -190,6 +213,10 @@ class AppState:
             with open(self.electrumsv_sdk_config_path, "w") as f:
                 config = {"is_first_run": False}
                 f.write(json.dumps(config, indent=4))
+
+            if sys.platform in ['linux', 'darwin']:
+                self.setup_python_venv()
+
             logger.debug("Purging completed successfully")
 
             electrumsv_node.reset()

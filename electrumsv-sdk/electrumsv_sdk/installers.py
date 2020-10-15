@@ -49,12 +49,12 @@ class Installers:
         os.chdir(self.app_state.electrumsv_dir)
         checkout_branch(branch)
 
-        if sys.platform in ['win32', 'darwin']:
-            cmd1 = f"{sys.executable} -m pip install --user -r {self.app_state.electrumsv_requirements_path}"
-            cmd2 = f"{sys.executable} -m pip install --user -r {self.app_state.electrumsv_binary_requirements_path}"
-        elif sys.platform == 'linux':
-            cmd1 = f"sudo {sys.executable} -m pip install --force -r {self.app_state.electrumsv_requirements_path}"
-            cmd2 = f"sudo {sys.executable} -m pip install --force -r {self.app_state.electrumsv_binary_requirements_path}"
+        if sys.platform == 'win32':
+            cmd1 = f"{self.app_state.python} -m pip install --user -r {self.app_state.electrumsv_requirements_path}"
+            cmd2 = f"{self.app_state.python} -m pip install --user -r {self.app_state.electrumsv_binary_requirements_path}"
+        elif sys.platform in ['linux', 'darwin']:
+            cmd1 = f"sudo {self.app_state.python} -m pip install -r {self.app_state.electrumsv_requirements_path}"
+            cmd2 = f"sudo {self.app_state.python} -m pip install -r {self.app_state.electrumsv_binary_requirements_path}"
 
         process1 = subprocess.Popen(cmd1, shell=True)
         process1.wait()
@@ -70,7 +70,7 @@ class Installers:
 
         if sys.platform in ['linux', 'darwin']:
             process = subprocess.Popen(
-                f"sudo {sys.executable} -m pip install --user --force --no-cache -r {requirements_path}", shell=True)
+                f"sudo {self.app_state.python} -m pip install -r {requirements_path}", shell=True)
             process.wait()
 
         elif sys.platform == 'win32':
@@ -85,7 +85,7 @@ class Installers:
             with open(temp_requirements, 'w') as f:
                 f.writelines(packages)
             process = subprocess.Popen(
-                f"{sys.executable} -m pip install --user -r {temp_requirements}", shell=True)
+                f"{self.app_state.python} -m pip install --user -r {temp_requirements}", shell=True)
             process.wait()
             os.remove(temp_requirements)
 
@@ -170,7 +170,7 @@ class Installers:
             checkout_branch(branch)
 
     def fetch_node(self):
-        subprocess.run(f"{sys.executable} -m pip install electrumsv-node", shell=True, check=True)
+        subprocess.run(f"{self.app_state.python} -m pip install electrumsv-node", shell=True, check=True)
 
     def fetch_whatsonchain(self, url="https://github.com/AustEcon/woc-explorer.git",
                            branch=''):
@@ -216,7 +216,7 @@ class Installers:
 
         logger.debug(f"esv_data_dir = {esv_data_dir}")
 
-        base_cmd = (f"{sys.executable} {esv_script}")
+        base_cmd = (f"{self.app_state.python} {esv_script}")
         if component_args:
             make_esv_custom_script(base_cmd, esv_env_vars, component_args, esv_data_dir)
         elif not self.app_state.start_options[ComponentOptions.GUI]:
@@ -240,7 +240,7 @@ class Installers:
         }
 
         commandline_string = (
-            f"{sys.executable} {self.app_state.electrumx_dir.joinpath('electrumx_server')}"
+            f"{self.app_state.python} {self.app_state.electrumx_dir.joinpath('electrumx_server')}"
         )
         make_shell_script_for_component(ComponentName.ELECTRUMX, commandline_string,
             electrumx_env_vars)
@@ -248,7 +248,7 @@ class Installers:
     def generate_run_script_status_monitor(self):
         self.init_run_script_dir()
         commandline_string = (
-            f"{sys.executable} " f"{self.app_state.status_monitor_dir.joinpath('server.py')}"
+            f"{self.app_state.python} " f"{self.app_state.status_monitor_dir.joinpath('server.py')}"
         )
         make_shell_script_for_component(ComponentName.STATUS_MONITOR, commandline_string, {})
 
