@@ -50,11 +50,15 @@ class Installers:
         checkout_branch(branch)
 
         if sys.platform == 'win32':
-            cmd1 = f"{self.app_state.python} -m pip install --user -r {self.app_state.electrumsv_requirements_path}"
-            cmd2 = f"{self.app_state.python} -m pip install --user -r {self.app_state.electrumsv_binary_requirements_path}"
+            cmd1 = f"{self.app_state.python} -m pip install --user -r " \
+                   f"{self.app_state.electrumsv_requirements_path}"
+            cmd2 = f"{self.app_state.python} -m pip install --user -r " \
+                   f"{self.app_state.electrumsv_binary_requirements_path}"
         elif sys.platform in ['linux', 'darwin']:
-            cmd1 = f"sudo {self.app_state.python} -m pip install -r {self.app_state.electrumsv_requirements_path}"
-            cmd2 = f"sudo {self.app_state.python} -m pip install -r {self.app_state.electrumsv_binary_requirements_path}"
+            cmd1 = f"sudo {self.app_state.python} -m pip install -r " \
+                   f"{self.app_state.electrumsv_requirements_path}"
+            cmd2 = f"sudo {self.app_state.python} -m pip install -r " \
+                   f"{self.app_state.electrumsv_binary_requirements_path}"
 
         process1 = subprocess.Popen(cmd1, shell=True)
         process1.wait()
@@ -170,7 +174,8 @@ class Installers:
             checkout_branch(branch)
 
     def fetch_node(self):
-        subprocess.run(f"{self.app_state.python} -m pip install electrumsv-node", shell=True, check=True)
+        subprocess.run(f"{self.app_state.python} -m pip install electrumsv-node",
+                       shell=True, check=True)
 
     def fetch_whatsonchain(self, url="https://github.com/AustEcon/woc-explorer.git",
                            branch=''):
@@ -272,7 +277,7 @@ class Installers:
                 checkout_branch(branch)
             self.app_state.set_electrumsv_paths(Path(repo))
         data_dir = self.component_store.get_component_data_dir(ComponentName.ELECTRUMSV,
-                                                               data_dir_parent=self.app_state.electrumsv_dir)
+            data_dir_parent=self.app_state.electrumsv_dir)
         port = self.get_electrumsv_port()
         self.app_state.update_electrumsv_data_dir(data_dir, port)
 

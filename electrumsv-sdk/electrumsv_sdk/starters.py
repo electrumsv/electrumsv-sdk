@@ -77,8 +77,9 @@ class Starters:
         return process_handle
 
     def spawn_in_background(self, command):
-        """for long-running processes / servers - on linux there is a process id tracing step because Popen returns
-        a pid for a detached process (not the one we actually want)"""
+        """for long-running processes / servers - on linux there is a process id
+        tracing step because Popen returns a pid for a detached process (not the one we actually
+        want)"""
         if sys.platform in ('linux', 'darwin'):
             num_processes_before = len(trace_processes_for_cmd(command))
             self.run_command_background(command)
@@ -92,15 +93,16 @@ class Starters:
             return process_handle
 
     def spawn_in_new_console(self, command):
-        """for long-running processes / servers - on linux there is a process id tracing step because Popen returns
-        a pid for a detached process (not the one we actually want)"""
+        """for long-running processes / servers - on linux there is a process id tracing step
+        because Popen returns a pid for a detached process (not the one we actually want)"""
         if sys.platform in ('linux', 'darwin'):
             num_processes_before = len(trace_processes_for_cmd(command))
             try:
                 self.run_command_new_window(command)
             except ComponentLaunchFailedError:
-                logger.error(f"failed to launch long-running process: {command}. On linux cloud servers try "
-                             f"using the --background flag e.g. electrumsv-sdk start --background node.")
+                logger.error(f"failed to launch long-running process: {command}. On linux cloud "
+                             f"servers try using the --background flag e.g. electrumsv-sdk start "
+                             f"--background node.")
                 raise
             time.sleep(1)  # allow brief time window for process to fail at startup
 
@@ -260,10 +262,11 @@ class Starters:
             script_path = self.component_store.derive_shell_script_path(component_name)
             process = self.spawn_process(script_path)
         except ComponentLaunchFailedError:
-            log_files = os.listdir(self.app_state.status_monitor_logging_path)
+            log_path = self.app_state.status_monitor_logging_path
+            log_files = os.listdir(log_path)
             log_files.sort(reverse=True)  # get latest log file at index 0
-            logger.debug(f"see {self.app_state.status_monitor_logging_path.joinpath(log_files[0])} "
-                         f"for details")
+            if len(log_files) != 0:
+                logger.debug(f"see {log_path.joinpath(log_files[0])} for details")
             sys.exit(1)
 
         id = self.app_state.get_id(component_name)

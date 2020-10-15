@@ -1,6 +1,5 @@
 import logging
 import os
-import platform
 import sys
 
 from electrumsv_sdk.app_state import AppState  # pylint: disable=E0401
