@@ -1,7 +1,6 @@
 import pprint
 
 import logging
-import subprocess
 import sys
 import time
 
@@ -36,32 +35,25 @@ class Controller:
         logger.info("Starting component...")
         open(self.app_state.electrumsv_sdk_data_dir / "spawned_pids", 'w').close()
 
-        procs = []
-
         if not self.starters.is_component_running(ComponentName.STATUS_MONITOR,
                 STATUS_MONITOR_GET_STATUS, 3, 0.5):
-            status_monitor_process = self.starters.start_status_monitor()
-            procs.append(status_monitor_process.pid)
+            self.starters.start_status_monitor()
 
         if ComponentName.NODE == self.app_state.selected_start_component:
             self.starters.start_node()
             time.sleep(2)
 
         if ComponentName.ELECTRUMX == self.app_state.selected_start_component:
-            electrumx_process = self.starters.start_electrumx()
-            procs.append(electrumx_process.pid)
+            self.starters.start_electrumx()
 
         if ComponentName.ELECTRUMSV == self.app_state.selected_start_component:
             if sys.version_info[:3] < (3, 7, 8):
                 sys.exit("Error: ElectrumSV requires Python version >= 3.7.8...")
 
-            esv_process = self.starters.start_electrumsv()
-            if esv_process:
-                procs.append(esv_process.pid)
+            self.starters.start_electrumsv()
 
         if ComponentName.WHATSONCHAIN == self.app_state.selected_start_component:
-            woc_process = self.starters.start_whatsonchain()
-            procs.append(woc_process.pid)
+            self.starters.start_whatsonchain()
 
         self.app_state.save_repo_paths()
 
@@ -111,9 +103,6 @@ class Controller:
         """No choice is given to the user at present - resets node, electrumx and electrumsv
         wallet. If stop_set is empty, all processes terminate."""
         self.app_state.start_options[ComponentOptions.BACKGROUND] = True
-
-        print(f"self.app_state.start_options[ComponentOptions.ID] = {self.app_state.start_options[ComponentOptions.ID]}")
-        print(f"self.app_state.selected_reset_component = {self.app_state.selected_reset_component}")
 
         component_id = self.app_state.start_options[ComponentOptions.ID]
         if self.app_state.start_options[ComponentOptions.ID] != "":
