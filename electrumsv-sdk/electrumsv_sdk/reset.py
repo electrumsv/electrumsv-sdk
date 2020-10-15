@@ -35,7 +35,8 @@ class Resetters:
         try:
             logger.debug("Creating wallet...")
             wallet_name = self.normalize_wallet_name(wallet_name)
-            wallet_path = self.app_state.electrumsv_regtest_wallets_dir.joinpath(wallet_name)
+            wallet_path = self.app_state.electrumx_data_dir\
+                .joinpath(f"regtest/wallets/{wallet_name}")
             password = "test"
 
             command = (
@@ -51,7 +52,7 @@ class Resetters:
 
     def delete_wallet(self, wallet_name: str = None):
         wallet_name = self.normalize_wallet_name(wallet_name)
-        esv_wallet_db_directory = self.app_state.electrumsv_regtest_wallets_dir
+        esv_wallet_db_directory = self.app_state.electrumsv_data_dir.joinpath("regtest/wallets")
         os.makedirs(esv_wallet_db_directory, exist_ok=True)
 
         try:

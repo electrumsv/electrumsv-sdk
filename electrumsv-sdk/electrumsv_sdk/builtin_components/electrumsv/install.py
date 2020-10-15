@@ -26,34 +26,26 @@ def get_electrumsv_port():
 
 
 def set_electrumsv_paths(app_state, electrumsv_dir: Path):
-    """This is set dynamically at startup. It is *only persisted for purposes of the 'reset'
-    command. The trade-off is that the electrumsv 'repo' will need to be specified anew every
-    time the SDK 'start' command is run."""
     app_state.electrumsv_dir = electrumsv_dir
+    app_state.electrumsv_requirements_path = (
+        electrumsv_dir.joinpath("contrib/deterministic-build/requirements.txt")
+    )
+    app_state.electrumsv_binary_requirements_path = (
+        electrumsv_dir.joinpath("contrib/deterministic-build/requirements-binaries.txt")
+    )
+    app_state.electrumsv_port = get_electrumsv_port()
+
+    # Todo - abstract this away by making datadirs generic for component_name only (not repo dir)
     id = app_state.get_id(COMPONENT_NAME)
     data_dir = app_state.component_store.get_component_data_dir(COMPONENT_NAME,
         data_dir_parent=app_state.electrumsv_dir, id=id)
     app_state.electrumsv_data_dir = data_dir
-    app_state.electrumsv_regtest_dir = app_state.electrumsv_data_dir.joinpath("regtest")
-    app_state.electrumsv_regtest_config_path = app_state.electrumsv_regtest_dir.joinpath("config")
-    app_state.electrumsv_regtest_wallets_dir = app_state.electrumsv_regtest_dir.joinpath("wallets")
-
-    app_state.electrumsv_requirements_path = (
-        app_state.electrumsv_dir.joinpath("contrib")
-        .joinpath("deterministic-build")
-        .joinpath("requirements.txt")
-    )
-    app_state.electrumsv_binary_requirements_path = (
-        app_state.electrumsv_dir.joinpath("contrib")
-        .joinpath("deterministic-build")
-        .joinpath("requirements-binaries.txt")
-    )
-    app_state.electrumsv_port = get_electrumsv_port()
+    app_state.electrumsv_regtest_wallets_dir = data_dir.joinpath("regtest/wallets")
 
 
 def configure_paths_and_datadir_electrumsv(app_state, repo, branch):
     if is_remote_repo(repo):
-        app_state.set_electrumsv_paths(app_state.depends_dir.joinpath("electrumsv"))
+        set_electrumsv_paths(app_state, app_state.depends_dir.joinpath("electrumsv"))
     else:
         logger.debug(f"Installing local dependency {COMPONENT_NAME} at {repo}")
         assert Path(repo).exists(), f"the path {repo} does not exist!"
@@ -61,7 +53,9 @@ def configure_paths_and_datadir_electrumsv(app_state, repo, branch):
             checkout_branch(branch)
         app_state.set_electrumsv_paths(Path(repo))
 
+
 def fetch_electrumsv(app_state, url, branch):
+    # Todo - make this generic with electrumx
     """3 possibilities:
     (dir doesn't exists) -> install
     (dir exists, url matches)
@@ -98,6 +92,8 @@ def fetch_electrumsv(app_state, url, branch):
 
 
 def packages_electrumsv(app_state, url, branch):
+    # Todo - provide a python helper tool for supplying a list of installation commands (
+    #  f-strings with app_state.python)
     os.chdir(app_state.electrumsv_dir)
     checkout_branch(branch)
 

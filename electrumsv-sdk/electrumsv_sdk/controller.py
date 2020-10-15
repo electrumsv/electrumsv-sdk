@@ -30,8 +30,10 @@ class Controller:
         self.handlers = Handlers(self.app_state)
         self.component_store = ComponentStore(self.app_state)
 
-    def install(self):
-        component = importlib.import_module(f'.{self.app_state.selected_start_component}',
+    def install(self, component_name: str=None):
+        component_name = component_name if component_name \
+            else self.app_state.selected_start_component
+        component = importlib.import_module(f'.{component_name}',
                                             package='electrumsv_sdk.builtin_components')
         component.install(self.app_state)
 
@@ -41,6 +43,7 @@ class Controller:
 
         if not self.starters.is_component_running(ComponentName.STATUS_MONITOR,
                 STATUS_MONITOR_GET_STATUS, 3, 0.5):
+            self.install(ComponentName.STATUS_MONITOR)
             self.starters.start_status_monitor()
 
         if ComponentName.NODE == self.app_state.selected_start_component:

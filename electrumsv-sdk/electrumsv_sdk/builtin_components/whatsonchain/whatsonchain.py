@@ -16,7 +16,8 @@ def install(app_state):
     if not repo == "":  # default
         logger.error("ignoring --repo flag for whatsonchain - not applicable.")
 
-    # 1) configure_paths_and_maps (NOT APPLICABLE)
+    # 1) configure_paths_and_datadir (SEE BELOW)
+    app_state.woc_dir = app_state.depends_dir.joinpath("woc-explorer")
 
     # 2) fetch (as needed) (SEE BELOW)
     fetch_whatsonchain(app_state)

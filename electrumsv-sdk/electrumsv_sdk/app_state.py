@@ -61,6 +61,7 @@ class AppState:
         # namespaces
         self.NAMESPACE = ""  # 'start', 'stop' or 'reset'
 
+        # Todo - move these into constants under a CLICommands class (or something)
         self.TOP_LEVEL = "top_level"
         self.START = "start"
         self.STOP = "stop"
@@ -76,20 +77,6 @@ class AppState:
         self.depends_dir = self.electrumsv_sdk_data_dir.joinpath("sdk_depends")
         self.run_scripts_dir = self.electrumsv_sdk_data_dir.joinpath("run_scripts")
         self.electrumsv_sdk_config_path = self.electrumsv_sdk_data_dir.joinpath("config.json")
-
-        # electrumsv paths are set dynamically at startup - see: set_electrumsv_paths()
-        self.electrumsv_data_dir_init = Path(MODULE_DIR).joinpath("builtin_components").joinpath(
-            "electrumsv").joinpath("data_dir_init").joinpath("regtest")
-
-        self.electrumsv_dir = None
-        self.electrumsv_data_dir = None
-        self.electrumsv_regtest_dir = None
-        self.electrumsv_regtest_config_path = None
-        self.electrumsv_regtest_wallets_dir = None
-        self.electrumsv_requirements_path = None
-        self.electrumsv_binary_requirements_path = None
-
-        self.woc_dir = self.depends_dir.joinpath("woc-explorer")
 
         self.sdk_package_dir = Path(MODULE_DIR)
         self.status_monitor_dir = self.sdk_package_dir.joinpath("status_server")
@@ -121,10 +108,13 @@ class AppState:
         """overwrites config.json"""
         config_path = self.electrumsv_sdk_config_path
         with open(config_path, "r") as f:
-            config = json.loads(f.read())
+            data = f.read()
+            if data:
+                config = json.loads(data)
+            else:
+                config = {}
 
         with open(config_path, "w") as f:
-            config["electrumsv_dir"] = str(self.electrumsv_dir)
             f.write(json.dumps(config, indent=4))
 
     def purge_prev_installs_if_exist(self):
@@ -158,7 +148,11 @@ class AppState:
         the electrumsv-sdk."""
         try:
             with open(self.electrumsv_sdk_config_path, "r") as f:
-                config = json.loads(f.read())
+                data = f.read()
+                if data:
+                    config = json.loads(data)
+                else:
+                    config = {}
         except FileNotFoundError:
             with open(self.electrumsv_sdk_config_path, "w") as f:
                 config = {"is_first_run": True}

@@ -25,6 +25,7 @@ def configure_paths_and_maps_electrumx(app_state, repo, branch):
 
 
 def fetch_electrumx(app_state, url, branch):
+    # Todo - make this generic with electrumsv
     """3 possibilities:
     (dir doesn't exists) -> install
     (dir exists, url matches)

@@ -190,7 +190,7 @@ class Starters:
         return process
 
     def init_electrumsv_wallet_dir(self):
-        os.makedirs(self.app_state.electrumsv_regtest_wallets_dir, exist_ok=True)
+        os.makedirs(self.app_state.electrumsv_data_dir.joinpath("regtest/wallets"), exist_ok=True)
 
     def esv_check_node_and_electrumx_running(self):
         if not electrumsv_node.is_running():
@@ -234,11 +234,11 @@ class Starters:
 
         id = self.app_state.get_id(component_name)
         logging_path = self.app_state.electrumsv_data_dir.joinpath("logs")
-        metadata = {"config": str(self.app_state.electrumsv_regtest_config_path),
+        metadata = {"config": str(self.app_state.electrumsv_data_dir.joinpath("regtest/config")),
                     "datadir": str(self.app_state.electrumsv_data_dir)}
 
         component = Component(id, process.pid, component_name,
-            str(self.app_state.electrumsv_regtest_dir), "http://127.0.0.1:9999", metadata=metadata,
+            str(self.app_state.electrumsv_dir), "http://127.0.0.1:9999", metadata=metadata,
             logging_path=logging_path)
 
         is_running = self.is_component_running(component_name,
