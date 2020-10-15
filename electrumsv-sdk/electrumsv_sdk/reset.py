@@ -2,7 +2,6 @@ import logging
 import os
 import shutil
 import subprocess
-import sys
 import time
 from pathlib import Path
 
@@ -121,9 +120,9 @@ class Resetters:
         if ComponentName.ELECTRUMSV == component_name:
             self.reset_electrumsv_wallet(component_id)
             if component_id:
-                subprocess.run(f"electrumsv-sdk stop --id={component_id}")
+                self.starters.spawn_process(f"electrumsv-sdk stop --id={component_id}")
             else:
-                subprocess.run(f"electrumsv-sdk stop electrumsv")
+                self.starters.spawn_process(f"electrumsv-sdk stop electrumsv")
 
         if ComponentName.INDEXER == component_name:
             logger.error("resetting indexer is not supported at this time...")

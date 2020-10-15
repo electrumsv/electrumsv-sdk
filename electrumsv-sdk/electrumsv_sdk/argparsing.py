@@ -8,7 +8,6 @@ Fortunately the help menu displays as expected so does not deviate from the stan
 
 import argparse
 import logging
-import platform
 import sys
 import textwrap
 from argparse import RawTextHelpFormatter

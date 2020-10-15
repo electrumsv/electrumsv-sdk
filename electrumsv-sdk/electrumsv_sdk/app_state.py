@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 import stat
 import sys
-from typing import Dict, List, Set, Optional
+from typing import Dict, List, Optional
 
 from electrumsv_node import electrumsv_node
 

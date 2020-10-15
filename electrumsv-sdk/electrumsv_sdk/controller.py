@@ -68,10 +68,10 @@ class Controller:
         # no args implies (node, electrumx, electrumsv, whatsonchain)
         # call sdk recursively to achieve this (greatly simplifies code)
         if not self.app_state.selected_start_component:
-            subprocess.run("electrumsv-sdk start node", shell=True, check=True)
-            subprocess.run("electrumsv-sdk start electrumx", shell=True, check=True)
-            subprocess.run("electrumsv-sdk start electrumsv", shell=True, check=True)
-            subprocess.run("electrumsv-sdk start whatsonchain", shell=True, check=True)
+            self.starters.spawn_process("electrumsv-sdk start node")
+            self.starters.spawn_process("electrumsv-sdk start electrumx")
+            self.starters.spawn_process("electrumsv-sdk start electrumsv")
+            self.starters.spawn_process("electrumsv-sdk start whatsonchain")
 
     def stop(self):
         """if stop_set is empty, all processes terminate."""
@@ -101,11 +101,11 @@ class Controller:
         # no args implies stop all (status_monitor, node, electrumx, electrumsv, whatsonchain)
         # call sdk recursively to achieve this (greatly simplifies code)
         if not self.app_state.selected_stop_component:
-            subprocess.run("electrumsv-sdk stop status_monitor", shell=True, check=True)
-            subprocess.run("electrumsv-sdk stop node", shell=True, check=True)
-            subprocess.run("electrumsv-sdk stop electrumx", shell=True, check=True)
-            subprocess.run("electrumsv-sdk stop electrumsv", shell=True, check=True)
-            subprocess.run("electrumsv-sdk stop whatsonchain", shell=True, check=True)
+            self.starters.spawn_process("electrumsv-sdk stop status_monitor")
+            self.starters.spawn_process("electrumsv-sdk stop node")
+            self.starters.spawn_process("electrumsv-sdk stop electrumx")
+            self.starters.spawn_process("electrumsv-sdk stop electrumsv")
+            self.starters.spawn_process("electrumsv-sdk stop whatsonchain")
 
     def reset(self):
         """No choice is given to the user at present - resets node, electrumx and electrumsv
@@ -133,9 +133,9 @@ class Controller:
         # call sdk recursively to achieve this (greatly simplifies code)
         elif self.app_state.start_options[ComponentOptions.ID] == "" and not \
                 self.app_state.selected_reset_component:
-            subprocess.run("electrumsv-sdk reset node", shell=True, check=True)
-            subprocess.run("electrumsv-sdk reset electrumx", shell=True, check=True)
-            subprocess.run("electrumsv-sdk reset electrumsv", shell=True, check=True)
+            self.starters.spawn_process("electrumsv-sdk reset node")
+            self.starters.spawn_process("electrumsv-sdk reset electrumx")
+            self.starters.spawn_process("electrumsv-sdk reset electrumsv")
 
         if self.app_state.start_options[ComponentOptions.ID] == "" and \
                 self.app_state.selected_reset_component:
@@ -145,7 +145,7 @@ class Controller:
         elif not self.app_state.selected_reset_component:
             logger.info(f"Reset of: all components complete")
 
-        subprocess.run("electrumsv-sdk stop status_monitor", shell=True, check=True)
+        self.starters.spawn_process("electrumsv-sdk stop status_monitor")
 
     def node(self):
         """Essentially bitcoin-cli interface to RPC API that works 'out of the box' / zero config"""

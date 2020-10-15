@@ -31,7 +31,7 @@ class Starters:
         self.status_monitor_client = StatusMonitorClient(self.app_state)
         self.component_store = ComponentStore(self.app_state)
 
-    def spawn_process(self, command):
+    def spawn_process(self, command: str):
         if self.app_state.start_options[ComponentOptions.BACKGROUND]:
             return self.spawn_in_background(command)
         else:
