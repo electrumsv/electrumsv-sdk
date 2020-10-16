@@ -7,7 +7,6 @@ from pathlib import Path
 
 from electrumsv_node import electrumsv_node
 
-from .stoppers import Stoppers
 from .components import ComponentOptions, ComponentStore, ComponentName
 
 logger = logging.getLogger("resetters")
@@ -18,7 +17,6 @@ orm_logger.setLevel(logging.WARNING)
 class Resetters:
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
-        self.stoppers = Stoppers(self.app_state)
         self.component_store = ComponentStore(self.app_state)
 
     def normalize_wallet_name(self, wallet_name: str):
@@ -33,7 +31,7 @@ class Resetters:
         try:
             logger.debug("Creating wallet...")
             wallet_name = self.normalize_wallet_name(wallet_name)
-            wallet_path = self.app_state.electrumx_data_dir\
+            wallet_path = self.app_state.electrumsv_data_dir\
                 .joinpath(f"regtest/wallets/{wallet_name}")
             password = "test"
 
@@ -47,6 +45,7 @@ class Resetters:
             logger.debug(f"New wallet created at : {wallet_path} ")
         except Exception as e:
             logger.exception("unexpected problem creating new wallet")
+            raise
 
     def delete_wallet(self, wallet_name: str = None):
         wallet_name = self.normalize_wallet_name(wallet_name)
@@ -73,8 +72,7 @@ class Resetters:
             )
         except Exception as e:
             logger.exception(e)
-        else:
-            return
+            raise
 
     def reset_node(self):
         electrumsv_node.reset()
@@ -82,10 +80,6 @@ class Resetters:
 
     def reset_electrumx(self):
         logger.debug("Resetting state of RegTest electrumx server...")
-        repo = self.app_state.start_options[ComponentOptions.REPO]
-        branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        # self.installers.configure_paths_and_maps_electrumx(repo, branch)
-
         electrumx_data_dir = self.app_state.electrumx_data_dir
         if electrumx_data_dir.exists():
             shutil.rmtree(electrumx_data_dir)
@@ -96,9 +90,6 @@ class Resetters:
 
     def reset_electrumsv_wallet(self, component_id=None):
         """depends on having node and electrumx already running"""
-        repo = self.app_state.start_options[ComponentOptions.REPO]
-        branch = self.app_state.start_options[ComponentOptions.BRANCH]
-        # self.app_state.installers.configure_paths_and_maps_electrumsv(repo, branch)
         logger.debug("Resetting state of RegTest electrumsv server...")
         if component_id is None:
             logger.warning("Note: No --id flag is specified. Therefore the default 'electrumsv1' "

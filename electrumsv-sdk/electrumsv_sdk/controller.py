@@ -9,7 +9,6 @@ from electrumsv_sdk.components import ComponentStore, ComponentOptions, Componen
 from .constants import STATUS_MONITOR_GET_STATUS
 from .reset import Resetters
 from .handlers import Handlers
-from .stoppers import Stoppers
 from .utils import cast_str_int_args_to_int
 
 logger = logging.getLogger("runners")
@@ -19,7 +18,6 @@ class Controller:
 
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
-        self.stoppers = Stoppers(self.app_state)
         self.resetters = Resetters(self.app_state)
         self.handlers = Handlers(self.app_state)
         self.component_store = ComponentStore(self.app_state)
@@ -54,26 +52,10 @@ class Controller:
         # todo: make this granular enough to pick out instances of each component type
         self.app_state.start_options[ComponentOptions.BACKGROUND] = True
 
-        if ComponentName.NODE == self.app_state.selected_stop_component:
-            self.stoppers.stop_components_by_name(ComponentName.NODE)
-
-        if ComponentName.ELECTRUMSV == self.app_state.selected_stop_component:
-            self.stoppers.stop_components_by_name(ComponentName.ELECTRUMSV)
-
-        if ComponentName.ELECTRUMX == self.app_state.selected_stop_component:
-            self.stoppers.stop_components_by_name(ComponentName.ELECTRUMX)
-
-        if ComponentName.INDEXER == self.app_state.selected_stop_component:
-            self.stoppers.stop_components_by_name(ComponentName.INDEXER)
-
-        if ComponentName.STATUS_MONITOR == self.app_state.selected_stop_component:
-            self.stoppers.stop_components_by_name(ComponentName.STATUS_MONITOR)
-
-        if ComponentName.WHATSONCHAIN == self.app_state.selected_stop_component:
-            self.stoppers.stop_components_by_name(ComponentName.WHATSONCHAIN)
-
         if self.app_state.selected_stop_component:
-            logger.info(f"terminated: {self.app_state.selected_stop_component}")
+            component = self.app_state.import_plugin_component(
+                self.app_state.selected_stop_component)
+            component.stop(self.app_state)
 
         # no args implies stop all (status_monitor, node, electrumx, electrumsv, whatsonchain)
         # call sdk recursively to achieve this (greatly simplifies code)

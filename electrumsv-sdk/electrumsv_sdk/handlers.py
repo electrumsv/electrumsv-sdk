@@ -100,6 +100,11 @@ class Handlers:
         """takes no arguments"""
         if not self.app_state.NAMESPACE == self.app_state.STOP:
             return
+        id = self.app_state.start_options[ComponentOptions.ID]
+        component_name = self.app_state.selected_start_component
+        if id and component_name:
+            logger.error("stop command cannot handle both --id flag and <component_type>. Please "
+                         "select one or the other.")
 
     def handle_reset_args(self, parsed_args):
         """takes no arguments"""

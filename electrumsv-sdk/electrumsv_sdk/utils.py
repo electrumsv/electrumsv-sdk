@@ -153,3 +153,10 @@ def get_directory_name(component__file__):
     MODULE_DIR = os.path.dirname(os.path.abspath(component__file__))
     component_name = os.path.basename(MODULE_DIR)
     return component_name
+
+
+def kill_process(pid: int):
+    if sys.platform in ("linux", "darwin"):
+        subprocess.run(f"pkill -P {pid}", shell=True)
+    elif sys.platform == "win32":
+        subprocess.run(f"taskkill.exe /PID {pid} /T /F")

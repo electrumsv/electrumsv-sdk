@@ -14,11 +14,10 @@ from typing import Dict, List, Optional
 import requests
 from electrumsv_node import electrumsv_node
 
-from .utils import trace_processes_for_cmd, trace_pid
-from .stoppers import Stoppers
+from .utils import trace_processes_for_cmd, trace_pid, kill_process
 from .constants import ComponentLaunchFailedError
 from .argparsing import ArgParser
-from .components import ComponentName, ComponentOptions, ComponentStore
+from .components import ComponentName, ComponentOptions, ComponentStore, ComponentState
 from .controller import Controller
 from .handlers import Handlers
 from .reset import Resetters
@@ -46,7 +45,6 @@ class AppState:
 
         self.component_store = ComponentStore(self)
         self.arparser = ArgParser(self)
-        self.stoppers = Stoppers(self)
         self.controller = Controller(self)
         self.handlers = Handlers(self)
         self.resetters = Resetters(self)
@@ -300,3 +298,23 @@ class AppState:
         component = self.import_plugin_component(component_name)
         if hasattr(component, 'configure_paths'):
             component.configure_paths(self, repo, branch)
+
+    def kill_component(self):
+        """generic, cross-platform way of killing components (by --id or <component_type>)"""
+        id = self.start_options[ComponentOptions.ID]
+        components_state = self.component_store.get_status()
+
+        # stop all running components of: <component_type>
+        if self.selected_stop_component:
+            for component in components_state:
+                if component.get("component_type") == self.selected_stop_component:
+                    kill_process(component['pid'])
+            logger.info(f"terminated: {self.selected_stop_component}")
+
+        # stop component according to unique: --id
+        if id:
+            for component in components_state:
+                if component.get("id") == id and \
+                        component.get("component_state") == ComponentState.Running:
+                    kill_process(component['pid'])
+            logger.info(f"terminated: {id}")

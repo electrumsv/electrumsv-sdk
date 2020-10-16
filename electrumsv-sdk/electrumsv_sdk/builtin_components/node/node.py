@@ -52,7 +52,9 @@ def start(app_state):
 
 
 def stop(app_state):
-    pass
+    """The bitcoin node requires graceful shutdown via the RPC API - a good example of why this
+    entrypoint is provided for user customizations (rather than always killing the process)."""
+    electrumsv_node.stop()
 
 
 def reset(app_state):

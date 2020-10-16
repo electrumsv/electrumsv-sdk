@@ -79,9 +79,10 @@ def start(app_state, is_first_run=False):
     return process
 
 
-
 def stop(app_state):
-    pass
+    """some components require graceful shutdown via a REST API or RPC API but most can use the
+    generic 'app_state.kill_component()' function to track down the pid and kill the process."""
+    app_state.kill_component()
 
 
 def reset(app_state):
