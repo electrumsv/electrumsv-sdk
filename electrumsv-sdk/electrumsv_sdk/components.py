@@ -125,7 +125,6 @@ class ComponentStore:
         self.lock_path = app_state.electrumsv_sdk_data_dir / "component_state.json.lock"
         self.file_lock = FileLock(self.lock_path, timeout=1)
         self.component_state_path = app_state.electrumsv_sdk_data_dir / self.file_path
-        # todo include extention plugin directory (in AppData/Local/ElectrumSV-SDK/builtin_components)
         self.component_list = os.listdir(self.app_state.plugin_dir)
 
     def get_component_data_dir(self, component_name: ComponentName, data_dir_parent:
@@ -226,12 +225,3 @@ class ComponentStore:
 
         logger.error("component id not found")
         return {}
-
-    def derive_shell_script_path(self, component_name):
-        script_name = component_name
-
-        if sys.platform == "win32":
-            script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.bat")
-        elif sys.platform in ("linux", "darwin"):
-            script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.sh")
-        return script

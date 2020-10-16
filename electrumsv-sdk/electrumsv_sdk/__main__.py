@@ -38,8 +38,7 @@ def main():
 
     # Call Relevant 'Runner'
     if app_state.NAMESPACE == app_state.START:
-        app_state.controller.install()  # -> install() entrypoint of plugin
-        app_state.controller.start()  # -> start() entrypoint of plugin
+        app_state.controller.start()  # -> install() + start() entrypoint of plugin
 
     if app_state.NAMESPACE == app_state.STOP:
         app_state.controller.stop()  # -> stop() entrypoint of plugin

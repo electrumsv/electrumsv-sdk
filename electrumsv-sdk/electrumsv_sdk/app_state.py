@@ -1,19 +1,22 @@
 import argparse
+import importlib
 import json
 import logging
 import os
 import subprocess
+import time
 from pathlib import Path
 import shutil
 import stat
 import sys
 from typing import Dict, List, Optional
 
+import requests
 from electrumsv_node import electrumsv_node
 
-from .starters import Starters
+from .utils import trace_processes_for_cmd, trace_pid
 from .stoppers import Stoppers
-from .constants import DEFAULT_PORT_ELECTRUMSV
+from .constants import ComponentLaunchFailedError
 from .argparsing import ArgParser
 from .components import ComponentName, ComponentOptions, ComponentStore
 from .controller import Controller
@@ -43,7 +46,6 @@ class AppState:
 
         self.component_store = ComponentStore(self)
         self.arparser = ArgParser(self)
-        self.starters = Starters(self)
         self.stoppers = Stoppers(self)
         self.controller = Controller(self)
         self.handlers = Handlers(self)
@@ -53,7 +55,7 @@ class AppState:
         if sys.platform in ['linux', 'darwin']:
             self.linux_venv_dir = self.electrumsv_sdk_data_dir.joinpath("sdk_venv")
             self.python = self.linux_venv_dir.joinpath("bin").joinpath("python")
-            self.starters.run_command_current_shell(
+            self.run_command_current_shell(
                 f"{sys.executable} -m venv {self.linux_venv_dir}")
         else:
             self.python = sys.executable
@@ -91,6 +93,7 @@ class AppState:
         self.start_options: Dict[ComponentName] = {}
         self.node_args = None
 
+        # Todo - just make these app_state attributes
         self.start_options[ComponentOptions.NEW] = False
         self.start_options[ComponentOptions.GUI] = False
         self.start_options[ComponentOptions.BACKGROUND] = False
@@ -178,3 +181,122 @@ class AppState:
     def init_run_script_dir(self):
         os.makedirs(self.run_scripts_dir, exist_ok=True)
         os.chdir(self.run_scripts_dir)
+
+    def is_component_running(self, component_name: ComponentName, status_endpoint: str, retries:
+            int=6, duration: float=1.0, timeout: float=0.5) -> bool:
+        for sleep_time in [duration] * retries:
+            logger.debug(f"Polling {component_name}...")
+            try:
+                result = requests.get(status_endpoint, timeout=timeout)
+                result.raise_for_status()
+                return True
+            except Exception as e:
+                pass
+
+            time.sleep(sleep_time)
+        return False
+
+    def derive_shell_script_path(self, component_name):
+        script_name = component_name
+
+        if sys.platform == "win32":
+            script = self.run_scripts_dir.joinpath(f"{script_name}.bat")
+        elif sys.platform in ("linux", "darwin"):
+            script = self.run_scripts_dir.joinpath(f"{script_name}.sh")
+        return script
+
+    def spawn_process(self, command: str):
+        if self.start_options[ComponentOptions.BACKGROUND]:
+            return self.spawn_in_background(command)
+        else:
+            return self.spawn_in_new_console(command)
+
+    def run_command_current_shell(self, command: str):
+        subprocess.run(command, shell=True, check=True)
+
+    def run_command_background(self, command: str):
+        if sys.platform in ('linux', 'darwin'):
+            process_handle = subprocess.Popen(f"nohup {command} &", shell=True,
+                                       stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                       stderr=subprocess.STDOUT)
+            process_handle.wait()
+            return process_handle
+        elif sys.platform == 'win32':
+            logger.info(
+                "Running as a background process (without a console window) is not supported "
+                "on windows, spawning in a new console window")
+            process_handle = subprocess.Popen(
+                f"{command}", creationflags=subprocess.CREATE_NEW_CONSOLE
+            )
+            return process_handle
+
+    def run_command_new_window(self, command: str):
+        if sys.platform in ('linux', 'darwin'):
+            # todo gnome-terminal part will not work cross-platform for spawning new terminals
+            process_handle = subprocess.Popen(f"gnome-terminal -- {command}", shell=True,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            process_handle.wait()
+            return process_handle
+
+        elif sys.platform == 'win32':
+            process_handle = self.run_command_background(command)
+            return process_handle
+
+    def linux_trace_pid(self, command: str, num_processes_before: int):
+        num_processes_after = len(trace_processes_for_cmd(command))
+        if num_processes_before == num_processes_after:
+            raise ComponentLaunchFailedError()
+
+        process_handle = trace_pid(command)
+        return process_handle
+
+    def spawn_in_background(self, command):
+        """for long-running processes / servers - on linux there is a process id
+        tracing step because Popen returns a pid for a detached process (not the one we actually
+        want)"""
+        if sys.platform in ('linux', 'darwin'):
+            num_processes_before = len(trace_processes_for_cmd(command))
+            self.run_command_background(command)
+            time.sleep(1)  # allow brief time window for process to fail at startup
+
+            process_handle = self.linux_trace_pid(command, num_processes_before)
+            return process_handle
+
+        elif sys.platform == 'win32':
+            process_handle = self.run_command_background(command)
+            return process_handle
+
+    def spawn_in_new_console(self, command):
+        """for long-running processes / servers - on linux there is a process id tracing step
+        because Popen returns a pid for a detached process (not the one we actually want)"""
+        if sys.platform in ('linux', 'darwin'):
+            num_processes_before = len(trace_processes_for_cmd(command))
+            try:
+                self.run_command_new_window(command)
+            except ComponentLaunchFailedError:
+                logger.error(f"failed to launch long-running process: {command}. On linux cloud "
+                             f"servers try using the --background flag e.g. electrumsv-sdk start "
+                             f"--background node.")
+                raise
+            time.sleep(1)  # allow brief time window for process to fail at startup
+
+            process_handle = self.linux_trace_pid(command, num_processes_before)
+            return process_handle
+
+        elif sys.platform == 'win32':
+            process_handle = self.run_command_new_window(command)
+            return process_handle
+
+    def import_plugin_component(self, component_name: str):
+        component_name = component_name if component_name \
+            else self.selected_start_component
+        component = importlib.import_module(f'.{component_name}',
+                                            package='electrumsv_sdk.builtin_components')
+        return component
+
+    def configure_paths(self, component_name: str):
+        repo = self.start_options[ComponentOptions.REPO]
+        branch = self.start_options[ComponentOptions.BRANCH]
+        component = self.import_plugin_component(component_name)
+        if hasattr(component, 'configure_paths'):
+            component.configure_paths(self, repo, branch)

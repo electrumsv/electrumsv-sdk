@@ -6,11 +6,10 @@ from pathlib import Path
 
 from electrumsv_sdk.components import ComponentOptions
 from electrumsv_sdk.utils import is_remote_repo, checkout_branch, port_is_in_use, \
-    make_shell_script_for_component
+    make_shell_script_for_component, get_directory_name
 
 DEFAULT_PORT_ELECTRUMSV = 9999
-MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
-COMPONENT_NAME = os.path.basename(MODULE_DIR)
+COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
 
@@ -43,7 +42,7 @@ def set_electrumsv_paths(app_state, electrumsv_dir: Path):
     app_state.electrumsv_regtest_wallets_dir = data_dir.joinpath("regtest/wallets")
 
 
-def configure_paths_and_datadir_electrumsv(app_state, repo, branch):
+def configure_paths(app_state, repo, branch):
     if is_remote_repo(repo):
         set_electrumsv_paths(app_state, app_state.depends_dir.joinpath("electrumsv"))
     else:

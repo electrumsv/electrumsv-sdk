@@ -4,15 +4,15 @@ import subprocess
 import sys
 from pathlib import Path
 
-from electrumsv_sdk.utils import checkout_branch, is_remote_repo, make_shell_script_for_component
+from electrumsv_sdk.utils import checkout_branch, is_remote_repo, make_shell_script_for_component, \
+    get_directory_name
 
 DEFAULT_PORT_ELECTRUMX = 51001
-MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
-COMPONENT_NAME = os.path.basename(MODULE_DIR)
+COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
 
-def configure_paths_and_maps_electrumx(app_state, repo, branch):
+def configure_paths(app_state, repo, branch):
     if is_remote_repo(repo):
         app_state.electrumx_dir = app_state.depends_dir.joinpath("electrumx")
     else:

@@ -10,8 +10,6 @@ from pathlib import Path
 import psutil
 from electrumsv_node import electrumsv_node
 
-from .components import ComponentName
-
 logger = logging.getLogger("utils")
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -149,3 +147,9 @@ def port_is_in_use(port) -> bool:
         else:
             logger.debug(e)
     s.close()
+
+
+def get_directory_name(component__file__):
+    MODULE_DIR = os.path.dirname(os.path.abspath(component__file__))
+    component_name = os.path.basename(MODULE_DIR)
+    return component_name

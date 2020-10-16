@@ -1,12 +1,9 @@
 import logging
-import os
 
-from electrumsv_sdk.utils import make_shell_script_for_component
-
+from electrumsv_sdk.utils import make_shell_script_for_component, get_directory_name
 
 DEFAULT_PORT_ELECTRUMX = 5000
-MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
-COMPONENT_NAME = os.path.basename(MODULE_DIR)
+COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
 

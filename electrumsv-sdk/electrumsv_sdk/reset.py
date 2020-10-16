@@ -9,7 +9,6 @@ from electrumsv_node import electrumsv_node
 
 from .stoppers import Stoppers
 from .components import ComponentOptions, ComponentStore, ComponentName
-from .starters import Starters
 
 logger = logging.getLogger("resetters")
 orm_logger = logging.getLogger("peewee")
@@ -19,7 +18,6 @@ orm_logger.setLevel(logging.WARNING)
 class Resetters:
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
-        self.starters = Starters(self.app_state)
         self.stoppers = Stoppers(self.app_state)
         self.component_store = ComponentStore(self.app_state)
 
@@ -119,9 +117,9 @@ class Resetters:
         if ComponentName.ELECTRUMSV == component_name:
             self.reset_electrumsv_wallet(component_id)
             if component_id:
-                self.starters.run_command_current_shell(f"electrumsv-sdk stop --id={component_id}")
+                self.app_state.run_command_current_shell(f"electrumsv-sdk stop --id={component_id}")
             else:
-                self.starters.run_command_current_shell(f"electrumsv-sdk stop electrumsv")
+                self.app_state.run_command_current_shell(f"electrumsv-sdk stop electrumsv")
 
         if ComponentName.INDEXER == component_name:
             logger.error("resetting indexer is not supported at this time...")
