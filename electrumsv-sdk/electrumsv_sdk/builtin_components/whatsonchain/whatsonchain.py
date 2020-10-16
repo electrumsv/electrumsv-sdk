@@ -13,7 +13,7 @@ logger = logging.getLogger(COMPONENT_NAME)
 
 
 def install(app_state):
-    repo = app_state.start_options[ComponentOptions.REPO]
+    repo = app_state.global_cli_flags[ComponentOptions.REPO]
     if not repo == "":  # default
         logger.error("ignoring --repo flag for whatsonchain - not applicable.")
 
@@ -62,7 +62,7 @@ def stop(app_state):
 
 
 def reset(app_state):
-    pass
+    logger.info("resetting the whatsonchain is not applicable")
 
 
 def status_check(app_state):

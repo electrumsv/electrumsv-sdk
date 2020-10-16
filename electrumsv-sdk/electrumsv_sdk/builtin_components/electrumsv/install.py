@@ -176,7 +176,7 @@ def generate_run_scripts_electrumsv(app_state):
     base_cmd = (f"{app_state.python} {esv_script}")
     if component_args:
         make_esv_custom_script(base_cmd, esv_env_vars, component_args, esv_data_dir)
-    elif not app_state.start_options[ComponentOptions.GUI]:
+    elif not app_state.global_cli_flags[ComponentOptions.GUI]:
         make_esv_daemon_script(base_cmd, esv_env_vars, esv_data_dir, port)
     else:
         make_esv_gui_script(base_cmd, esv_env_vars, esv_data_dir, port)

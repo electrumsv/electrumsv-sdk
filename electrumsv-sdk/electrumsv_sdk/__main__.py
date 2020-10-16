@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 
+from electrumsv_sdk.components import ComponentOptions
 from electrumsv_sdk.app_state import AppState  # pylint: disable=E0401
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',
@@ -35,6 +36,22 @@ def main():
     # Check & Install dependencies / or Configure state for main execution pathway
     # indirectly calls the 'install()' entrypoint for the component with config based on cli args
     app_state.handlers.handle_cli_args()
+
+    selected_component = app_state.selected_start_component or \
+                         app_state.selected_stop_component or \
+                         app_state.selected_reset_component
+
+    component_id = app_state.global_cli_flags[ComponentOptions.ID]
+    if selected_component:
+        app_state.component_module = app_state.import_plugin_component(selected_component)
+    elif component_id != "":
+        component_data = app_state.component_store.component_status_data_by_id(component_id)
+        if component_data == {}:
+            logger.error(f"no component data found for id: {component_id}")
+            sys.exit(1)
+        else:
+            component_name = component_data['component_type']
+            app_state.component_module = app_state.import_plugin_component(component_name)
 
     # Call Relevant 'Runner'
     if app_state.NAMESPACE == app_state.START:

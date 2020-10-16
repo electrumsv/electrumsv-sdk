@@ -69,12 +69,12 @@ class Handlers:
                   f"selected '{flags}'")
             return
 
-        self.app_state.start_options[ComponentOptions.NEW] = parsed_args.new
-        self.app_state.start_options[ComponentOptions.GUI] = parsed_args.gui
-        self.app_state.start_options[ComponentOptions.BACKGROUND] = parsed_args.background
-        self.app_state.start_options[ComponentOptions.ID] = id = parsed_args.id
-        self.app_state.start_options[ComponentOptions.REPO] = repo = parsed_args.repo
-        self.app_state.start_options[ComponentOptions.BRANCH] = branch = parsed_args.branch
+        self.app_state.global_cli_flags[ComponentOptions.NEW] = parsed_args.new
+        self.app_state.global_cli_flags[ComponentOptions.GUI] = parsed_args.gui
+        self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = parsed_args.background
+        self.app_state.global_cli_flags[ComponentOptions.ID] = id = parsed_args.id
+        self.app_state.global_cli_flags[ComponentOptions.REPO] = repo = parsed_args.repo
+        self.app_state.global_cli_flags[ComponentOptions.BRANCH] = branch = parsed_args.branch
 
         def has_startup_flags():
             return parsed_args.new or parsed_args.gui or id != "" or repo != "" or branch != ""
@@ -92,7 +92,7 @@ class Handlers:
         if id != "":
             logger.debug(f"id flag={parsed_args.id}")
         if repo != "":
-            logger.debug(f"repo flag={self.app_state.start_options[ComponentOptions.REPO]}")
+            logger.debug(f"repo flag={self.app_state.global_cli_flags[ComponentOptions.REPO]}")
         if branch != "":
             logger.debug(f"branch flag={parsed_args.branch}")
 
@@ -100,7 +100,7 @@ class Handlers:
         """takes no arguments"""
         if not self.app_state.NAMESPACE == self.app_state.STOP:
             return
-        id = self.app_state.start_options[ComponentOptions.ID]
+        id = self.app_state.global_cli_flags[ComponentOptions.ID]
         component_name = self.app_state.selected_start_component
         if id and component_name:
             logger.error("stop command cannot handle both --id flag and <component_type>. Please "
@@ -111,15 +111,15 @@ class Handlers:
         if not self.app_state.NAMESPACE == self.app_state.RESET:
             return
 
-        self.app_state.start_options[ComponentOptions.ID] = id = parsed_args.id
-        self.app_state.start_options[ComponentOptions.REPO] = repo = parsed_args.repo
-        self.app_state.start_options[ComponentOptions.BRANCH] = branch = parsed_args.branch
+        self.app_state.global_cli_flags[ComponentOptions.ID] = id = parsed_args.id
+        self.app_state.global_cli_flags[ComponentOptions.REPO] = repo = parsed_args.repo
+        self.app_state.global_cli_flags[ComponentOptions.BRANCH] = branch = parsed_args.branch
 
         # logging
         if id != "":
             logger.debug(f"id flag={parsed_args.id}")
         if repo != "":
-            logger.debug(f"repo flag={self.app_state.start_options[ComponentOptions.REPO]}")
+            logger.debug(f"repo flag={self.app_state.global_cli_flags[ComponentOptions.REPO]}")
         if branch != "":
             logger.debug(f"branch flag={parsed_args.branch}")
 

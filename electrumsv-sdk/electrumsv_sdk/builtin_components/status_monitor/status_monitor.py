@@ -16,7 +16,7 @@ logger = logging.getLogger(COMPONENT_NAME)
 
 def install(app_state):
     """this is a locally hosted sub-repo so there is no 'fetch' or 'package' installation steps"""
-    repo = app_state.start_options[ComponentOptions.REPO]
+    repo = app_state.global_cli_flags[ComponentOptions.REPO]
     if not repo == "":  # default
         logger.error("ignoring --repo flag for status_monitor - not applicable.")
 
@@ -64,7 +64,7 @@ def stop(app_state):
 
 
 def reset(app_state):
-    pass
+    logger.info("resetting the status monitor is not supported.")
 
 
 def status_check(app_state):

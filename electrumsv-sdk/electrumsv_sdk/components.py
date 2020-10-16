@@ -140,13 +140,13 @@ class ComponentStore:
         def is_not_new_and_id(id, new) -> bool:
             return id != "" and not new
 
-        new = self.app_state.start_options[ComponentOptions.NEW]
+        new = self.app_state.global_cli_flags[ComponentOptions.NEW]
 
         # autoincrements (electrumsv1 -> electrumsv2 -> electrumsv3...) until empty space is found
         if is_new_and_no_id(id, new):
             count = 1
             while True:
-                self.app_state.start_options[ComponentOptions.ID] = id = \
+                self.app_state.global_cli_flags[ComponentOptions.ID] = id = \
                     str(component_name) + str(count)
                 new_dir = data_dir_parent.joinpath(id)
                 if not new_dir.exists():

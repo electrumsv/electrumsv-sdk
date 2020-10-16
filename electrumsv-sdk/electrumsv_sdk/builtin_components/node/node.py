@@ -16,7 +16,7 @@ logger = logging.getLogger(COMPONENT_NAME)
 def install(app_state):
     """The node component has a pip installer at https://pypi.org/project/electrumsv-node/ and
     only official releases from pypi are supported"""
-    repo = app_state.start_options[ComponentOptions.REPO]
+    repo = app_state.global_cli_flags[ComponentOptions.REPO]
     if not repo == "":  # default
         logger.error("ignoring --repo flag for node - not applicable.")
 
@@ -58,7 +58,8 @@ def stop(app_state):
 
 
 def reset(app_state):
-    pass
+    electrumsv_node.reset()
+    logger.debug("Reset of RegTest bitcoin daemon completed successfully.")
 
 
 def status_check(app_state):

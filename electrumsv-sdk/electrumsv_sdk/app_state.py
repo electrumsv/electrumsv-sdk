@@ -20,7 +20,6 @@ from .argparsing import ArgParser
 from .components import ComponentName, ComponentOptions, ComponentStore, ComponentState
 from .controller import Controller
 from .handlers import Handlers
-from .reset import Resetters
 from .status_monitor_client import StatusMonitorClient
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -28,6 +27,8 @@ MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 logger = logging.getLogger("status")
 filelock_logger = logging.getLogger("filelock")
 filelock_logger.setLevel(logging.WARNING)
+orm_logger = logging.getLogger("peewee")
+orm_logger.setLevel(logging.WARNING)
 
 
 class AppState:
@@ -47,8 +48,9 @@ class AppState:
         self.arparser = ArgParser(self)
         self.controller = Controller(self)
         self.handlers = Handlers(self)
-        self.resetters = Resetters(self)
         self.status_monitor_client = StatusMonitorClient(self)
+
+        self.component_module = None
 
         if sys.platform in ['linux', 'darwin']:
             self.linux_venv_dir = self.electrumsv_sdk_data_dir.joinpath("sdk_venv")
@@ -88,19 +90,19 @@ class AppState:
         self.selected_stop_component: Optional[ComponentName] = None
         self.selected_reset_component: Optional[ComponentName] = None
 
-        self.start_options: Dict[ComponentName] = {}
+        self.global_cli_flags: Dict[ComponentName] = {}
         self.node_args = None
 
         # Todo - just make these app_state attributes
-        self.start_options[ComponentOptions.NEW] = False
-        self.start_options[ComponentOptions.GUI] = False
-        self.start_options[ComponentOptions.BACKGROUND] = False
-        self.start_options[ComponentOptions.ID] = ""
-        self.start_options[ComponentOptions.REPO] = ""
-        self.start_options[ComponentOptions.BRANCH] = ""
+        self.global_cli_flags[ComponentOptions.NEW] = False
+        self.global_cli_flags[ComponentOptions.GUI] = False
+        self.global_cli_flags[ComponentOptions.BACKGROUND] = False
+        self.global_cli_flags[ComponentOptions.ID] = ""
+        self.global_cli_flags[ComponentOptions.REPO] = ""
+        self.global_cli_flags[ComponentOptions.BRANCH] = ""
 
     def get_id(self, component_name: ComponentName):
-        id = self.start_options[ComponentOptions.ID]
+        id = self.global_cli_flags[ComponentOptions.ID]
         if not id:  # Default component_name
             id = component_name + "1"
         return id
@@ -204,7 +206,7 @@ class AppState:
         return script
 
     def spawn_process(self, command: str):
-        if self.start_options[ComponentOptions.BACKGROUND]:
+        if self.global_cli_flags[ComponentOptions.BACKGROUND]:
             return self.spawn_in_background(command)
         else:
             return self.spawn_in_new_console(command)
@@ -285,23 +287,21 @@ class AppState:
             process_handle = self.run_command_new_window(command)
             return process_handle
 
-    def import_plugin_component(self, component_name: str):
-        component_name = component_name if component_name \
-            else self.selected_start_component
+    def import_plugin_component(self, component_name: ComponentName):
         component = importlib.import_module(f'.{component_name}',
                                             package='electrumsv_sdk.builtin_components')
         return component
 
-    def configure_paths(self, component_name: str):
-        repo = self.start_options[ComponentOptions.REPO]
-        branch = self.start_options[ComponentOptions.BRANCH]
+    def configure_paths(self, component_name: ComponentName):
+        repo = self.global_cli_flags[ComponentOptions.REPO]
+        branch = self.global_cli_flags[ComponentOptions.BRANCH]
         component = self.import_plugin_component(component_name)
         if hasattr(component, 'configure_paths'):
-            component.configure_paths(self, repo, branch)
+            self.component_module.configure_paths(self, repo, branch)
 
     def kill_component(self):
         """generic, cross-platform way of killing components (by --id or <component_type>)"""
-        id = self.start_options[ComponentOptions.ID]
+        id = self.global_cli_flags[ComponentOptions.ID]
         components_state = self.component_store.get_status()
 
         # stop all running components of: <component_type>

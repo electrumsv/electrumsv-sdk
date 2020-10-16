@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import os
+import shutil
 import time
 
 from electrumsv_sdk.components import ComponentOptions, ComponentName, Component, ComponentState
@@ -15,8 +17,8 @@ logger = logging.getLogger(COMPONENT_NAME)
 
 def install(app_state):
     """--repo and --branch flags affect the behaviour of the 'fetch' step"""
-    repo = app_state.start_options[ComponentOptions.REPO]
-    branch = app_state.start_options[ComponentOptions.BRANCH]
+    repo = app_state.global_cli_flags[ComponentOptions.REPO]
+    branch = app_state.global_cli_flags[ComponentOptions.BRANCH]
 
     # 1) configure_paths
     configure_paths(app_state, repo, branch)
@@ -66,7 +68,18 @@ def stop(app_state):
 
 
 def reset(app_state):
-    pass
+    repo = app_state.global_cli_flags[ComponentOptions.REPO]
+    branch = app_state.global_cli_flags[ComponentOptions.BRANCH]
+    configure_paths(app_state, repo, branch)
+
+    logger.debug("Resetting state of RegTest electrumx server...")
+    electrumx_data_dir = app_state.electrumx_data_dir
+    if electrumx_data_dir.exists():
+        shutil.rmtree(electrumx_data_dir)
+        os.mkdir(electrumx_data_dir)
+    else:
+        os.makedirs(electrumx_data_dir, exist_ok=True)
+    logger.debug("Reset of RegTest electrumx server completed successfully.")
 
 
 def status_check(app_state):
