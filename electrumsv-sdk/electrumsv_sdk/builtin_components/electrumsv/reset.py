@@ -4,7 +4,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from components import ComponentOptions
+from electrumsv_sdk.components import ComponentOptions
 from electrumsv_sdk.utils import get_directory_name
 
 COMPONENT_NAME = get_directory_name(__file__)

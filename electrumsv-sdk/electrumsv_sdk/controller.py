@@ -1,9 +1,9 @@
 import pprint
-
 import logging
 from electrumsv_node import electrumsv_node
 
-from electrumsv_sdk.components import ComponentStore, ComponentOptions, ComponentName
+from electrumsv_sdk.components import ComponentStore, ComponentOptions, ComponentName, \
+    ComponentState
 
 from .constants import STATUS_MONITOR_GET_STATUS
 from .handlers import Handlers
@@ -24,20 +24,28 @@ class Controller:
         logger.info("Starting component...")
         open(self.app_state.electrumsv_sdk_data_dir / "spawned_pids", 'w').close()
 
-        if not self.app_state.is_component_running(ComponentName.STATUS_MONITOR,
-                STATUS_MONITOR_GET_STATUS, 2, 0.5):
+        # The status_monitor is a special-case component because it must always be running
+        is_status_monitor_running = \
+            self.app_state.is_component_running_http(STATUS_MONITOR_GET_STATUS, 2, 0.5,
+            component_name=ComponentName.STATUS_MONITOR)
+
+        if not is_status_monitor_running:
             component_module = self.app_state.import_plugin_component(ComponentName.STATUS_MONITOR)
             component_module.install(self.app_state)
             component_module.start(self.app_state)
+            self.status_check()
 
-        if self.app_state.selected_start_component:
+        # All other component types
+        if self.app_state.selected_component and \
+                self.app_state.selected_component != ComponentName.STATUS_MONITOR:
             self.app_state.component_module.install(self.app_state)
             self.app_state.component_module.start(self.app_state)
+            self.status_check()
 
         self.app_state.save_repo_paths()
 
         # no args implies (node, electrumx, electrumsv, whatsonchain)
-        if not self.app_state.selected_start_component:
+        if not self.app_state.selected_component:
             self.app_state.run_command_current_shell("electrumsv-sdk start node")
             self.app_state.run_command_current_shell("electrumsv-sdk start electrumx")
             self.app_state.run_command_current_shell("electrumsv-sdk start electrumsv")
@@ -46,8 +54,8 @@ class Controller:
     def stop(self):
         """if stop_set is empty, all processes terminate."""
         # todo: make this granular enough to pick out instances of each component type
-        self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = True
 
+        self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = True
         if self.app_state.selected_stop_component:
             self.app_state.component_module.stop(self.app_state)
 
@@ -68,18 +76,18 @@ class Controller:
         component_id = self.app_state.global_cli_flags[ComponentOptions.ID]
 
         # reset by selected by --id flag or by <component_type>
-        if component_id != "" or self.app_state.selected_reset_component:
+        if component_id != "" or self.app_state.selected_component:
             self.app_state.component_module.reset(self.app_state)
 
         # no args (no --id or <component_type>) implies reset all (node, electrumx, electrumsv)
-        elif component_id == "" and not self.app_state.selected_reset_component:
+        elif component_id == "" and not self.app_state.selected_component:
             self.app_state.run_command_current_shell("electrumsv-sdk reset node")
             self.app_state.run_command_current_shell("electrumsv-sdk reset electrumx")
             self.app_state.run_command_current_shell("electrumsv-sdk reset electrumsv")
 
         # logging
-        if component_id == "" and self.app_state.selected_reset_component:
-            logger.info(f"Reset of: {self.app_state.selected_reset_component} complete.")
+        if component_id == "" and self.app_state.selected_component:
+            logger.info(f"Reset of: {self.app_state.selected_component} complete.")
         elif component_id != "":
             logger.info(f"Reset of: {component_id} complete.")
         elif not self.app_state.selected_reset_component:
@@ -87,6 +95,39 @@ class Controller:
 
         # cleanup
         self.app_state.run_command_current_shell("electrumsv-sdk stop status_monitor")
+
+    def status_check(self):
+        """The 'status_check()' entrypoint of the plugin must always run after the start()
+        command.
+
+        'status_check()' should return None, True or False (usually in response to polling for an
+        http 200 OK response or 4XX/5XX error. However alternative litmus tests are customizable
+        via the plugin.
+
+        None type indicates that it was only run transiently (e.g. ElectrumSV's offline CLI mode)
+
+        The status_monitor subsequently is updated with the status."""
+        component_id = self.app_state.global_cli_flags[ComponentOptions.ID]
+        component_name = self.app_state.component_module.COMPONENT_NAME
+
+        # if --id flag or <component_type> are set and the
+        if component_id != "" or component_name:
+            is_running = self.app_state.component_module.status_check(self.app_state)
+
+            if is_running is None:
+                return
+
+            if is_running is False:
+                self.app_state.component_info.component_state = ComponentState.Failed
+                logger.error(f"{component_name} failed to start")
+
+            elif is_running is True:
+                self.app_state.component_info.component_state = ComponentState.Running
+                logger.debug(f"{component_name} online")
+            self.app_state.component_store.update_status_file(self.app_state.component_info)
+            self.app_state.status_monitor_client.update_status(self.app_state.component_info)
+        else:
+            raise Exception("neither component --id or component_name given")
 
     def node(self):
         """Essentially bitcoin-cli interface to RPC API that works 'out of the box' / zero config"""

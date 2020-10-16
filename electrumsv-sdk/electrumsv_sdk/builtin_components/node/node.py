@@ -1,9 +1,10 @@
 import logging
 from pathlib import Path
+from typing import Optional
 
 from electrumsv_node import electrumsv_node
 
-from electrumsv_sdk.components import ComponentOptions, ComponentName, Component, ComponentState
+from electrumsv_sdk.components import ComponentOptions, ComponentName, Component
 from electrumsv_sdk.utils import get_directory_name
 
 from .install import fetch_node
@@ -34,21 +35,11 @@ def start(app_state):
     logging_path = Path(electrumsv_node.DEFAULT_DATA_PATH)\
         .joinpath("regtest").joinpath("bitcoind.log")
 
-    component = Component(id, process_pid, component_name, electrumsv_node.BITCOIND_PATH,
+    app_state.component_info = Component(id, process_pid, component_name,
+        electrumsv_node.BITCOIND_PATH,
         f"http://rpcuser:rpcpassword@127.0.0.1:18332", logging_path=logging_path,
         metadata={"datadir": electrumsv_node.DEFAULT_DATA_PATH}
     )
-    if not electrumsv_node.is_node_running():
-        component.component_state = ComponentState.Failed
-        logger.error("bitcoin daemon failed to start")
-    else:
-        component.component_state = ComponentState.Running
-        logger.debug("Bitcoin daemon online")
-
-    app_state.component_store.update_status_file(component)
-    app_state.status_monitor_client.update_status(component)
-
-    # process handle not returned because node is stopped via rpc
 
 
 def stop(app_state):
@@ -62,5 +53,11 @@ def reset(app_state):
     logger.debug("Reset of RegTest bitcoin daemon completed successfully.")
 
 
-def status_check(app_state):
-    pass
+def status_check(app_state) -> Optional[bool]:
+    """
+    True -> ComponentState.Running;
+    False -> ComponentState.Failed;
+    None -> skip status monitoring updates (e.g. using app's cli interface transiently)
+    """
+    is_running = electrumsv_node.is_node_running()
+    return is_running

@@ -1,8 +1,9 @@
 import logging
 import os
 import sys
+from typing import Optional
 
-from electrumsv_sdk.components import ComponentOptions, ComponentName, Component, ComponentState
+from electrumsv_sdk.components import ComponentOptions, ComponentName, Component
 from electrumsv_sdk.constants import ComponentLaunchFailedError
 from electrumsv_sdk.utils import get_directory_name
 
@@ -42,19 +43,8 @@ def start(app_state):
         sys.exit(1)
 
     id = app_state.get_id(component_name)
-    component = Component(id, process.pid, component_name,
+    app_state.component_info = Component(id, process.pid, component_name,
         str(app_state.status_monitor_dir), "http://127.0.0.1:5000/api/status/get_status")
-
-    # move to utils
-    is_running = app_state.is_component_running(component_name, component.status_endpoint, 4, 0.5)
-    if not is_running:
-        component.component_state = ComponentState.Failed
-        logger.error("Status_monitor failed to start")
-    else:
-        component.component_state = ComponentState.Running
-        logger.debug("Status_monitor online")
-    app_state.component_store.update_status_file(component)
-    return process
 
 
 def stop(app_state):
@@ -67,5 +57,12 @@ def reset(app_state):
     logger.info("resetting the status monitor is not supported.")
 
 
-def status_check(app_state):
-    pass
+def status_check(app_state) -> Optional[bool]:
+    """
+    True -> ComponentState.Running;
+    False -> ComponentState.Failed;
+    None -> skip status monitoring updates (e.g. using app's cli interface transiently)
+    """
+    is_running = app_state.is_component_running_http(
+        status_endpoint=app_state.component_info.status_endpoint, retries=4, timeout=0.5)
+    return is_running

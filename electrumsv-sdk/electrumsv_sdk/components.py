@@ -196,7 +196,7 @@ class ComponentStore:
                 return (index, component)
         return False
 
-    def update_status_file(self, component):
+    def update_status_file(self, component_info: Component):
         """updates to the *file* (component.json) - does *not* update the server"""
 
         component_state = []
@@ -207,12 +207,12 @@ class ComponentStore:
                     if data:
                         component_state = json.loads(data)
 
-        result = self.find_component_if_exists(component, component_state)
+        result = self.find_component_if_exists(component_info, component_state)
         if not result:
-            component_state.append(component.to_dict())
+            component_state.append(component_info.to_dict())
         else:
-            index, component = result
-            component_state[index] = component.to_dict()
+            index, component_info = result
+            component_state[index] = component_info.to_dict()
 
         with open(self.component_state_path, "w") as f:
             f.write(json.dumps(component_state, indent=4))

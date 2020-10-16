@@ -32,30 +32,21 @@ def main():
     # Parse args
     app_state.arparser.setup_argparser()
     app_state.arparser.manual_argparsing(sys.argv)
-
-    # Check & Install dependencies / or Configure state for main execution pathway
-    # indirectly calls the 'install()' entrypoint for the component with config based on cli args
     app_state.handlers.handle_cli_args()
 
-    selected_component = app_state.selected_start_component or \
-                         app_state.selected_stop_component or \
-                         app_state.selected_reset_component
+    app_state.selected_component = app_state.selected_start_component or \
+                                   app_state.selected_stop_component or \
+                                   app_state.selected_reset_component
 
     component_id = app_state.global_cli_flags[ComponentOptions.ID]
-    if selected_component:
-        app_state.component_module = app_state.import_plugin_component(selected_component)
+    if app_state.selected_component:
+        app_state.component_module = app_state.import_plugin_component(app_state.selected_component)
     elif component_id != "":
-        component_data = app_state.component_store.component_status_data_by_id(component_id)
-        if component_data == {}:
-            logger.error(f"no component data found for id: {component_id}")
-            sys.exit(1)
-        else:
-            component_name = component_data['component_type']
-            app_state.component_module = app_state.import_plugin_component(component_name)
+        app_state.component_module = app_state.import_plugin_component_from_id(component_id)
 
-    # Call Relevant 'Runner'
+    # Call relevant entrypoint
     if app_state.NAMESPACE == app_state.START:
-        app_state.controller.start()  # -> install() + start() entrypoint of plugin
+        app_state.controller.start()  # -> install() -> start() -> status_check() plugin entrypoints
 
     if app_state.NAMESPACE == app_state.STOP:
         app_state.controller.stop()  # -> stop() entrypoint of plugin
@@ -67,6 +58,7 @@ def main():
     if app_state.NAMESPACE == app_state.NODE:
         app_state.controller.node()
 
+    # Http 'GET' request to status_monitor
     if app_state.NAMESPACE == app_state.STATUS:
         app_state.controller.status()
 

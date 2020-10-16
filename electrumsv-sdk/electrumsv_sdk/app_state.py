@@ -17,7 +17,7 @@ from electrumsv_node import electrumsv_node
 from .utils import trace_processes_for_cmd, trace_pid, kill_process
 from .constants import ComponentLaunchFailedError
 from .argparsing import ArgParser
-from .components import ComponentName, ComponentOptions, ComponentStore, ComponentState
+from .components import ComponentName, ComponentOptions, ComponentStore, ComponentState, Component
 from .controller import Controller
 from .handlers import Handlers
 from .status_monitor_client import StatusMonitorClient
@@ -50,7 +50,8 @@ class AppState:
         self.handlers = Handlers(self)
         self.status_monitor_client = StatusMonitorClient(self)
 
-        self.component_module = None
+        self.component_module = None  # e.g. builtin_components.node.node.py module
+        self.component_info: Optional[Component] = None  # dict conversion <-> status_monitor
 
         if sys.platform in ['linux', 'darwin']:
             self.linux_venv_dir = self.electrumsv_sdk_data_dir.joinpath("sdk_venv")
@@ -182,12 +183,20 @@ class AppState:
         os.makedirs(self.run_scripts_dir, exist_ok=True)
         os.chdir(self.run_scripts_dir)
 
-    def is_component_running(self, component_name: ComponentName, status_endpoint: str, retries:
-            int=6, duration: float=1.0, timeout: float=0.5) -> bool:
+    def is_component_running_http(self, status_endpoint: str, retries:
+            int=6, duration: float=1.0, timeout: float=0.5, http_method='get',
+            payload: Dict=None, component_name: ComponentName=None) -> bool:
+
+        if not component_name and self.component_info:
+            component_name = self.component_info.component_type
+        elif not component_name and not self.component_info:
+            raise Exception(f"Unknown component_name")
+
         for sleep_time in [duration] * retries:
             logger.debug(f"Polling {component_name}...")
             try:
-                result = requests.get(status_endpoint, timeout=timeout)
+                result = getattr(requests, http_method)(status_endpoint, timeout=timeout,
+                    data=payload)
                 result.raise_for_status()
                 return True
             except Exception as e:
@@ -318,3 +327,12 @@ class AppState:
                         component.get("component_state") == ComponentState.Running:
                     kill_process(component['pid'])
             logger.info(f"terminated: {id}")
+
+    def import_plugin_component_from_id(self, component_id: str):
+        component_data = self.component_store.component_status_data_by_id(component_id)
+        if component_data == {}:
+            logger.error(f"no component data found for id: {component_id}")
+            sys.exit(1)
+        else:
+            component_name = component_data['component_type']
+            return self.import_plugin_component(component_name)
