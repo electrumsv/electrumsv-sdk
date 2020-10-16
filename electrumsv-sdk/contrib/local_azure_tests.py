@@ -1,6 +1,13 @@
+import os
 import subprocess
+import sys
+from pathlib import Path
+
+MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 commands = [
+    "electrumsv-sdk reset",
+
     "electrumsv-sdk start --background node",
     "electrumsv-sdk start --background electrumx",
     "electrumsv-sdk start --background electrumsv",
@@ -12,13 +19,10 @@ commands = [
     "electrumsv-sdk stop electrumsv",
     "electrumsv-sdk stop whatsonchain",
 
-    "electrumsv-sdk reset",
-
-    "electrumsv-sdk reset --id=node1"
-    "electrumsv-sdk"
-    "reset --id=electrumx1"
-    "electrumsv-sdk"
-    "reset --id=electrumsv1"
+    "electrumsv-sdk reset --id=node1",
+    "electrumsv-sdk reset --id=electrumx1",
+    "electrumsv-sdk reset --id=electrumsv1",
+    f"{sys.executable} -m pylint --rcfile ../../.pylintrc {Path(MODULE_DIR).parent}"
 ]
 
 try:

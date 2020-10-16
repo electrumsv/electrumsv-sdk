@@ -9,7 +9,7 @@ SHUTDOWN
 - on shutdown of an 'SDK component'                          state=Stopped
 
 STATUS-MONITOR (server)
-- pings SDK components periodically to see if they
+- pings SDK builtin_components periodically to see if they
 are still online
 
 - if state=Running & reachable then                          state=Running
@@ -24,7 +24,7 @@ regardless of which state they are in.
 - If state=Failed but the service becomes reachable subsequently, the status will return to
 state=Running.
 
-- terminated components without using the SDK interface      state=Failed
+- terminated builtin_components without using the SDK interface      state=Failed
 """
 import datetime
 import enum
@@ -125,11 +125,10 @@ class ComponentStore:
         self.lock_path = app_state.electrumsv_sdk_data_dir / "component_state.json.lock"
         self.file_lock = FileLock(self.lock_path, timeout=1)
         self.component_state_path = app_state.electrumsv_sdk_data_dir / self.file_path
-        # todo include extention plugin directory (in AppData/Local/ElectrumSV-SDK/components)
         self.component_list = os.listdir(self.app_state.plugin_dir)
 
     def get_component_data_dir(self, component_name: ComponentName, data_dir_parent:
-            Path, id=None):
+            Path, id: str):
         # Todo - use this generically for node and electrumsv
         """to run multiple instances of a component requires multiple data directories"""
         def is_new_and_no_id(id, new) -> bool:
@@ -141,15 +140,13 @@ class ComponentStore:
         def is_not_new_and_id(id, new) -> bool:
             return id != "" and not new
 
-        new = self.app_state.start_options[ComponentOptions.NEW]
-        if not id:
-            id = self.app_state.start_options[ComponentOptions.ID]
+        new = self.app_state.global_cli_flags[ComponentOptions.NEW]
 
         # autoincrements (electrumsv1 -> electrumsv2 -> electrumsv3...) until empty space is found
         if is_new_and_no_id(id, new):
             count = 1
             while True:
-                self.app_state.start_options[ComponentOptions.ID] = id = \
+                self.app_state.global_cli_flags[ComponentOptions.ID] = id = \
                     str(component_name) + str(count)
                 new_dir = data_dir_parent.joinpath(id)
                 if not new_dir.exists():
@@ -199,7 +196,7 @@ class ComponentStore:
                 return (index, component)
         return False
 
-    def update_status_file(self, component):
+    def update_status_file(self, component_info: Component):
         """updates to the *file* (component.json) - does *not* update the server"""
 
         component_state = []
@@ -210,12 +207,12 @@ class ComponentStore:
                     if data:
                         component_state = json.loads(data)
 
-        result = self.find_component_if_exists(component, component_state)
+        result = self.find_component_if_exists(component_info, component_state)
         if not result:
-            component_state.append(component.to_dict())
+            component_state.append(component_info.to_dict())
         else:
-            index, component = result
-            component_state[index] = component.to_dict()
+            index, component_info = result
+            component_state[index] = component_info.to_dict()
 
         with open(self.component_state_path, "w") as f:
             f.write(json.dumps(component_state, indent=4))
@@ -228,12 +225,3 @@ class ComponentStore:
 
         logger.error("component id not found")
         return {}
-
-    def derive_shell_script_path(self, component_name):
-        script_name = component_name
-
-        if sys.platform == "win32":
-            script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.bat")
-        elif sys.platform in ("linux", "darwin"):
-            script = self.app_state.run_scripts_dir.joinpath(f"{script_name}.sh")
-        return script

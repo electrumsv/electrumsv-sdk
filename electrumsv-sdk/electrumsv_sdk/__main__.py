@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 
+from electrumsv_sdk.components import ComponentOptions
 from electrumsv_sdk.app_state import AppState  # pylint: disable=E0401
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',
@@ -31,25 +32,33 @@ def main():
     # Parse args
     app_state.arparser.setup_argparser()
     app_state.arparser.manual_argparsing(sys.argv)
+    app_state.handlers.handle_cli_args()
 
-    # Check & Install dependencies / or Configure state for main execution pathway
-    # indirectly calls the 'install()' entrypoint for the component with config based on cli args
-    app_state.handlers.handle_install()
+    app_state.selected_component = app_state.selected_start_component or \
+                                   app_state.selected_stop_component or \
+                                   app_state.selected_reset_component
 
-    # Call Relevant 'Runner'
+    component_id = app_state.global_cli_flags[ComponentOptions.ID]
+    if app_state.selected_component:
+        app_state.component_module = app_state.import_plugin_component(app_state.selected_component)
+    elif component_id != "":
+        app_state.component_module = app_state.import_plugin_component_from_id(component_id)
+
+    # Call relevant entrypoint
     if app_state.NAMESPACE == app_state.START:
-        app_state.controller.start()
+        app_state.controller.start()  # -> install() -> start() -> status_check() plugin entrypoints
 
     if app_state.NAMESPACE == app_state.STOP:
-        app_state.controller.stop()
+        app_state.controller.stop()  # -> stop() entrypoint of plugin
 
     if app_state.NAMESPACE == app_state.RESET:
-        app_state.controller.reset()
+        app_state.controller.reset()  # -> reset() entrypoint of plugin
 
     # Special built-in execution pathway (not part of plugin system)
     if app_state.NAMESPACE == app_state.NODE:
         app_state.controller.node()
 
+    # Http 'GET' request to status_monitor
     if app_state.NAMESPACE == app_state.STATUS:
         app_state.controller.status()
 

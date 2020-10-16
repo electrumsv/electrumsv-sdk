@@ -4,7 +4,6 @@ electrumsv-sdk/electrumsv_sdk.egg-info/*
 electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumsv
 electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumx
 electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumx_data
-*.bat
 *.sh
 .vscode/*
 electrumsv-server/data
