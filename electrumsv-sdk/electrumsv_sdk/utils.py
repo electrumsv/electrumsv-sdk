@@ -160,3 +160,14 @@ def kill_process(pid: int):
         subprocess.run(f"pkill -P {pid}", shell=True)
     elif sys.platform == "win32":
         subprocess.run(f"taskkill.exe /PID {pid} /T /F")
+
+
+def get_component_port(default_component_port):
+    """find any port that is not currently in use"""
+    port = default_component_port
+    while True:
+        if port_is_in_use(port):
+            port += 1
+        else:
+            break
+    return port

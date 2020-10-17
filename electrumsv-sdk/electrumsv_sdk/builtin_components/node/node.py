@@ -7,8 +7,7 @@ from electrumsv_node import electrumsv_node
 from electrumsv_sdk.components import ComponentOptions, ComponentName, Component
 from electrumsv_sdk.utils import get_directory_name
 
-from .install import fetch_node
-
+from .install import fetch_node, configure_paths
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -21,7 +20,7 @@ def install(app_state):
     if not repo == "":  # default
         logger.error("ignoring --repo flag for node - not applicable.")
 
-    # 1) configure_paths - (NOT APPLICABLE)  # Todo - need to add this
+    configure_paths(app_state)
     # 2) fetch (as needed) - (SEE BELOW)
     fetch_node(app_state)
     # 3) pip install (or npm install) packages/dependencies - (NOT APPLICABLE)
@@ -30,10 +29,9 @@ def install(app_state):
 
 def start(app_state):
     component_name = ComponentName.NODE
-    process_pid = electrumsv_node.start()
+    process_pid = electrumsv_node.start(data_path=app_state.component_datadir)
     id = app_state.get_id(component_name)
-    logging_path = Path(electrumsv_node.DEFAULT_DATA_PATH)\
-        .joinpath("regtest").joinpath("bitcoind.log")
+    logging_path = Path(app_state.component_datadir).joinpath("regtest/bitcoind.log")
 
     app_state.component_info = Component(id, process_pid, component_name,
         electrumsv_node.BITCOIND_PATH,

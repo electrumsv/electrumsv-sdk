@@ -20,7 +20,7 @@ def is_offline_cli_mode(app_state):
 
 
 def init_electrumsv_wallet_dir(app_state):
-    os.makedirs(app_state.electrumsv_data_dir.joinpath("regtest/wallets"), exist_ok=True)
+    os.makedirs(app_state.component_datadir.joinpath("regtest/wallets"), exist_ok=True)
 
 
 def esv_check_node_and_electrumx_running():

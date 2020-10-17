@@ -58,12 +58,12 @@ def start(app_state, is_first_run=False):
         return start(app_state, is_first_run=False)
 
     id = app_state.get_id(COMPONENT_NAME)
-    logging_path = app_state.electrumsv_data_dir.joinpath("logs")
-    metadata = {"config": str(app_state.electrumsv_data_dir.joinpath("regtest/config")),
-                "datadir": str(app_state.electrumsv_data_dir)}
+    logging_path = app_state.component_datadir.joinpath("logs")
+    metadata = {"config": str(app_state.component_datadir.joinpath("regtest/config")),
+                "datadir": str(app_state.component_datadir)}
 
     app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
-        str(app_state.electrumsv_dir), "http://127.0.0.1:9999", metadata=metadata,
+        str(app_state.component_source_dir), "http://127.0.0.1:9999", metadata=metadata,
         logging_path=logging_path)
 
 
@@ -82,7 +82,7 @@ def reset(app_state):
     logger.debug("Resetting state of RegTest electrumsv server...")
     if id is None:
         logger.warning(f"Note: No --id flag is specified. Therefore the default 'electrumsv1' "
-                       f"instance will be reset ({app_state.electrumsv_data_dir}).")
+                       f"instance will be reset ({app_state.component_datadir}).")
     delete_wallet(app_state)
     create_wallet(app_state)
     cleanup(app_state)

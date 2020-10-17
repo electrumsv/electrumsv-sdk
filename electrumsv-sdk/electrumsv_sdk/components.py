@@ -142,7 +142,7 @@ class ComponentStore:
         new = self.app_state.global_cli_flags[ComponentOptions.NEW]
         id = self.app_state.global_cli_flags[ComponentOptions.ID]
 
-        # autoincrements (electrumsv1 -> electrumsv2 -> electrumsv3...) until empty space is found
+        # autoincrement <component_name>1 -> <component_name>2 etc. new datadir is found
         if is_new_and_no_id(id, new):
             count = 1
             while True:
@@ -153,29 +153,29 @@ class ComponentStore:
                     break
                 else:
                     count += 1
-            logger.debug(f"Using new user-specified electrumsv data dir ({id})")
+            logger.debug(f"Using new user-specified data dir ({id})")
 
         elif is_new_and_id(id, new):
             new_dir = self.app_state.data_dir.joinpath(f"{component_name}/{id}")
             if new_dir.exists():
-                logger.debug(f"User-specified electrumsv data directory: {new_dir} already exists ("
+                logger.debug(f"User-specified data directory: {new_dir} already exists ("
                       f"either drop the --new flag or choose a unique identifier).")
                 sys.exit(1)
-            logger.debug(f"Using user-specified electrumsv data dir ({new_dir})")
+            logger.debug(f"Using user-specified data dir ({new_dir})")
 
         elif is_not_new_and_id(id, new):
             new_dir = self.app_state.data_dir.joinpath(f"{component_name}/{id}")
             if not new_dir.exists():
-                logger.debug(f"User-specified electrumsv data directory: {new_dir} does not exist"
+                logger.debug(f"User-specified data directory: {new_dir} does not exist"
                              f" and so will be created anew.")
-            logger.debug(f"Using user-specified electrumsv data dir ({new_dir})")
+            logger.debug(f"Using user-specified data dir ({new_dir})")
 
         elif is_not_new_and_no_id(id, new):
             id = self.app_state.get_id(component_name)  # default
             new_dir = self.app_state.data_dir.joinpath(f"{component_name}/{id}")
-            logger.debug(f"Using default electrumsv data dir ({new_dir})")
+            logger.debug(f"Using default data dir ({new_dir})")
 
-        logger.debug(f"Electrumsv data dir = {new_dir}")
+        logger.debug(f"data dir = {new_dir}")
         return new_dir
 
     def get_status(self):
