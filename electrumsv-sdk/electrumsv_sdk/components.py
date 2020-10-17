@@ -103,7 +103,7 @@ class Component:
             f"Component(id={self.id}, pid={self.pid}, "
             f"component_type={self.component_type}, "
             f"status_endpoint={self.status_endpoint}, "
-            f"component_state={self.component_state.name}, "
+            f"component_state={str(ComponentState.Running)}, "
             f"location={self.location}, metadata={self.metadata}, "
             f"logging_path={self.logging_path}, "
             f"last_updated={self.last_updated})"
@@ -113,7 +113,7 @@ class Component:
         config_dict = {}
         for key, val in self.__dict__.items():
             if key == "component_state":
-                val = self.component_state.name
+                val = str(ComponentState.Running)
             config_dict[key] = val
         return config_dict
 

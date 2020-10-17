@@ -22,7 +22,8 @@ def configure_paths(app_state, repo, branch):
             checkout_branch(branch)
         app_state.component_source_dir = Path(repo)
     app_state.component_port = get_component_port(DEFAULT_PORT_ELECTRUMX)
-    app_state.component_datadir = app_state.components.get_component_data_dir(COMPONENT_NAME)
+    app_state.component_data_dir = app_state.component_store.get_component_data_dir(COMPONENT_NAME)
+    os.makedirs(app_state.component_data_dir, exist_ok=True)
 
 
 def fetch_electrumx(app_state, url, branch):
@@ -62,8 +63,6 @@ def fetch_electrumx(app_state, url, branch):
             # not app_state.electrumx_dir.exists() == True -> clones repo
 
     if not app_state.component_source_dir.exists():
-        os.makedirs(app_state.component_source_dir, exist_ok=True)
-        os.makedirs(app_state.electrumx_data_dir, exist_ok=True)
         os.chdir(app_state.remote_repos_dir)
         subprocess.run(f"git clone {url}", shell=True, check=True)
 
@@ -103,10 +102,10 @@ def packages_electrumx(app_state, url, branch):
 def generate_run_script_electrumx(app_state):
     app_state.init_run_script_dir()
     electrumx_env_vars = {
-        "DB_DIRECTORY": str(app_state.electrumx_data_dir),
+        "DB_DIRECTORY": str(app_state.component_data_dir),
         "DAEMON_URL": "http://rpcuser:rpcpassword@127.0.0.1:18332",
         "DB_ENGINE": "leveldb",
-        "SERVICES": f"tcp://:{DEFAULT_PORT_ELECTRUMX},rpc://",
+        "SERVICES": f"tcp://:{app_state.component_port},rpc://",
         "COIN": "BitcoinSV",
         "COST_SOFT_LIMIT": "0",
         "COST_HARD_LIMIT": "0",

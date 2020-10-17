@@ -326,7 +326,7 @@ class AppState:
             for component in components_state:
                 if component.get("component_type") == self.selected_stop_component:
                     kill_process(component['pid'])
-            logger.info(f"terminated: {self.selected_stop_component}")
+                    logger.info(f"terminated: {component.get('id')}")
 
         # stop component according to unique: --id
         if id:
@@ -334,7 +334,7 @@ class AppState:
                 if component.get("id") == id and \
                         component.get("component_state") == ComponentState.Running:
                     kill_process(component['pid'])
-            logger.info(f"terminated: {id}")
+                    logger.info(f"terminated: {id}")
 
     def import_plugin_component_from_id(self, component_id: str):
         component_data = self.component_store.component_status_data_by_id(component_id)

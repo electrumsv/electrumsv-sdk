@@ -136,17 +136,29 @@ def read_sdk_version():
 
 
 def port_is_in_use(port) -> bool:
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.bind(("127.0.0.1", port))
-        return False
-    except socket.error as e:
-        if e.errno == errno.EADDRINUSE:
-            logger.debug("Port is already in use")
-            return True
-        else:
-            logger.debug(e)
-    s.close()
+    if sys.platform == 'win32':
+        filter_set = {f'127.0.0.1:{port}', f'0.0.0.0:{port}', f'[::]:{port}', f'[::1]:{port}'}
+        result = subprocess.run("netstat -an", shell=True, check=True,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        for line in str(result.stdout).split(r'\r\n'):
+            columns = line.split()
+            if len(columns) > 1 and columns[1] in filter_set:
+                return True
+    elif sys.platform in {'linux', 'darwin'}:
+        # Todo - this does not work for electrumx or the bitcoin node (needs to be updated similar
+        #  to above using unix commandline networking tools.
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.bind(("127.0.0.1", port))
+            return False
+        except socket.error as e:
+            if e.errno == errno.EADDRINUSE:
+                logger.debug("Port is already in use")
+                return True
+            else:
+                logger.debug(e)
+        s.close()
+    return False
 
 
 def get_directory_name(component__file__):

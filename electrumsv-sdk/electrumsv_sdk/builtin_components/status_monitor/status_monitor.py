@@ -51,7 +51,7 @@ def stop(app_state):
     """some components require graceful shutdown via a REST API or RPC API but most can use the
     generic 'app_state.kill_component()' function to track down the pid and kill the process."""
     app_state.kill_component()
-
+    logger.info(f"stopped selected {COMPONENT_NAME} instance(s) (if any)")
 
 def reset(app_state):
     logger.info("resetting the status monitor is not supported.")

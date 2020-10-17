@@ -1,5 +1,6 @@
 import logging
 import subprocess
+from pathlib import Path
 
 from electrumsv_node import electrumsv_node
 
@@ -11,8 +12,9 @@ logger = logging.getLogger(COMPONENT_NAME)
 
 
 def configure_paths(app_state, repo=None, branch=None):
+    app_state.component_source_dir = Path(electrumsv_node.FILE_PATH).parent
     app_state.component_port = get_component_port(DEFAULT_PORT_NODE)
-    app_state.component_datadir = app_state.components.get_component_data_dir(COMPONENT_NAME)
+    app_state.component_datadir = app_state.component_store.get_component_data_dir(COMPONENT_NAME)
 
 
 def fetch_node(app_state):
