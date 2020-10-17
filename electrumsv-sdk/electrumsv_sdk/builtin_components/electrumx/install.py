@@ -14,14 +14,14 @@ logger = logging.getLogger(COMPONENT_NAME)
 
 def configure_paths(app_state, repo, branch):
     if is_remote_repo(repo):
-        app_state.electrumx_dir = app_state.depends_dir.joinpath("electrumx")
+        app_state.electrumx_dir = app_state.remote_repos_dir.joinpath("electrumx")
     else:
         logger.debug(f"Installing local dependency {COMPONENT_NAME} at {repo}")
         assert Path(repo).exists(), f"the path {repo} does not exist!"
         if branch != "":
             checkout_branch(branch)
         app_state.electrumx_dir = Path(repo)
-    app_state.electrumx_data_dir = app_state.depends_dir.joinpath("electrumx_data")
+    app_state.electrumx_data_dir = app_state.remote_repos_dir.joinpath("electrumx_data")
 
 
 def fetch_electrumx(app_state, url, branch):
@@ -63,7 +63,7 @@ def fetch_electrumx(app_state, url, branch):
     if not app_state.electrumx_dir.exists():
         os.makedirs(app_state.electrumx_dir, exist_ok=True)
         os.makedirs(app_state.electrumx_data_dir, exist_ok=True)
-        os.chdir(app_state.depends_dir)
+        os.chdir(app_state.remote_repos_dir)
         subprocess.run(f"git clone {url}", shell=True, check=True)
 
         os.chdir(app_state.electrumx_dir)

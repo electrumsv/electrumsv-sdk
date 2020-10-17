@@ -122,13 +122,12 @@ class ComponentStore:
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
         self.file_path = "component_state.json"
-        self.lock_path = app_state.electrumsv_sdk_data_dir / "component_state.json.lock"
+        self.lock_path = app_state.sdk_home_dir / "component_state.json.lock"
         self.file_lock = FileLock(self.lock_path, timeout=1)
-        self.component_state_path = app_state.electrumsv_sdk_data_dir / self.file_path
-        self.component_list = os.listdir(self.app_state.plugin_dir)
+        self.component_state_path = app_state.sdk_home_dir / self.file_path
+        self.component_list = os.listdir(self.app_state.builtin_components_dir)
 
-    def get_component_data_dir(self, component_name: ComponentName, data_dir_parent:
-            Path, id: str):
+    def get_component_data_dir(self, component_name: ComponentName):
         # Todo - use this generically for node and electrumsv
         """to run multiple instances of a component requires multiple data directories"""
         def is_new_and_no_id(id, new) -> bool:
@@ -141,6 +140,7 @@ class ComponentStore:
             return id != "" and not new
 
         new = self.app_state.global_cli_flags[ComponentOptions.NEW]
+        id = self.app_state.global_cli_flags[ComponentOptions.ID]
 
         # autoincrements (electrumsv1 -> electrumsv2 -> electrumsv3...) until empty space is found
         if is_new_and_no_id(id, new):
@@ -148,7 +148,7 @@ class ComponentStore:
             while True:
                 self.app_state.global_cli_flags[ComponentOptions.ID] = id = \
                     str(component_name) + str(count)
-                new_dir = data_dir_parent.joinpath(id)
+                new_dir = self.app_state.data_dir.joinpath(f"{component_name}/{id}")
                 if not new_dir.exists():
                     break
                 else:
@@ -156,7 +156,7 @@ class ComponentStore:
             logger.debug(f"Using new user-specified electrumsv data dir ({id})")
 
         elif is_new_and_id(id, new):
-            new_dir = self.app_state.electrumsv_dir.joinpath(id)
+            new_dir = self.app_state.data_dir.joinpath(f"{component_name}/{id}")
             if new_dir.exists():
                 logger.debug(f"User-specified electrumsv data directory: {new_dir} already exists ("
                       f"either drop the --new flag or choose a unique identifier).")
@@ -164,15 +164,15 @@ class ComponentStore:
             logger.debug(f"Using user-specified electrumsv data dir ({new_dir})")
 
         elif is_not_new_and_id(id, new):
-            new_dir = self.app_state.electrumsv_dir.joinpath(id)
+            new_dir = self.app_state.data_dir.joinpath(f"{component_name}/{id}")
             if not new_dir.exists():
                 logger.debug(f"User-specified electrumsv data directory: {new_dir} does not exist"
                              f" and so will be created anew.")
             logger.debug(f"Using user-specified electrumsv data dir ({new_dir})")
 
         elif is_not_new_and_no_id(id, new):
-            id = self.app_state.get_id(component_name)
-            new_dir = self.app_state.electrumsv_dir.joinpath(id)
+            id = self.app_state.get_id(component_name)  # default
+            new_dir = self.app_state.data_dir.joinpath(f"{component_name}/{id}")
             logger.debug(f"Using default electrumsv data dir ({new_dir})")
 
         logger.debug(f"Electrumsv data dir = {new_dir}")

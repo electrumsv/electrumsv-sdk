@@ -35,16 +35,14 @@ def set_electrumsv_paths(app_state, electrumsv_dir: Path):
     app_state.electrumsv_port = get_electrumsv_port()
 
     # Todo - abstract this away by making datadirs generic for component_name only (not repo dir)
-    id = app_state.get_id(COMPONENT_NAME)
-    data_dir = app_state.component_store.get_component_data_dir(COMPONENT_NAME,
-        data_dir_parent=app_state.electrumsv_dir, id=id)
+    data_dir = app_state.component_store.get_component_data_dir(COMPONENT_NAME)
     app_state.electrumsv_data_dir = data_dir
     app_state.electrumsv_regtest_wallets_dir = data_dir.joinpath("regtest/wallets")
 
 
 def configure_paths(app_state, repo, branch):
     if is_remote_repo(repo):
-        set_electrumsv_paths(app_state, app_state.depends_dir.joinpath("electrumsv"))
+        set_electrumsv_paths(app_state, app_state.remote_repos_dir.joinpath("electrumsv"))
     else:
         logger.debug(f"Installing local dependency {COMPONENT_NAME} at {repo}")
         assert Path(repo).exists(), f"the path {repo} does not exist!"
@@ -62,7 +60,7 @@ def fetch_electrumsv(app_state, url, branch):
     """
     if not app_state.electrumsv_dir.exists():
         logger.debug(f"Installing electrumsv (url={url})")
-        os.chdir(app_state.depends_dir)
+        os.chdir(app_state.remote_repos_dir)
         subprocess.run(f"git clone {url}", shell=True, check=True)
 
     elif app_state.electrumsv_dir.exists():

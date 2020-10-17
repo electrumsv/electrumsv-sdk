@@ -19,7 +19,7 @@ def install(app_state):
         logger.error("ignoring --repo flag for whatsonchain - not applicable.")
 
     # 1) configure_paths (SEE BELOW)
-    app_state.woc_dir = app_state.depends_dir.joinpath("woc-explorer")
+    app_state.woc_dir = app_state.remote_repos_dir.joinpath("woc-explorer")
 
     # 2) fetch (as needed) (SEE BELOW)
     fetch_whatsonchain(app_state, url="https://github.com/AustEcon/woc-explorer.git", branch='')

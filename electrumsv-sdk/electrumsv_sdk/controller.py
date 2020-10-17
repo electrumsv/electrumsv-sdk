@@ -22,7 +22,7 @@ class Controller:
 
     def start(self):
         logger.info("Starting component...")
-        open(self.app_state.electrumsv_sdk_data_dir / "spawned_pids", 'w').close()
+        open(self.app_state.sdk_home_dir / "spawned_pids", 'w').close()
 
         # The status_monitor is a special-case component because it must always be running
         is_status_monitor_running = \
@@ -33,7 +33,7 @@ class Controller:
             component_module = self.app_state.import_plugin_component(ComponentName.STATUS_MONITOR)
             component_module.install(self.app_state)
             component_module.start(self.app_state)
-            self.status_check()
+            self.status_check(component_module)
 
         # All other component types
         if self.app_state.selected_component and \
@@ -96,7 +96,7 @@ class Controller:
         # cleanup
         self.app_state.run_command_current_shell("electrumsv-sdk stop status_monitor")
 
-    def status_check(self):
+    def status_check(self, component_module=None):
         """The 'status_check()' entrypoint of the plugin must always run after the start()
         command.
 
@@ -108,11 +108,13 @@ class Controller:
 
         The status_monitor subsequently is updated with the status."""
         component_id = self.app_state.global_cli_flags[ComponentOptions.ID]
-        component_name = self.app_state.component_module.COMPONENT_NAME
+        component_module = component_module if component_module else \
+            self.app_state.component_module
+        component_name = component_module.COMPONENT_NAME
 
         # if --id flag or <component_type> are set and the
         if component_id != "" or component_name:
-            is_running = self.app_state.component_module.status_check(self.app_state)
+            is_running = component_module.status_check(self.app_state)
 
             if is_running is None:
                 return
