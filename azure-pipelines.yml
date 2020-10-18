@@ -169,6 +169,24 @@ jobs:
         pathtoPublish: 'wheelhouse'
       displayName: 'build wheel windows'
 
+- job: BuildWindowsx86
+  pool: {vmImage: 'windows-latest'}
+  steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: 3.7
+        architecture: x86
+    - script: |
+        py -3 -m pip install --upgrade pip
+        py -3 -m pip install wheel
+        py -3 .\setup.py build bdist_wheel --plat-name win32 --dist-dir ../wheelhouse
+      workingDirectory: electrumsv-sdk/
+    - task: PublishBuildArtifacts@1
+      inputs:
+        artifactName: 'Windowsx86'
+        pathtoPublish: 'wheelhouse'
+      displayName: 'build wheel windowsx86'
+
 - job: BuildLinux
   pool:
     vmImage: 'ubuntu-latest'
