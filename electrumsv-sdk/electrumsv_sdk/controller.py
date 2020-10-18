@@ -32,8 +32,6 @@ class Controller:
 
     def start(self):
         logger.info("Starting component...")
-        open(self.app_state.sdk_home_dir / "spawned_pids", 'w').close()
-
         # The status_monitor is a special-case component because it must be running for start/stop()
         if not self.is_status_monitor_online():
             self.launch_status_monitor()
