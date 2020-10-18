@@ -25,6 +25,7 @@ class StatusMonitorClient:
     def update_status(self, component: Component):
         logging.debug(f"updating status monitor with component data: {component}")
         for sleep_time in (3, 3, 3):
+            result = None
             try:
                 result = requests.post(STATUS_MONITOR_UPDATE_STATUS,
                                        json=component.to_dict())
