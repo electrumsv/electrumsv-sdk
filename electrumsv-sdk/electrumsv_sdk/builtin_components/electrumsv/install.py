@@ -27,7 +27,8 @@ def configure_paths(app_state, repo, branch):
         app_state.component_source_dir.joinpath("contrib/deterministic-build/requirements.txt")
     )
     app_state.electrumsv_binary_requirements_path = (
-        app_state.component_source_dir.joinpath("contrib/deterministic-build/requirements-binaries.txt")
+        app_state.component_source_dir.joinpath(
+            "contrib/deterministic-build/requirements-binaries.txt")
     )
     app_state.component_port = get_component_port(DEFAULT_PORT_ELECTRUMSV)
     app_state.component_datadir = app_state.component_store.get_component_data_dir(COMPONENT_NAME)

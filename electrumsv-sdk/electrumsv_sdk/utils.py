@@ -1,8 +1,6 @@
-import errno
 import logging
 import os
 import shlex
-import socket
 import subprocess
 import sys
 from pathlib import Path

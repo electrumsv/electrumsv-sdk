@@ -33,7 +33,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict, Tuple
 
 from filelock import FileLock
 
@@ -81,7 +81,7 @@ class Component:
         self,
         id: str,
         pid: int,
-        component_type: ComponentName,
+        component_type: str,
         location: Union[str, Path],
         status_endpoint: str,
         component_state: Optional[ComponentState]=ComponentState.Running,
@@ -90,9 +90,9 @@ class Component:
     ):
         self.id = id  # human-readable identifier for instance
         self.pid = pid
-        self.component_type = component_type
+        self.component_type = str(component_type)
         self.status_endpoint = status_endpoint
-        self.component_state = component_state
+        self.component_state = str(component_state)
         self.location = str(location)
         self.metadata = metadata
         self.logging_path = str(logging_path)
@@ -103,7 +103,7 @@ class Component:
             f"Component(id={self.id}, pid={self.pid}, "
             f"component_type={self.component_type}, "
             f"status_endpoint={self.status_endpoint}, "
-            f"component_state={str(ComponentState.Running)}, "
+            f"component_state={self.component_state}, "
             f"location={self.location}, metadata={self.metadata}, "
             f"logging_path={self.logging_path}, "
             f"last_updated={self.last_updated})"
@@ -112,10 +112,13 @@ class Component:
     def to_dict(self):
         config_dict = {}
         for key, val in self.__dict__.items():
-            if key == "component_state":
-                val = str(ComponentState.Running)
             config_dict[key] = val
         return config_dict
+
+    @classmethod
+    def from_dict(cls, component_dict: Dict):
+        component_dict.pop('last_updated')
+        return cls(**component_dict)
 
 
 class ComponentStore:
@@ -178,23 +181,27 @@ class ComponentStore:
         logger.debug(f"data dir = {new_dir}")
         return new_dir
 
-    def get_status(self):
+    def get_status(self) -> List[Dict]:
         filelock_logger = logging.getLogger("filelock")
         filelock_logger.setLevel(logging.WARNING)
 
         with self.file_lock:
             if self.component_state_path.exists():
                 with open(self.component_state_path, "r") as f:
-                    component_state = json.loads(f.read())
+                    data = f.read()
+                    if data:
+                        component_state = json.loads(data)
+                    else:
+                        component_state = []
                 return component_state
             else:
                 return []
 
-    def find_component_if_exists(self, component: Component, component_state: List[dict]):
+    def find_component_if_exists(self, id: str, component_state: List[dict]) \
+            -> Optional[Tuple[int, Dict]]:
         for index, comp in enumerate(component_state):
-            if comp.get("id") == component.id:
-                return (index, component)
-        return False
+            if comp.get("id") == id:
+                return (index, comp)
 
     def update_status_file(self, component_info: Component):
         """updates to the *file* (component.json) - does *not* update the server"""
@@ -206,18 +213,20 @@ class ComponentStore:
                     data = f.read()
                     if data:
                         component_state = json.loads(data)
+                    else:
+                        component_state = []
 
-        result = self.find_component_if_exists(component_info, component_state)
+        result = self.find_component_if_exists(component_info.id, component_state)
         if not result:
             component_state.append(component_info.to_dict())
         else:
-            index, component_info = result
+            index, _component_dict = result
             component_state[index] = component_info.to_dict()
 
         with open(self.component_state_path, "w") as f:
             f.write(json.dumps(component_state, indent=4))
 
-    def component_status_data_by_id(self, component_id):
+    def component_status_data_by_id(self, component_id: int) -> Dict:
         component_state = self.get_status()
         for component in component_state:
             if component.get('id') == component_id:

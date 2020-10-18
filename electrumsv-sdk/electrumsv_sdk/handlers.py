@@ -96,15 +96,21 @@ class Handlers:
         if branch != "":
             logger.debug(f"branch flag={parsed_args.branch}")
 
-    def handle_stop_args(self, _parsed_args):
+    def handle_stop_args(self, parsed_args):
         """takes no arguments"""
         if not self.app_state.NAMESPACE == self.app_state.STOP:
             return
-        id = self.app_state.global_cli_flags[ComponentOptions.ID]
-        component_name = self.app_state.selected_start_component
+
+        self.app_state.global_cli_flags[ComponentOptions.ID] = id = parsed_args.id
+        component_name = self.app_state.selected_stop_component
         if id and component_name:
             logger.error("stop command cannot handle both --id flag and <component_type>. Please "
                          "select one or the other.")
+            sys.exit(1)
+
+        # logging
+        if id != "":
+            logger.debug(f"id flag={parsed_args.id}")
 
     def handle_reset_args(self, parsed_args):
         """takes no arguments"""

@@ -9,8 +9,7 @@ from electrumsv_sdk.utils import is_remote_repo, get_directory_name
 from .install import configure_paths, fetch_electrumsv, packages_electrumsv, \
     generate_run_scripts_electrumsv
 from .reset import delete_wallet, create_wallet, cleanup
-from .start import esv_check_node_and_electrumx_running, init_electrumsv_wallet_dir, \
-    is_offline_cli_mode
+from .start import init_electrumsv_wallet_dir, is_offline_cli_mode
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -43,7 +42,6 @@ def start(app_state, is_first_run=False):
         return
 
     # Daemon or GUI mode
-    esv_check_node_and_electrumx_running()
     init_electrumsv_wallet_dir(app_state)
 
     script_path = app_state.derive_shell_script_path(COMPONENT_NAME)

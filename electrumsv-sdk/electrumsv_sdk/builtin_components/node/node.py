@@ -4,7 +4,7 @@ from typing import Optional, Dict
 
 from electrumsv_node import electrumsv_node
 
-from electrumsv_sdk.components import ComponentOptions, ComponentName, Component, ComponentState
+from electrumsv_sdk.components import ComponentOptions, ComponentName, Component
 from electrumsv_sdk.utils import get_directory_name
 
 from .install import fetch_node, configure_paths
@@ -30,9 +30,11 @@ def install(app_state):
 def start(app_state):
     component_name = ComponentName.NODE
     rpcport = app_state.component_port
+    p2p_port = app_state.component_p2p_port
     data_path = app_state.component_datadir
-    process_pid = electrumsv_node.start(data_path=data_path, rpcport=rpcport, network='regtest')
     id = app_state.get_id(component_name)
+    process_pid = electrumsv_node.start(data_path=data_path, rpcport=rpcport,
+                                        p2p_port=p2p_port, network='regtest')
     logging_path = Path(app_state.component_datadir).joinpath("regtest/bitcoind.log")
 
     app_state.component_info = Component(id, process_pid, component_name,
@@ -40,8 +42,10 @@ def start(app_state):
         f"http://rpcuser:rpcpassword@127.0.0.1:{rpcport}",
         logging_path=logging_path,
         metadata={"datadir": str(app_state.component_datadir),
-                  "rpcport": rpcport}
+                  "rpcport": rpcport,
+                  "p2p_port": p2p_port}
     )
+    app_state.node_status_check_result = True
 
 
 def stop(app_state):
@@ -50,25 +54,23 @@ def stop(app_state):
     id = app_state.global_cli_flags[ComponentOptions.ID]
     components_state = app_state.component_store.get_status()
 
-    def stop_node(component: Dict):
-        rpcport = component.get("metadata").get("rpcport")
+    def stop_node(component_dict: Dict):
+        rpcport = component_dict.get("metadata").get("rpcport")
         if not rpcport:
             raise Exception("rpcport data not found")
         electrumsv_node.stop(rpcport=rpcport)
-        logger.info(f"terminated: {component.get('id')}")
+        logger.info(f"terminated: {component_dict.get('id')}")
 
     # stop all running components of: <component_type>
-    if app_state.selected_stop_component and app_state.selected_stop_component == COMPONENT_NAME:
+    if not id and app_state.selected_stop_component:
         for component in components_state:
-            if component.get("component_type") == app_state.selected_stop_component and \
-                    component.get("component_state") == str(ComponentState.Running):
+            if component.get("component_type") == app_state.selected_stop_component:
                 stop_node(component)
 
     # stop component according to unique: --id
-    if id and app_state.selected_stop_component == COMPONENT_NAME:
+    if id and not app_state.selected_stop_component:
         for component in components_state:
-            if component.get("id") == id and \
-                    component.get("component_state") == str(ComponentState.Running):
+            if component.get("id") == id:
                 stop_node(component)
     logger.info(f"stopped selected {COMPONENT_NAME} instance(s) (if any)")
 
@@ -84,5 +86,4 @@ def status_check(app_state) -> Optional[bool]:
     False -> ComponentState.Failed;
     None -> skip status monitoring updates (e.g. using app's cli interface transiently)
     """
-    is_running = electrumsv_node.is_node_running()
-    return is_running
+    return app_state.node_status_check_result

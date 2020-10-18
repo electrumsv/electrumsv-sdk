@@ -3,7 +3,7 @@ import logging
 from electrumsv_node import electrumsv_node
 
 from electrumsv_sdk.components import ComponentStore, ComponentOptions, ComponentName, \
-    ComponentState
+    ComponentState, Component
 
 from .constants import STATUS_MONITOR_GET_STATUS
 from .handlers import Handlers
@@ -53,15 +53,35 @@ class Controller:
 
     def stop(self):
         """if stop_set is empty, all processes terminate."""
-        # todo: make this granular enough to pick out instances of each component type
-
         self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = True
-        if self.app_state.selected_stop_component:
+        id = self.app_state.global_cli_flags[ComponentOptions.ID]
+
+        if id or self.app_state.selected_stop_component:
             self.app_state.component_module.stop(self.app_state)
+
+        component_list = []
+        if id:
+            component_dict = self.app_state.component_store.component_status_data_by_id(id)
+            if component_dict:
+                component_list.append(component_dict)
+
+        if self.app_state.selected_stop_component:
+            component_list = [
+                component_dict for component_dict
+                in self.app_state.component_store.get_status()
+                if component_dict.get('component_type') == self.app_state.selected_stop_component
+            ]
+
+        if component_list:
+            for component_dict in component_list:
+                component_obj = Component.from_dict(component_dict)
+                component_obj.component_state = str(ComponentState.Stopped)
+                self.app_state.component_store.update_status_file(component_obj)
+                self.app_state.status_monitor_client.update_status(component_obj)
 
         # no args implies stop all (status_monitor, node, electrumx, electrumsv, whatsonchain)
         # call sdk recursively to achieve this (greatly simplifies code)
-        if not self.app_state.selected_stop_component:
+        if not id and not self.app_state.selected_stop_component:
             self.app_state.run_command_current_shell("electrumsv-sdk stop node")
             self.app_state.run_command_current_shell("electrumsv-sdk stop electrumx")
             self.app_state.run_command_current_shell("electrumsv-sdk stop electrumsv")
@@ -133,8 +153,17 @@ class Controller:
 
     def node(self):
         """Essentially bitcoin-cli interface to RPC API that works 'out of the box' / zero config"""
+        id = self.app_state.global_cli_flags[ComponentOptions.ID]
+        if not id:
+            id = "node1"
+        component_dict = self.app_state.component_store.component_status_data_by_id(id)
+        if component_dict:
+            rpcport = component_dict.get("metadata").get("rpcport")
+        else:
+            logger.error(f"could not locate rpcport for node instance: {id}")
+
         self.app_state.node_args = cast_str_int_args_to_int(self.app_state.node_args)
-        assert electrumsv_node.is_running(), (
+        assert electrumsv_node.is_running(rpcport), (
             "bitcoin node must be running to respond to rpc methods. "
             "try: electrumsv-sdk start --node"
         )
