@@ -19,7 +19,7 @@ def install(app_state):
         logger.error("ignoring --repo flag for whatsonchain - not applicable.")
 
     # 1) configure_paths (SEE BELOW)
-    app_state.woc_dir = app_state.depends_dir.joinpath("woc-explorer")
+    app_state.woc_dir = app_state.remote_repos_dir.joinpath("woc-explorer")
 
     # 2) fetch (as needed) (SEE BELOW)
     fetch_whatsonchain(app_state, url="https://github.com/AustEcon/woc-explorer.git", branch='')
@@ -48,7 +48,7 @@ def stop(app_state):
     """some components require graceful shutdown via a REST API or RPC API but most can use the
     generic 'app_state.kill_component()' function to track down the pid and kill the process."""
     app_state.kill_component()
-
+    logger.info(f"stopped selected {COMPONENT_NAME} instance(s) (if any)")
 
 def reset(app_state):
     logger.info("resetting the whatsonchain is not applicable")

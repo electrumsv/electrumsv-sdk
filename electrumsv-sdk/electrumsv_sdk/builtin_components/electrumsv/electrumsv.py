@@ -9,8 +9,7 @@ from electrumsv_sdk.utils import is_remote_repo, get_directory_name
 from .install import configure_paths, fetch_electrumsv, packages_electrumsv, \
     generate_run_scripts_electrumsv
 from .reset import delete_wallet, create_wallet, cleanup
-from .start import esv_check_node_and_electrumx_running, init_electrumsv_wallet_dir, \
-    is_offline_cli_mode
+from .start import init_electrumsv_wallet_dir, is_offline_cli_mode
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -43,7 +42,6 @@ def start(app_state, is_first_run=False):
         return
 
     # Daemon or GUI mode
-    esv_check_node_and_electrumx_running()
     init_electrumsv_wallet_dir(app_state)
 
     script_path = app_state.derive_shell_script_path(COMPONENT_NAME)
@@ -58,12 +56,12 @@ def start(app_state, is_first_run=False):
         return start(app_state, is_first_run=False)
 
     id = app_state.get_id(COMPONENT_NAME)
-    logging_path = app_state.electrumsv_data_dir.joinpath("logs")
-    metadata = {"config": str(app_state.electrumsv_data_dir.joinpath("regtest/config")),
-                "datadir": str(app_state.electrumsv_data_dir)}
+    logging_path = app_state.component_datadir.joinpath("logs")
+    metadata = {"config": str(app_state.component_datadir.joinpath("regtest/config")),
+                "datadir": str(app_state.component_datadir)}
 
     app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
-        str(app_state.electrumsv_dir), "http://127.0.0.1:9999", metadata=metadata,
+        str(app_state.component_source_dir), "http://127.0.0.1:9999", metadata=metadata,
         logging_path=logging_path)
 
 
@@ -71,6 +69,7 @@ def stop(app_state):
     """some components require graceful shutdown via a REST API or RPC API but most can use the
     generic 'app_state.kill_component()' function to track down the pid and kill the process."""
     app_state.kill_component()
+    logger.info(f"stopped selected {COMPONENT_NAME} instance(s) (if any)")
 
 
 def reset(app_state):
@@ -82,7 +81,7 @@ def reset(app_state):
     logger.debug("Resetting state of RegTest electrumsv server...")
     if id is None:
         logger.warning(f"Note: No --id flag is specified. Therefore the default 'electrumsv1' "
-                       f"instance will be reset ({app_state.electrumsv_data_dir}).")
+                       f"instance will be reset ({app_state.component_datadir}).")
     delete_wallet(app_state)
     create_wallet(app_state)
     cleanup(app_state)

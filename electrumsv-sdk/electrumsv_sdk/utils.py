@@ -1,8 +1,6 @@
-import errno
 import logging
 import os
 import shlex
-import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -136,17 +134,18 @@ def read_sdk_version():
 
 
 def port_is_in_use(port) -> bool:
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.bind(("127.0.0.1", port))
-        return False
-    except socket.error as e:
-        if e.errno == errno.EADDRINUSE:
-            logger.debug("Port is already in use")
+    netstat_cmd = "netstat -an"
+    if sys.platform in {'linux', 'darwin'}:
+        netstat_cmd = "netstat -antu"
+
+    filter_set = {f'127.0.0.1:{port}', f'0.0.0.0:{port}', f'[::]:{port}', f'[::1]:{port}'}
+    result = subprocess.run(netstat_cmd, shell=True, check=True,
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    for line in str(result.stdout).split(r'\r\n'):
+        columns = line.split()
+        if len(columns) > 1 and columns[1] in filter_set:
             return True
-        else:
-            logger.debug(e)
-    s.close()
+    return False
 
 
 def get_directory_name(component__file__):
@@ -160,3 +159,14 @@ def kill_process(pid: int):
         subprocess.run(f"pkill -P {pid}", shell=True)
     elif sys.platform == "win32":
         subprocess.run(f"taskkill.exe /PID {pid} /T /F")
+
+
+def get_component_port(default_component_port):
+    """find any port that is not currently in use"""
+    port = default_component_port
+    while True:
+        if port_is_in_use(port):
+            port += 1
+        else:
+            break
+    return port

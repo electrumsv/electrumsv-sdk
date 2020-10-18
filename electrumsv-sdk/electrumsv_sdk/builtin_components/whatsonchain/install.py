@@ -10,7 +10,7 @@ def fetch_whatsonchain(app_state, url="https://github.com/AustEcon/woc-explorer.
                        branch=''):
     if not app_state.woc_dir.exists():
         os.makedirs(app_state.woc_dir, exist_ok=True)
-        os.chdir(app_state.depends_dir)
+        os.chdir(app_state.remote_repos_dir)
         subprocess.run(f"git clone {url}", shell=True, check=True)
 
         os.chdir(app_state.woc_dir)

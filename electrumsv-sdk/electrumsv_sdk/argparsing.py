@@ -137,8 +137,7 @@ class ArgParser:
                     continue
 
             elif self.app_state.NAMESPACE == self.app_state.NODE:
-                if index != 0:
-                    subcommand_indices[cur_cmd_name].append(index)
+                subcommand_indices[cur_cmd_name].append(index)
 
             elif self.app_state.NAMESPACE == self.app_state.STATUS:
                 pass

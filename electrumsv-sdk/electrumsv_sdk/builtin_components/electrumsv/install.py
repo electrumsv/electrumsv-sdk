@@ -5,52 +5,33 @@ import sys
 from pathlib import Path
 
 from electrumsv_sdk.components import ComponentOptions
-from electrumsv_sdk.utils import is_remote_repo, checkout_branch, port_is_in_use, \
-    make_shell_script_for_component, get_directory_name
+from electrumsv_sdk.utils import is_remote_repo, checkout_branch, \
+    make_shell_script_for_component, get_directory_name, get_component_port
 
 DEFAULT_PORT_ELECTRUMSV = 9999
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
 
-def get_electrumsv_port():
-    """any port that is not currently in use"""
-    port = DEFAULT_PORT_ELECTRUMSV
-    while True:
-        if port_is_in_use(port):
-            port += 1
-        else:
-            break
-    return port
-
-
-def set_electrumsv_paths(app_state, electrumsv_dir: Path):
-    app_state.electrumsv_dir = electrumsv_dir
-    app_state.electrumsv_requirements_path = (
-        electrumsv_dir.joinpath("contrib/deterministic-build/requirements.txt")
-    )
-    app_state.electrumsv_binary_requirements_path = (
-        electrumsv_dir.joinpath("contrib/deterministic-build/requirements-binaries.txt")
-    )
-    app_state.electrumsv_port = get_electrumsv_port()
-
-    # Todo - abstract this away by making datadirs generic for component_name only (not repo dir)
-    id = app_state.get_id(COMPONENT_NAME)
-    data_dir = app_state.component_store.get_component_data_dir(COMPONENT_NAME,
-        data_dir_parent=app_state.electrumsv_dir, id=id)
-    app_state.electrumsv_data_dir = data_dir
-    app_state.electrumsv_regtest_wallets_dir = data_dir.joinpath("regtest/wallets")
-
-
 def configure_paths(app_state, repo, branch):
     if is_remote_repo(repo):
-        set_electrumsv_paths(app_state, app_state.depends_dir.joinpath("electrumsv"))
+        app_state.component_source_dir = app_state.remote_repos_dir.joinpath("electrumsv")
     else:
         logger.debug(f"Installing local dependency {COMPONENT_NAME} at {repo}")
         assert Path(repo).exists(), f"the path {repo} does not exist!"
         if branch != "":
             checkout_branch(branch)
-        app_state.set_electrumsv_paths(Path(repo))
+        app_state.component_source_dir = Path(repo)
+
+    app_state.electrumsv_requirements_path = (
+        app_state.component_source_dir.joinpath("contrib/deterministic-build/requirements.txt")
+    )
+    app_state.electrumsv_binary_requirements_path = (
+        app_state.component_source_dir.joinpath(
+            "contrib/deterministic-build/requirements-binaries.txt")
+    )
+    app_state.component_port = get_component_port(DEFAULT_PORT_ELECTRUMSV)
+    app_state.component_datadir = app_state.component_store.get_component_data_dir(COMPONENT_NAME)
 
 
 def fetch_electrumsv(app_state, url, branch):
@@ -60,13 +41,13 @@ def fetch_electrumsv(app_state, url, branch):
     (dir exists, url matches)
     (dir exists, url does not match - it's a forked repo)
     """
-    if not app_state.electrumsv_dir.exists():
+    if not app_state.component_source_dir.exists():
         logger.debug(f"Installing electrumsv (url={url})")
-        os.chdir(app_state.depends_dir)
+        os.chdir(app_state.remote_repos_dir)
         subprocess.run(f"git clone {url}", shell=True, check=True)
 
-    elif app_state.electrumsv_dir.exists():
-        os.chdir(app_state.electrumsv_dir)
+    elif app_state.component_source_dir.exists():
+        os.chdir(app_state.component_source_dir)
         result = subprocess.run(
             f"git config --get remote.origin.url",
             shell=True,
@@ -80,20 +61,20 @@ def fetch_electrumsv(app_state, url, branch):
             checkout_branch(branch)
             subprocess.run(f"git pull", shell=True, check=True)
         if result.stdout.strip() != url:
-            existing_fork = app_state.electrumsv_dir
+            existing_fork = app_state.component_source_dir
             logger.debug(f"Alternate fork of electrumsv is already installed")
             logger.debug(f"Moving existing fork (to '{existing_fork}.bak')")
             logger.debug(f"Installing electrumsv (url={url})")
             os.rename(
-                app_state.electrumsv_dir,
-                app_state.electrumsv_dir.with_suffix(".bak"),
+                app_state.component_source_dir,
+                app_state.component_source_dir.with_suffix(".bak"),
             )
 
 
 def packages_electrumsv(app_state, url, branch):
     # Todo - provide a python helper tool for supplying a list of installation commands (
     #  f-strings with app_state.python)
-    os.chdir(app_state.electrumsv_dir)
+    os.chdir(app_state.component_source_dir)
     checkout_branch(branch)
 
     if sys.platform == 'win32':
@@ -159,15 +140,15 @@ def make_esv_gui_script(base_cmd, env_vars, esv_data_dir, port):
 def generate_run_scripts_electrumsv(app_state):
     """makes both the daemon script and a script for running the GUI"""
     app_state.init_run_script_dir()
-    path_to_dapp_example_apps = app_state.electrumsv_dir.joinpath("examples").joinpath(
+    path_to_dapp_example_apps = app_state.component_source_dir.joinpath("examples").joinpath(
         "applications"
     )
     esv_env_vars = {
         "PYTHONPATH": str(path_to_dapp_example_apps),
     }
-    esv_script = str(app_state.electrumsv_dir.joinpath("electrum-sv"))
-    esv_data_dir = app_state.electrumsv_data_dir
-    port = app_state.electrumsv_port
+    esv_script = str(app_state.component_source_dir.joinpath("electrum-sv"))
+    esv_data_dir = app_state.component_datadir
+    port = app_state.component_port
     component_args = \
         app_state.component_args if len(app_state.component_args) != 0 else None
 

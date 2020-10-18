@@ -41,8 +41,22 @@ class AppState:
         if data_dir is None:
             data_dir = Path.home() / ".electrumsv-sdk"
 
-        self.electrumsv_sdk_data_dir = data_dir
-        self.plugin_dir = Path(MODULE_DIR).joinpath("builtin_components")
+        # set main application paths
+        self.sdk_home_dir = data_dir
+        self.remote_repos_dir = self.sdk_home_dir.joinpath("remote_repos")
+        self.shell_scripts_dir = self.sdk_home_dir.joinpath("shell_scripts")
+        self.data_dir = self.sdk_home_dir.joinpath("component_datadirs")
+        self.logs_dir = self.sdk_home_dir.joinpath("logs")
+        self.config_path = self.sdk_home_dir.joinpath("config.json")
+        os.makedirs(self.remote_repos_dir, exist_ok=True)
+        os.makedirs(self.shell_scripts_dir, exist_ok=True)
+        os.makedirs(self.data_dir, exist_ok=True)
+        os.makedirs(self.logs_dir, exist_ok=True)
+
+        self.sdk_package_dir = Path(MODULE_DIR)
+        # plugins - 'user_components' overrides 'builtin_components' if there are name clashes
+        self.builtin_components_dir = Path(MODULE_DIR).joinpath("builtin_components")
+        self.user_components_dir = self.sdk_home_dir.joinpath("user_components")
 
         self.component_store = ComponentStore(self)
         self.arparser = ArgParser(self)
@@ -54,7 +68,7 @@ class AppState:
         self.component_info: Optional[Component] = None  # dict conversion <-> status_monitor
 
         if sys.platform in ['linux', 'darwin']:
-            self.linux_venv_dir = self.electrumsv_sdk_data_dir.joinpath("sdk_venv")
+            self.linux_venv_dir = self.sdk_home_dir.joinpath("sdk_venv")
             self.python = self.linux_venv_dir.joinpath("bin").joinpath("python")
             self.run_command_current_shell(
                 f"{sys.executable} -m venv {self.linux_venv_dir}")
@@ -77,14 +91,8 @@ class AppState:
         self.subcmd_parsed_args_map = {}  # cmd_name: parsed arguments
         self.component_args = []  # e.g. store arguments to pass to the electrumsv's cli interface
 
-        self.depends_dir = self.electrumsv_sdk_data_dir.joinpath("sdk_depends")
-        self.run_scripts_dir = self.electrumsv_sdk_data_dir.joinpath("run_scripts")
-        self.electrumsv_sdk_config_path = self.electrumsv_sdk_data_dir.joinpath("config.json")
-
-        self.sdk_package_dir = Path(MODULE_DIR)
         self.status_monitor_dir = self.sdk_package_dir.joinpath("status_server")
-        self.status_monitor_logging_path = self.electrumsv_sdk_data_dir.joinpath("logs").joinpath(
-            "status_monitor")
+        self.status_monitor_logging_path = self.logs_dir.joinpath("status_monitor")
         os.makedirs(self.status_monitor_logging_path, exist_ok=True)
 
         self.selected_start_component: Optional[ComponentName] = None
@@ -110,7 +118,7 @@ class AppState:
 
     def save_repo_paths(self):
         """overwrites config.json"""
-        config_path = self.electrumsv_sdk_config_path
+        config_path = self.config_path
         with open(config_path, "r") as f:
             data = f.read()
             if data:
@@ -126,12 +134,12 @@ class AppState:
             os.chmod(path, stat.S_IWRITE)
             func(path)
 
-        if self.depends_dir.exists():
-            shutil.rmtree(self.depends_dir, onerror=remove_readonly)
-            os.makedirs(self.depends_dir, exist_ok=True)
-        if self.run_scripts_dir.exists():
-            shutil.rmtree(self.run_scripts_dir, onerror=remove_readonly)
-            os.makedirs(self.run_scripts_dir, exist_ok=True)
+        if self.remote_repos_dir.exists():
+            shutil.rmtree(self.remote_repos_dir, onerror=remove_readonly)
+            os.makedirs(self.remote_repos_dir, exist_ok=True)
+        if self.shell_scripts_dir.exists():
+            shutil.rmtree(self.shell_scripts_dir, onerror=remove_readonly)
+            os.makedirs(self.shell_scripts_dir, exist_ok=True)
 
     def setup_python_venv(self):
         logger.debug("Setting up python virtualenv (linux/unix only)")
@@ -151,14 +159,14 @@ class AppState:
         """nukes previously installed dependencies and .bat/.sh scripts for the first ever run of
         the electrumsv-sdk."""
         try:
-            with open(self.electrumsv_sdk_config_path, "r") as f:
+            with open(self.config_path, "r") as f:
                 data = f.read()
                 if data:
                     config = json.loads(data)
                 else:
                     config = {}
         except FileNotFoundError:
-            with open(self.electrumsv_sdk_config_path, "w") as f:
+            with open(self.config_path, "w") as f:
                 config = {"is_first_run": True}
                 f.write(json.dumps(config, indent=4))
 
@@ -168,7 +176,7 @@ class AppState:
             )
             logger.debug("Purging previous server installations (if any)...")
             self.purge_prev_installs_if_exist()
-            with open(self.electrumsv_sdk_config_path, "w") as f:
+            with open(self.config_path, "w") as f:
                 config = {"is_first_run": False}
                 f.write(json.dumps(config, indent=4))
 
@@ -180,8 +188,8 @@ class AppState:
             electrumsv_node.reset()
 
     def init_run_script_dir(self):
-        os.makedirs(self.run_scripts_dir, exist_ok=True)
-        os.chdir(self.run_scripts_dir)
+        os.makedirs(self.shell_scripts_dir, exist_ok=True)
+        os.chdir(self.shell_scripts_dir)
 
     def is_component_running_http(self, status_endpoint: str, retries:
             int=6, duration: float=1.0, timeout: float=0.5, http_method='get',
@@ -209,9 +217,9 @@ class AppState:
         script_name = component_name
 
         if sys.platform == "win32":
-            script = self.run_scripts_dir.joinpath(f"{script_name}.bat")
+            script = self.shell_scripts_dir.joinpath(f"{script_name}.bat")
         elif sys.platform in ("linux", "darwin"):
-            script = self.run_scripts_dir.joinpath(f"{script_name}.sh")
+            script = self.shell_scripts_dir.joinpath(f"{script_name}.sh")
         return script
 
     def spawn_process(self, command: str):
@@ -318,7 +326,7 @@ class AppState:
             for component in components_state:
                 if component.get("component_type") == self.selected_stop_component:
                     kill_process(component['pid'])
-            logger.info(f"terminated: {self.selected_stop_component}")
+                    logger.info(f"terminated: {component.get('id')}")
 
         # stop component according to unique: --id
         if id:
@@ -326,7 +334,7 @@ class AppState:
                 if component.get("id") == id and \
                         component.get("component_state") == ComponentState.Running:
                     kill_process(component['pid'])
-            logger.info(f"terminated: {id}")
+                    logger.info(f"terminated: {id}")
 
     def import_plugin_component_from_id(self, component_id: str):
         component_data = self.component_store.component_status_data_by_id(component_id)

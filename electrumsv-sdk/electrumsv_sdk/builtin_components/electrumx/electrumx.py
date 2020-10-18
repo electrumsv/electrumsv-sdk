@@ -42,18 +42,15 @@ def start(app_state):
     process = app_state.spawn_process(script_path)
     id = app_state.get_id(component_name)
     app_state.component_info = Component(id, process.pid, ComponentName.ELECTRUMX,
-        location=str(app_state.electrumx_dir),
-        status_endpoint="http://127.0.0.1:51001",
-        metadata={"data_dir": str(app_state.electrumx_data_dir)},
-        logging_path=None,
-    )
+        location=str(app_state.component_source_dir), status_endpoint="http://127.0.0.1:51001",
+        metadata={"data_dir": str(app_state.component_data_dir)}, logging_path=None)
 
 
 def stop(app_state):
     """some components require graceful shutdown via a REST API or RPC API but most can use the
     generic 'app_state.kill_component()' function to track down the pid and kill the process."""
     app_state.kill_component()
-
+    logger.info(f"stopped selected {COMPONENT_NAME} instance(s) (if any)")
 
 def reset(app_state):
     repo = app_state.global_cli_flags[ComponentOptions.REPO]
@@ -61,7 +58,7 @@ def reset(app_state):
     configure_paths(app_state, repo, branch)
 
     logger.debug("Resetting state of RegTest electrumx server...")
-    electrumx_data_dir = app_state.electrumx_data_dir
+    electrumx_data_dir = app_state.component_data_dir
     if electrumx_data_dir.exists():
         shutil.rmtree(electrumx_data_dir)
         os.mkdir(electrumx_data_dir)

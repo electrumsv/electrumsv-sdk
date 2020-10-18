@@ -24,7 +24,7 @@ def create_wallet(app_state, wallet_name: str = None):
     try:
         logger.debug("Creating wallet...")
         wallet_name = normalize_wallet_name(wallet_name)
-        wallet_path = app_state.electrumsv_data_dir.joinpath(f"regtest/wallets/{wallet_name}")
+        wallet_path = app_state.component_datadir.joinpath(f"regtest/wallets/{wallet_name}")
         password = "test"
 
         command = (
@@ -42,7 +42,7 @@ def create_wallet(app_state, wallet_name: str = None):
 
 def delete_wallet(app_state, wallet_name: str = None):
     wallet_name = normalize_wallet_name(wallet_name)
-    esv_wallet_db_directory = app_state.electrumsv_data_dir.joinpath("regtest/wallets")
+    esv_wallet_db_directory = app_state.component_datadir.joinpath("regtest/wallets")
     os.makedirs(esv_wallet_db_directory, exist_ok=True)
 
     try:

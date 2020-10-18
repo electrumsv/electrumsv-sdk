@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 
 from electrumsv_sdk.components import ComponentOptions
@@ -25,8 +24,6 @@ def main():
     command.
     """
     app_state = AppState()
-    os.makedirs(app_state.depends_dir, exist_ok=True)
-    os.makedirs(app_state.run_scripts_dir, exist_ok=True)
     app_state.handle_first_ever_run()
 
     # Parse args
