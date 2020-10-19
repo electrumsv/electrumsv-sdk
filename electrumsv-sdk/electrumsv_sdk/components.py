@@ -57,6 +57,7 @@ class ComponentName:
     def __add__(self, val):
         return str(self) + str(val)
 
+
 class ComponentOptions:
     NEW = "new"
     GUI = "gui"

@@ -50,9 +50,6 @@ def start(app_state):
 def stop(app_state):
     """The bitcoin node requires graceful shutdown via the RPC API - a good example of why this
     entrypoint is provided for user customizations (rather than always killing the process)."""
-    id = app_state.global_cli_flags[ComponentOptions.ID]
-    components_state = app_state.component_store.get_status()
-
     def stop_node(component_dict: Dict):
         rpcport = component_dict.get("metadata").get("rpcport")
         if not rpcport:
@@ -60,17 +57,7 @@ def stop(app_state):
         electrumsv_node.stop(rpcport=rpcport)
         logger.info(f"terminated: {component_dict.get('id')}")
 
-    # stop all running components of: <component_type>
-    if not id and app_state.selected_component:
-        for component in components_state:
-            if component.get("component_type") == app_state.selected_component:
-                stop_node(component)
-
-    # stop component according to unique: --id
-    if id and not app_state.selected_component:
-        for component in components_state:
-            if component.get("id") == id:
-                stop_node(component)
+    app_state.call_for_component_id_or_type(COMPONENT_NAME, callable=stop_node)
     logger.info(f"stopped selected {COMPONENT_NAME} instance(s) (if any)")
 
 
@@ -78,9 +65,6 @@ def reset(app_state):
     # Todo for this + stop() can likely generalise it by passing it a 'callable' (function that
     #  takes one argument (component_name)... and the helper function can do the rest... calling
     #  our custom reset or stop function as appropriate for --id or component_name settings.
-    id = app_state.global_cli_flags[ComponentOptions.ID]
-    components_state = app_state.component_store.get_status()
-
     def reset_node(component_dict: Dict):
         rpcport = component_dict.get("metadata").get("rpcport")
         datadir = component_dict.get("metadata").get("datadir")
@@ -89,18 +73,7 @@ def reset(app_state):
         electrumsv_node.reset(data_path=datadir, rpcport=rpcport)
         logger.info(f"terminated: {component_dict.get('id')}")
 
-    # reset all running components of: <component_type>
-    if not id and app_state.selected_component:
-        for component in components_state:
-            if component.get("component_type") == app_state.selected_component:
-                reset_node(component)
-
-    # reset component according to unique: --id
-    if id and not app_state.selected_component:
-        for component in components_state:
-            if component.get("id") == id:
-                reset_node(component)
-
+    app_state.call_for_component_id_or_type(COMPONENT_NAME, callable=reset_node)
     logger.debug("Reset of RegTest bitcoin daemon completed successfully.")
 
 
