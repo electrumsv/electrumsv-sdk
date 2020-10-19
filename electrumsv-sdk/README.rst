@@ -14,36 +14,32 @@ Overview
 
 This project provides a consolidated set of resources that together can allow a developer, whether
 working on ElectrumSV directly or on an application based on ElectrumSV, to develop, run and test
-while offline.
+while offline (and is especially aimed at facilitating rigourous CI/CD functional testing).
 
 Instructions
 ============
-This project is still in early stages. However, to test it out
-in this early stage of development you can do
-(from the top-level directory of this repository)::
+To install from pypi_ run (for general users)::
+
+    > pip install --upgrade electrumsv-sdk
+
+.. _pypi: https://pypi.org/project/electrumsv-sdk/
+
+For development of this SDK on master branch, ``cd`` to the top-level directory of this repository and do::
 
     > pip install -e .
 
 (the '-e' flag is for installing in development 'editable' mode).
+
 Now you have global access to a script called 'electrumsv-sdk.exe' from
-any console window. Now do::
-
-    > electrumsv-sdk
-
-Which will run the default 'full-stack' of:
-
-- electrumsv (in daemon mode)
-- electrumx server
-- RegTest bitcoin daemon (as a background process)
-
-**Ctrl + C** will terminate the servers cleanly and close the newly opened console windows.
+any console window.
 
 For help::
 
     > electrumsv-sdk --help
 
-Which (on 24/07/2020) will show::
+Which (on 19/10/2020) will show::
 
+    """
     top-level
     =========
     electrumsv-sdk has four top-level namespaces (and works similarly to systemctl):
@@ -51,6 +47,7 @@ Which (on 24/07/2020) will show::
     - "stop"
     - "reset"
     - "node"
+    - "status"
 
     The "start" command is the most feature-rich and launches servers as background
     processes (see next):
@@ -58,30 +55,23 @@ Which (on 24/07/2020) will show::
     start
     =====
     examples:
-    run electrumsv + electrumx + electrumsv-node
-        > electrumsv-sdk start --full-stack or
-        > electrumsv-sdk start --esv-ex-node
+    run node + electrumx + electrumsv
+        > electrumsv-sdk start node
+        > electrumsv-sdk start electrumx
+        > electrumsv-sdk start electrumsv
 
-    run electrumsv + electrumsv-indexer + electrumsv-node
-        > electrumsv-sdk start --esv-idx-node
+    run new instances:
+        > electrumsv-sdk start --new node
 
-     -------------------------------------------------------
-    | esv = electrumsv daemon                               |
-    | ex = electrumx server                                 |
-    | node = electrumsv-node                                |
-    | idx = electrumsv-indexer (with pushdata-centric API)  |
-    | full-stack = defaults to 'esv-ex-node'                |
-     -------------------------------------------------------
-
-    input the needed mixture to suit your needs
+    run new instances with user-defined --id
+        > electrumsv-sdk start --new --id=myspecialnode node
 
     dependencies are installed on-demand at run-time
 
-    specify a local or remote git repo and branch for each server e.g.
-        > electrumsv-sdk start --full-stack electrumsv repo=G:/electrumsv branch=develop
-
-    'repo' can take the form repo=https://github.com/electrumsv/electrumsv.git for a remote
-    repo or repo=G:/electrumsv for a local dev repo
+    specify --repo as a local path or remote git url for each component type.
+        > electrumsv-sdk start --repo=G:\electrumsv electrumsv
+    specify --branch as either "master" or "features/my-feature-branch"
+        > electrumsv-sdk start --branch=master electrumsv
 
     all arguments are optional
 
@@ -103,61 +93,75 @@ Which (on 24/07/2020) will show::
         > electrumsv-sdk node help
         > electrumsv-sdk node generate 10
 
-Mode (which servers to run)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    status
+    ======
+    returns a status report of applications previously started by the SDK
 
-The first, "--" prefixed argument sets the "mode" of operation
-(in other words which servers are required).
-Only one mode can be specified.
-The default is to run with ``--full-stack`` if no arguments are parsed which runs:
+    """
 
-1) electrumsv daemon
-2) electrumx
-3) bitcoin daemon
+if you want help for one of the subcommands do::
 
-But in other cases you may wish to run the electrumsv **GUI** instead
-(or your own 3rd party application that only requires these two
-dependencies). So you may elect to use the ``--ex-node`` flag to only run:
+    > electrumsv-sdk start --help
 
-1) electrumx
-2) bitcoin daemon.
+Which on 19/10/2020 will show::
 
-Extension 3rd party Apps (Not implemented yet)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The second, "--" prefixed, optional argument is ``--extapp`` which will add
-to the above list your own 3rd party server to be launched and terminated
-alongside the others. This argument can be specified multiple times like::
+    usage: electrumsv-sdk start [-h] [--new] [--gui] [--background] [--id ID]
+                                [--repo REPO] [--branch BRANCH]
+                                {electrumsv,electrumx,status_monitor,node,indexer,whatsonchain}
+                                ...
 
-    > electrumsv-sdk --extapp pathtoapp1 --extapp pathtoapp2
+    positional arguments:
+      {electrumsv,electrumx,status_monitor,node,indexer,whatsonchain}
+                            subcommand
+        electrumsv          start electrumsv
+        electrumx           start electrumx
+        status_monitor      start status monitor
+        node                start node
+        indexer             start indexer
+        whatsonchain        start whatsonchain explorer
 
-NOTE: must be an executable (which allows use to support any programming language)
-a good example usecase for this is to run a localhost node.js block
-explorer alongside this RegTest stack.
+    optional arguments:
+      -h, --help            show this help message and exit
+      --new
+      --gui
+      --background
+      --id ID               human-readable identifier for component (e.g.
+                            'worker1_esv')
+      --repo REPO           git repo as either an https://github.com url or a
+                            local git repo path e.g. G:/electrumsv (optional)
+      --branch BRANCH       git repo branch (optional)
 
-Subcommands (server-specific configurations)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-After the initial "--" prefixed, top-level arguments (that always come first),
-what follows is optional server-specific configurations for:
+NOTE1: The sdk tool only handles a single ``component_type`` at a time (i.e. for the ``start``, ``stop``, ``reset``
+commands).
 
-1) electrumsv
-2) electrumx
-3) electrumsv_node
-4) electrumsv_indexer (in development)
+NOTE2: The "optional arguments" above actually come **before** specifying the ``component_type`` e.g.::
 
-The syntax is to specify the name of the server followed by "-" prefixed
-optional arguments like this::
+    > electrumsv-sdk start --new --id=myspecialnode node
 
-    > electrumsv-sdk electrumsv -repo=https://github.com/electrumsv/electrumsv.git -branch=master
+This reserves the capability for arguments to the right hand side of the ``component_type`` to be fed to the component's underlying
+commandline interface (if one exists) - this is currently only supported for the electrumsv builtin component.
 
+Plugins
+~~~~~~~
+As of version 0.0.19 the SDK follows a plugin model whereby there are three layers:
 
-**(Remote repo):** A 'repo' beginning with "https://" is automatically installed to the 'sdk_depends/'
-directory as part of this SDK - this could be a forked repository or the official repo
-(which is the default anyway).
+- ``'builtin_components/'``  (located in site-packages/electrumsv_sdk/builtin_components
+- ``'user_components/'``   (located in AppData/local/ElectrumSV-SDK/user_components
+- ``'electrumsv_sdk_components'`` (local working directory)
 
-**(Local repo):** If there is no such "https://" prefix to the 'repo' argument, it is assumed to be
-a filesystem path to a local development repository and so no installation or
-``git pull`` is attempted - it becomes the developers responsibility for the correct
-functioning of this server. But it will be launched and terminated in the usual way.
+Each layer overrides the one above it if there are any namespace clashes for a given ``component_type``
+
+The rationale for using a plugin model is aimed at maintainability and extensibility.
+
+To get a feel for the patterns and how to create your own plugin you can look at the ``'builtin_components/'``
+as a template.
+
+Disclaimer: Creating plugins is more the domain of software developers who are expected to have a
+certain competency level and are willing to work through some technical challenges to get it working.
+
+Most users of this SDK would be expected to merely make use of it for the ease of spinning up 1 or more RegTest
+instances of bitcoin node(s) +/- manipulating the state of the RegTest environment via the various tooling (which
+may or may not make use of the electrumsv wallet GUI or daemon/REST API)
 
 Whatsonchain blockexplorer (localhost)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -383,6 +383,12 @@ class ArgParser:
                 > electrumsv-sdk start electrumx
                 > electrumsv-sdk start electrumsv
 
+            run new instances:
+                > electrumsv-sdk start --new node
+
+            run new instances with user-defined --id
+                > electrumsv-sdk start --new --id=myspecialnode node
+
             dependencies are installed on-demand at run-time
 
             specify --repo as a local path or remote git url for each component type.

@@ -37,10 +37,6 @@ Now you can start the explorer with:
     
 Webpage is viewable at http://127.0.0.1:3002/
 
-**You need to be running electrumx and the node to have anything to look at.**
-> electrumsv-sdk start --ex-node
-
-or ideally run the 'full stack' (electrumsv + electrumx + node):
-> electrumsv-sdk start --full-stack 
+**You need to be running the node and ideally electrumx to have anything to look at.**
 
 The docker build for this explorer doesn't work for me at the moment. YMMV.
