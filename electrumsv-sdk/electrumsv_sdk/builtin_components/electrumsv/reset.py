@@ -20,16 +20,17 @@ def normalize_wallet_name(wallet_name: str):
     return wallet_name
 
 
-def create_wallet(app_state, wallet_name: str = None):
+def create_wallet(app_state, id: str, datadir: Path, wallet_name: str = None):
+    repo = app_state.global_cli_flags[ComponentOptions.REPO]
+    branch = app_state.global_cli_flags[ComponentOptions.BRANCH]
     try:
         logger.debug("Creating wallet...")
         wallet_name = normalize_wallet_name(wallet_name)
-        wallet_path = app_state.component_datadir.joinpath(f"regtest/wallets/{wallet_name}")
+        wallet_path = datadir.joinpath(f"regtest/wallets/{wallet_name}")
         password = "test"
 
         command = (
-            f"electrumsv-sdk start --background --repo"
-            f"={app_state.global_cli_flags[ComponentOptions.REPO]} "
+            f"electrumsv-sdk start --id={id} --repo={repo} --branch={branch} --background "
             f"electrumsv create_wallet --wallet {wallet_path} "
             f"--walletpassword {password} --portable --no-password-check")
 
@@ -40,9 +41,9 @@ def create_wallet(app_state, wallet_name: str = None):
         raise
 
 
-def delete_wallet(app_state, wallet_name: str = None):
+def delete_wallet(datadir: Path, wallet_name: str = None):
     wallet_name = normalize_wallet_name(wallet_name)
-    esv_wallet_db_directory = app_state.component_datadir.joinpath("regtest/wallets")
+    esv_wallet_db_directory = datadir.joinpath("regtest/wallets")
     os.makedirs(esv_wallet_db_directory, exist_ok=True)
 
     try:

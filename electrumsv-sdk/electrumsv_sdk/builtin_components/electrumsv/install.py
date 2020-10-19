@@ -4,6 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from electrumsv_sdk.argparsing import NameSpace
 from electrumsv_sdk.components import ComponentOptions
 from electrumsv_sdk.utils import is_remote_repo, checkout_branch, \
     get_directory_name, get_component_port
@@ -17,7 +18,7 @@ def configure_paths(app_state, repo, branch):
     if is_remote_repo(repo):
         app_state.component_source_dir = app_state.remote_repos_dir.joinpath("electrumsv")
     else:
-        logger.debug(f"Installing local dependency {COMPONENT_NAME} at {repo}")
+        logger.debug(f"Targetting local repo {COMPONENT_NAME} at {repo}")
         assert Path(repo).exists(), f"the path {repo} does not exist!"
         if branch != "":
             checkout_branch(branch)
@@ -31,7 +32,8 @@ def configure_paths(app_state, repo, branch):
             "contrib/deterministic-build/requirements-binaries.txt")
     )
     app_state.component_port = get_component_port(DEFAULT_PORT_ELECTRUMSV)
-    app_state.component_datadir = app_state.component_store.get_component_data_dir(COMPONENT_NAME)
+    if app_state.NAMESPACE == NameSpace.START:
+        app_state.component_datadir = app_state.get_component_datadir(COMPONENT_NAME)
 
 
 def fetch_electrumsv(app_state, url, branch):
@@ -107,9 +109,9 @@ def generate_run_script(app_state):
     os.chdir(app_state.shell_scripts_dir)
 
     esv_launcher = str(app_state.component_source_dir.joinpath("electrum-sv"))
-    esv_data_dir = app_state.component_datadir
+    esv_datadir = app_state.component_datadir
     port = app_state.component_port
-    logger.debug(f"esv_data_dir = {esv_data_dir}")
+    logger.debug(f"esv_datadir = {esv_datadir}")
 
     # custom script (user-specified arguments are fed to ESV)
     component_args = app_state.component_args if len(app_state.component_args) != 0 else None
@@ -117,7 +119,7 @@ def generate_run_script(app_state):
         additional_args = " ".join(component_args)
         line1 = f"{app_state.python} {esv_launcher} {additional_args}"
         if "--dir" not in component_args:
-            line1 += " " + f"--dir {esv_data_dir}"
+            line1 += " " + f"--dir {esv_datadir}"
 
         # so that polling works
         if "--restapi" not in component_args:
@@ -133,7 +135,7 @@ def generate_run_script(app_state):
             line1 = f"export PYTHONPATH={path_to_example_dapps}"
 
         line2 = (
-            f"{app_state.python} {esv_launcher} --portable --dir {esv_data_dir} --regtest daemon "
+            f"{app_state.python} {esv_launcher} --portable --dir {esv_datadir} --regtest daemon "
             f"-dapp restapi --v=debug --file-logging --restapi --restapi-port={port} "
             f"--server=127.0.0.1:51001:t --restapi-user rpcuser --restapi-password= "
         )
@@ -143,7 +145,7 @@ def generate_run_script(app_state):
     else:
         line1 = (
             f"{app_state.python} {esv_launcher} gui --regtest --restapi --restapi-port={port} "
-            f"--v=debug --file-logging --server=127.0.0.1:51001:t --dir {esv_data_dir}"
+            f"--v=debug --file-logging --server=127.0.0.1:51001:t --dir {esv_datadir}"
         )
         lines = [line1]
     app_state.make_shell_script_for_component(list_of_shell_commands=lines,

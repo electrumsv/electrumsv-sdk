@@ -1,7 +1,8 @@
 import logging
 import subprocess
 import sys
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Dict
 
 from electrumsv_sdk.components import ComponentOptions, Component
 from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process
@@ -73,18 +74,15 @@ def stop(app_state):
 
 
 def reset(app_state):
-    repo = app_state.global_cli_flags[ComponentOptions.REPO]
-    branch = app_state.global_cli_flags[ComponentOptions.BRANCH]
-    configure_paths(app_state, repo, branch)
+    def reset_electrumsv(component_dict: Dict):
+        logger.debug("Resetting state of RegTest electrumsv server...")
+        id = component_dict.get('id')
+        datadir = Path(component_dict.get('metadata').get("datadir"))
+        delete_wallet(datadir=datadir, wallet_name='worker1.sqlite')
+        create_wallet(app_state, id=id, datadir=datadir, wallet_name='worker1.sqlite')
+        cleanup(app_state)
 
-    id = app_state.global_cli_flags[ComponentOptions.ID]
-    logger.debug("Resetting state of RegTest electrumsv server...")
-    if id is None:
-        logger.warning(f"Note: No --id flag is specified. Therefore the default 'electrumsv1' "
-                       f"instance will be reset ({app_state.component_datadir}).")
-    delete_wallet(app_state)
-    create_wallet(app_state)
-    cleanup(app_state)
+    app_state.call_for_component_id_or_type(COMPONENT_NAME, callable=reset_electrumsv)
     logger.debug("Reset of RegTest electrumsv wallet completed successfully")
 
 

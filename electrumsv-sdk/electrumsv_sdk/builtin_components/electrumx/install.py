@@ -4,6 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from electrumsv_sdk.argparsing import NameSpace
 from electrumsv_sdk.utils import checkout_branch, is_remote_repo, get_directory_name, \
     get_component_port
 
@@ -16,14 +17,15 @@ def configure_paths(app_state, repo, branch):
     if is_remote_repo(repo):
         app_state.component_source_dir = app_state.remote_repos_dir.joinpath("electrumx")
     else:
-        logger.debug(f"Installing local dependency {COMPONENT_NAME} at {repo}")
+        logger.debug(f"Tergetting local repo: {COMPONENT_NAME} at {repo}")
         assert Path(repo).exists(), f"the path {repo} does not exist!"
         if branch != "":
             checkout_branch(branch)
         app_state.component_source_dir = Path(repo)
     app_state.component_port = get_component_port(DEFAULT_PORT_ELECTRUMX)
-    app_state.component_data_dir = app_state.component_store.get_component_data_dir(COMPONENT_NAME)
-    os.makedirs(app_state.component_data_dir, exist_ok=True)
+    if app_state.NAMESPACE == NameSpace.START:
+        app_state.component_datadir = app_state.get_component_datadir(COMPONENT_NAME)
+        os.makedirs(app_state.component_datadir, exist_ok=True)
 
 
 def fetch_electrumx(app_state, url, branch):
@@ -104,7 +106,7 @@ def generate_run_script(app_state):
     os.chdir(app_state.shell_scripts_dir)
     env_var_setter = 'set' if sys.platform == 'win32' else 'export'
     lines = [
-        f"{env_var_setter} DB_DIRECTORY={app_state.component_data_dir}",
+        f"{env_var_setter} DB_DIRECTORY={app_state.component_datadir}",
         f"{env_var_setter} DAEMON_URL=http://rpcuser:rpcpassword@127.0.0.1:18332",
         f"{env_var_setter} DB_ENGINE=leveldb",
         f"{env_var_setter} SERVICES=tcp://:{app_state.component_port},rpc://",

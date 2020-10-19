@@ -35,22 +35,22 @@ class AppState:
     """Only electrumsv paths are saved to config.json so that 'reset' works on correct wallet."""
 
     def __init__(self):
-        data_dir = None
+        datadir = None
         if sys.platform == "win32":
-            data_dir = Path(os.environ.get("LOCALAPPDATA")) / "ElectrumSV-SDK"
-        if data_dir is None:
-            data_dir = Path.home() / ".electrumsv-sdk"
+            datadir = Path(os.environ.get("LOCALAPPDATA")) / "ElectrumSV-SDK"
+        if datadir is None:
+            datadir = Path.home() / ".electrumsv-sdk"
 
         # set main application paths
-        self.sdk_home_dir = data_dir
+        self.sdk_home_dir = datadir
         self.remote_repos_dir = self.sdk_home_dir.joinpath("remote_repos")
         self.shell_scripts_dir = self.sdk_home_dir.joinpath("shell_scripts")
-        self.data_dir = self.sdk_home_dir.joinpath("component_datadirs")
+        self.datadir = self.sdk_home_dir.joinpath("component_datadirs")
         self.logs_dir = self.sdk_home_dir.joinpath("logs")
         self.config_path = self.sdk_home_dir.joinpath("config.json")
         os.makedirs(self.remote_repos_dir, exist_ok=True)
         os.makedirs(self.shell_scripts_dir, exist_ok=True)
-        os.makedirs(self.data_dir, exist_ok=True)
+        os.makedirs(self.datadir, exist_ok=True)
         os.makedirs(self.logs_dir, exist_ok=True)
 
         self.sdk_package_dir = Path(MODULE_DIR)
@@ -132,8 +132,8 @@ class AppState:
 
     def setup_python_venv(self):
         logger.debug("Setting up python virtualenv (linux/unix only)")
-        sdk_data_dir = Path.home() / ".electrumsv-sdk"
-        linux_venv_dir = sdk_data_dir.joinpath("sdk_venv")
+        sdk_datadir = Path.home() / ".electrumsv-sdk"
+        linux_venv_dir = sdk_datadir.joinpath("sdk_venv")
         python = linux_venv_dir.joinpath("bin").joinpath("python3")
         sdk_requirements_path = Path(MODULE_DIR).parent.joinpath("requirements")\
             .joinpath("requirements.txt")
@@ -341,3 +341,54 @@ class AppState:
 
         elif sys.platform in ["linux", "darwin"]:
             make_bash_file(component_name + ".sh", list_of_shell_commands)
+
+    def get_component_datadir(self, component_name: ComponentName):
+        # Todo - use this generically for node and electrumsv
+        """to run multiple instances of a component requires multiple data directories"""
+        def is_new_and_no_id(id, new) -> bool:
+            return id == "" and new
+        def is_new_and_id(id, new) -> bool:
+            return id != "" and new
+        def is_not_new_and_no_id(id, new) -> bool:
+            return id == "" and not new
+        def is_not_new_and_id(id, new) -> bool:
+            return id != "" and not new
+
+        new = self.global_cli_flags[ComponentOptions.NEW]
+        id = self.global_cli_flags[ComponentOptions.ID]
+
+        # autoincrement <component_name>1 -> <component_name>2 etc. new datadir is found
+        if is_new_and_no_id(id, new):
+            count = 1
+            while True:
+                self.global_cli_flags[ComponentOptions.ID] = id = \
+                    str(component_name) + str(count)
+                new_dir = self.datadir.joinpath(f"{component_name}/{id}")
+                if not new_dir.exists():
+                    break
+                else:
+                    count += 1
+            logger.debug(f"Using new user-specified data dir ({id})")
+
+        elif is_new_and_id(id, new):
+            new_dir = self.datadir.joinpath(f"{component_name}/{id}")
+            if new_dir.exists():
+                logger.debug(f"User-specified data directory: {new_dir} already exists ("
+                      f"either drop the --new flag or choose a unique identifier).")
+                sys.exit(1)
+            logger.debug(f"Using user-specified data dir ({new_dir})")
+
+        elif is_not_new_and_id(id, new):
+            new_dir = self.datadir.joinpath(f"{component_name}/{id}")
+            if not new_dir.exists():
+                logger.debug(f"User-specified data directory: {new_dir} does not exist"
+                             f" and so will be created anew.")
+            logger.debug(f"Using user-specified data dir ({new_dir})")
+
+        elif is_not_new_and_no_id(id, new):
+            id = self.get_id(component_name)  # default
+            new_dir = self.datadir.joinpath(f"{component_name}/{id}")
+            logger.debug(f"Using default data dir ({new_dir})")
+
+        logger.debug(f"data dir = {new_dir}")
+        return new_dir
