@@ -7,7 +7,7 @@ from electrumsv_sdk.components import ComponentOptions, Component
 from electrumsv_sdk.utils import is_remote_repo, get_directory_name
 
 from .install import configure_paths, fetch_electrumsv, packages_electrumsv, \
-    generate_run_scripts_electrumsv
+    generate_run_script
 from .reset import delete_wallet, create_wallet, cleanup
 from .start import init_electrumsv_wallet_dir, is_offline_cli_mode
 
@@ -31,7 +31,7 @@ def install(app_state):
     packages_electrumsv(app_state, repo, branch)
 
     # 4) generate run script
-    generate_run_scripts_electrumsv(app_state)
+    generate_run_script(app_state)
 
 
 def start(app_state, is_first_run=False):

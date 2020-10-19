@@ -1,9 +1,12 @@
+import logging
 import os
 import subprocess
 import sys
 
-from electrumsv_sdk.components import ComponentName
-from electrumsv_sdk.utils import checkout_branch, make_shell_script_for_component
+from electrumsv_sdk.utils import checkout_branch, get_directory_name
+
+COMPONENT_NAME = get_directory_name(__file__)
+logger = logging.getLogger(COMPONENT_NAME)
 
 
 def fetch_whatsonchain(app_state, url="https://github.com/AustEcon/woc-explorer.git",
@@ -29,11 +32,10 @@ def packages_whatsonchain(app_state):
     process.wait()
 
 
-def generate_run_script_whatsonchain(app_state):
-    app_state.init_run_script_dir()
-
-    commandline_string1 = f"cd {app_state.woc_dir}\n"
-    commandline_string2 = f"call npm start\n" if sys.platform == "win32" else f"npm start\n"
-    separate_lines = [commandline_string1, commandline_string2]
-    make_shell_script_for_component(ComponentName.WHATSONCHAIN,
-        commandline_string=None, env_vars=None, multiple_lines=separate_lines)
+def generate_run_script(app_state):
+    os.makedirs(app_state.shell_scripts_dir, exist_ok=True)
+    os.chdir(app_state.shell_scripts_dir)
+    line1 = f"cd {app_state.woc_dir}"
+    line2 = f"call npm start" if sys.platform == "win32" else f"npm start"
+    app_state.make_shell_script_for_component(list_of_shell_commands=[line1, line2],
+        component_name=COMPONENT_NAME)

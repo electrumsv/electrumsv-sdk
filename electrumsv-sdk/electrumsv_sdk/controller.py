@@ -106,6 +106,7 @@ class Controller:
     def reset(self):
         """No choice is given to the user at present - resets node, electrumx and electrumsv
         wallet. If stop_set is empty, all processes terminate."""
+        status_monitor_was_already_running = self.is_status_monitor_online()
         self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = True
         component_id = self.app_state.global_cli_flags[ComponentOptions.ID]
 
@@ -126,9 +127,6 @@ class Controller:
             logger.info(f"Reset of: {component_id} complete.")
         elif not self.app_state.selected_reset_component:
             logger.info(f"Reset of: all components complete")
-
-        # cleanup
-        self.app_state.run_command_current_shell("electrumsv-sdk stop status_monitor")
 
     def status_check(self, component_module=None):
         """The 'status_check()' entrypoint of the plugin must always run after the start()

@@ -4,8 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from electrumsv_sdk.utils import checkout_branch, is_remote_repo, make_shell_script_for_component, \
-    get_directory_name, get_component_port
+from electrumsv_sdk.utils import checkout_branch, is_remote_repo, get_directory_name, \
+    get_component_port
 
 DEFAULT_PORT_ELECTRUMX = 51001
 COMPONENT_NAME = get_directory_name(__file__)
@@ -99,22 +99,22 @@ def packages_electrumx(app_state, url, branch):
         os.remove(temp_requirements)
 
 
-def generate_run_script_electrumx(app_state):
-    app_state.init_run_script_dir()
-    electrumx_env_vars = {
-        "DB_DIRECTORY": str(app_state.component_data_dir),
-        "DAEMON_URL": "http://rpcuser:rpcpassword@127.0.0.1:18332",
-        "DB_ENGINE": "leveldb",
-        "SERVICES": f"tcp://:{app_state.component_port},rpc://",
-        "COIN": "BitcoinSV",
-        "COST_SOFT_LIMIT": "0",
-        "COST_HARD_LIMIT": "0",
-        "MAX_SEND": "10000000",
-        "LOG_LEVEL": "debug",
-        "NET": "regtest",
-    }
-
-    commandline_string = (
+def generate_run_script(app_state):
+    os.makedirs(app_state.shell_scripts_dir, exist_ok=True)
+    os.chdir(app_state.shell_scripts_dir)
+    env_var_setter = 'set' if sys.platform == 'win32' else 'export'
+    lines = [
+        f"{env_var_setter} DB_DIRECTORY={app_state.component_data_dir}",
+        f"{env_var_setter} DAEMON_URL=http://rpcuser:rpcpassword@127.0.0.1:18332",
+        f"{env_var_setter} DB_ENGINE=leveldb",
+        f"{env_var_setter} SERVICES=tcp://:{app_state.component_port},rpc://",
+        f"{env_var_setter} COIN=BitcoinSV",
+        f"{env_var_setter} COST_SOFT_LIMIT=0",
+        f"{env_var_setter} COST_HARD_LIMIT=0",
+        f"{env_var_setter} MAX_SEND=10000000",
+        f"{env_var_setter} LOG_LEVEL=debug",
+        f"{env_var_setter} NET=regtest",
         f"{app_state.python} {app_state.component_source_dir.joinpath('electrumx_server')}"
-    )
-    make_shell_script_for_component(COMPONENT_NAME, commandline_string, electrumx_env_vars)
+    ]
+    app_state.make_shell_script_for_component(list_of_shell_commands=lines,
+        component_name=COMPONENT_NAME)

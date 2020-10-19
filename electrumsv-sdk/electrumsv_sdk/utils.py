@@ -4,6 +4,7 @@ import shlex
 import subprocess
 import sys
 from pathlib import Path
+from typing import List
 
 import psutil
 from electrumsv_node import electrumsv_node
@@ -17,59 +18,34 @@ def checkout_branch(branch: str):
         subprocess.run(f"git checkout {branch}", shell=True, check=True)
 
 
-def make_bat_file(filename, commandline_string=None, env_vars=None, separate_lines=None):
-    if not env_vars:
-        env_vars = {}
-
+def make_bat_file(filename: str, list_of_shell_commands: List[str]):
+    """wraps a list of shell commands with @echo off and 'pause' and outputs it to a
+    <component_name>.bat file"""
     open(filename, "w").close()
     with open(filename, "a") as f:
         f.write("@echo off\n")
-        for key, val in env_vars.items():
-            f.write(f"set {key}={val}\n")
-
-        if separate_lines:
-            for line in separate_lines:
-                f.write(line)
-
-        if commandline_string:
-            commandline_string_split = shlex.split(commandline_string, posix=0)
-            for subcmd in commandline_string_split:
-                f.write(f"{subcmd}" + " ")
-        f.write("\n")
+        if list_of_shell_commands:
+            for line in list_of_shell_commands:
+                split_command = shlex.split(line, posix=0)
+                f.write(" ".join(split_command))
+                f.write('\n')
         f.write("pause\n")
 
 
-def make_bash_file(filename, commandline_string=None, env_vars=None, separate_lines=None):
-    if not env_vars:
-        env_vars = {}
-
+def make_bash_file(filename: str, list_of_shell_commands: List[str]):
+    """wraps a list of shell commands with 'set echo off' and 'exit' and outputs it to a
+    <component_name>.bat file"""
     open(filename, "w").close()
     with open(filename, "a") as f:
         f.write("#!/bin/bash\n")
         f.write("set echo off\n")
-        for key, val in env_vars.items():
-            f.write(f"export {key}={val}\n")
-
-        if separate_lines:
-            for line in separate_lines:
-                f.write(line)
-
-        if commandline_string:
-            commandline_string_split = shlex.split(commandline_string, posix=0)
-            for subcmd in commandline_string_split:
-                f.write(f"{subcmd}" + " ")
-        f.write("\n")
+        if list_of_shell_commands:
+            for line in list_of_shell_commands:
+                split_command = shlex.split(line, posix=1)
+                f.write(" ".join(split_command))
+                f.write("\n")
         f.write("exit")
     os.system(f'chmod 777 {filename}')
-
-
-def make_shell_script_for_component(component_name, commandline_string=None, env_vars=None,
-        multiple_lines=None):
-    if sys.platform == "win32":
-        make_bat_file(component_name + ".bat", commandline_string, env_vars, multiple_lines)
-
-    elif sys.platform in ["linux", "darwin"]:
-        make_bash_file(component_name + ".sh", commandline_string, env_vars, multiple_lines)
 
 
 def topup_wallet():
