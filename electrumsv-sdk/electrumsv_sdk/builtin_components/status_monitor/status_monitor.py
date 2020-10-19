@@ -3,7 +3,7 @@ import os
 import sys
 from typing import Optional
 
-from electrumsv_sdk.components import ComponentOptions, ComponentName, Component
+from electrumsv_sdk.components import ComponentOptions, Component
 from electrumsv_sdk.constants import ComponentLaunchFailedError
 from electrumsv_sdk.utils import get_directory_name
 
@@ -29,10 +29,9 @@ def install(app_state):
 
 
 def start(app_state):
-    component_name = ComponentName.STATUS_MONITOR
     logger.debug(f"Starting status monitor daemon...")
     try:
-        script_path = app_state.derive_shell_script_path(component_name)  # move to app_state
+        script_path = app_state.derive_shell_script_path(COMPONENT_NAME)  # move to app_state
         process = app_state.spawn_process(script_path)
     except ComponentLaunchFailedError:
         log_path = app_state.status_monitor_logging_path
@@ -42,8 +41,8 @@ def start(app_state):
             logger.debug(f"see {log_path.joinpath(log_files[0])} for details")
         sys.exit(1)
 
-    id = app_state.get_id(component_name)
-    app_state.component_info = Component(id, process.pid, component_name,
+    id = app_state.get_id(COMPONENT_NAME)
+    app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
         str(app_state.status_monitor_dir), "http://127.0.0.1:5000/api/status/get_status")
 
 
@@ -53,14 +52,15 @@ def stop(app_state):
     app_state.kill_component()
     logger.info(f"stopped selected {COMPONENT_NAME} instance(s) (if any)")
 
+
 def reset(app_state):
     logger.info("resetting the status monitor is not supported.")
 
 
 def status_check(app_state) -> Optional[bool]:
     """
-    True -> ComponentState.Running;
-    False -> ComponentState.Failed;
+    True -> ComponentState.RUNNING;
+    False -> ComponentState.FAILED;
     None -> skip status monitoring updates (e.g. using app's cli interface transiently)
     """
     is_running = app_state.is_component_running_http(

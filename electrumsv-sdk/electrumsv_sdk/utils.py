@@ -11,6 +11,7 @@ from electrumsv_node import electrumsv_node
 logger = logging.getLogger("utils")
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
 def checkout_branch(branch: str):
     if branch != "":
         subprocess.run(f"git checkout {branch}", shell=True, check=True)

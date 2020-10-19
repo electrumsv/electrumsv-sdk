@@ -2,7 +2,7 @@ import logging
 import sys
 from typing import Optional
 
-from electrumsv_sdk.components import ComponentOptions, ComponentName, Component
+from electrumsv_sdk.components import ComponentOptions, Component
 from electrumsv_sdk.utils import get_directory_name
 
 from .install import fetch_whatsonchain, generate_run_script_whatsonchain, packages_whatsonchain
@@ -32,15 +32,14 @@ def install(app_state):
 
 
 def start(app_state):
-    component_name = ComponentName.WHATSONCHAIN
     logger.debug(f"Starting whatsonchain daemon...")
     if not check_node_for_woc():
         sys.exit(1)
 
-    script_path = app_state.derive_shell_script_path(component_name)
+    script_path = app_state.derive_shell_script_path(COMPONENT_NAME)
     process = app_state.spawn_process(script_path)
-    id = app_state.get_id(component_name)
-    app_state.component_info = Component(id, process.pid, component_name,
+    id = app_state.get_id(COMPONENT_NAME)
+    app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
         str(app_state.woc_dir), "http://127.0.0.1:3002")
 
 
@@ -50,14 +49,15 @@ def stop(app_state):
     app_state.kill_component()
     logger.info(f"stopped selected {COMPONENT_NAME} instance(s) (if any)")
 
+
 def reset(app_state):
     logger.info("resetting the whatsonchain is not applicable")
 
 
 def status_check(app_state) -> Optional[bool]:
     """
-    True -> ComponentState.Running;
-    False -> ComponentState.Failed;
+    True -> ComponentState.RUNNING;
+    False -> ComponentState.FAILED;
     None -> skip status monitoring updates (e.g. using app's cli interface transiently)
     """
     is_running = app_state.is_component_running_http(

@@ -78,14 +78,14 @@ def packages_electrumsv(app_state, url, branch):
     checkout_branch(branch)
 
     if sys.platform == 'win32':
-        cmd1 = f"{app_state.python} -m pip install --user -r " \
+        cmd1 = f"{app_state.python} -m pip install --user --upgrade -r " \
                f"{app_state.electrumsv_requirements_path}"
-        cmd2 = f"{app_state.python} -m pip install --user -r " \
+        cmd2 = f"{app_state.python} -m pip install --user --upgrade -r " \
                f"{app_state.electrumsv_binary_requirements_path}"
     elif sys.platform in ['linux', 'darwin']:
-        cmd1 = f"sudo {app_state.python} -m pip install -r " \
+        cmd1 = f"sudo {app_state.python} -m pip install --upgrade -r " \
                f"{app_state.electrumsv_requirements_path}"
-        cmd2 = f"sudo {app_state.python} -m pip install -r " \
+        cmd2 = f"sudo {app_state.python} -m pip install --upgrade -r " \
                f"{app_state.electrumsv_binary_requirements_path}"
 
     process1 = subprocess.Popen(cmd1, shell=True)
@@ -140,12 +140,8 @@ def make_esv_gui_script(base_cmd, env_vars, esv_data_dir, port):
 def generate_run_scripts_electrumsv(app_state):
     """makes both the daemon script and a script for running the GUI"""
     app_state.init_run_script_dir()
-    path_to_dapp_example_apps = app_state.component_source_dir.joinpath("examples").joinpath(
-        "applications"
-    )
-    esv_env_vars = {
-        "PYTHONPATH": str(path_to_dapp_example_apps),
-    }
+    path_to_dapp_example_apps = app_state.component_source_dir.joinpath("examples/applications")
+    esv_env_vars = {"PYTHONPATH": str(path_to_dapp_example_apps)}
     esv_script = str(app_state.component_source_dir.joinpath("electrum-sv"))
     esv_data_dir = app_state.component_datadir
     port = app_state.component_port
