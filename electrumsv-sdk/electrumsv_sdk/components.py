@@ -127,11 +127,6 @@ class ComponentStore:
         self.lock_path = app_state.sdk_home_dir / "component_state.json.lock"
         self.file_lock = FileLock(self.lock_path, timeout=1)
         self.component_state_path = app_state.sdk_home_dir / self.file_path
-        self.component_list = [
-            component_type for component_type
-            in os.listdir(self.app_state.builtin_components_dir)
-            if component_type not in {'__init__.py', '__pycache__'}
-        ]
 
     def get_status(self) -> List[Dict]:
         filelock_logger = logging.getLogger("filelock")
