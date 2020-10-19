@@ -45,18 +45,6 @@ def get_str_datetime():
     return datetime.datetime.now().strftime(TIME_FORMAT)
 
 
-class ComponentName:
-    WHATSONCHAIN = "whatsonchain"
-    STATUS_MONITOR = "status_monitor"
-    NODE = "node"
-    ELECTRUMX = "electrumx"
-    ELECTRUMSV = "electrumsv"
-    INDEXER = "indexer"
-
-    def __add__(self, val):
-        return str(self) + str(val)
-
-
 class ComponentOptions:
     NEW = "new"
     GUI = "gui"

@@ -2,7 +2,7 @@ import pprint
 import logging
 from electrumsv_node import electrumsv_node
 
-from electrumsv_sdk.components import ComponentStore, ComponentOptions, ComponentName, \
+from electrumsv_sdk.components import ComponentStore, ComponentOptions, \
     ComponentState, Component
 
 from .constants import STATUS_MONITOR_GET_STATUS
@@ -22,10 +22,10 @@ class Controller:
 
     def is_status_monitor_online(self) -> bool:
         return self.app_state.is_component_running_http(STATUS_MONITOR_GET_STATUS, 2, 0.5,
-            component_name=ComponentName.STATUS_MONITOR)
+            component_name="status_monitor")
 
     def launch_status_monitor(self):
-        component_module = self.app_state.import_plugin_component(ComponentName.STATUS_MONITOR)
+        component_module = self.app_state.import_plugin_component("status_monitor")
         component_module.install(self.app_state)
         component_module.start(self.app_state)
         self.status_check(component_module)
@@ -38,7 +38,7 @@ class Controller:
 
         # All other component types
         if self.app_state.selected_component and \
-                self.app_state.selected_component != ComponentName.STATUS_MONITOR:
+                self.app_state.selected_component != "status_monitor":
             self.app_state.component_module.install(self.app_state)
             self.app_state.component_module.start(self.app_state)
             self.status_check()
@@ -56,9 +56,7 @@ class Controller:
         """if stop_set is empty, all processes terminate."""
         status_monitor_was_already_running = self.is_status_monitor_online()
         status_monitor_is_selected_component = self.app_state.selected_component and \
-            self.app_state.selected_component == ComponentName.STATUS_MONITOR
-        if not status_monitor_was_already_running:
-            self.launch_status_monitor()
+            self.app_state.selected_component == "status_monitor"
 
         self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = True
         id = self.app_state.global_cli_flags[ComponentOptions.ID]
@@ -87,16 +85,13 @@ class Controller:
                 self.app_state.component_store.update_status_file(component_obj)
                 if status_monitor_is_selected_component:
                     return  # skip impossible task of updating itself after killing itself...
-                self.app_state.status_monitor_client.update_status(component_obj)
+                self.app_state.component_store.update_status_file(component_obj)
 
         # no args implies stop all (status_monitor, node, electrumx, electrumsv, whatsonchain)
         # call sdk recursively to achieve this (greatly simplifies code)
         if not id and not self.app_state.selected_component:
-            self.app_state.run_command_current_shell("electrumsv-sdk stop node")
-            self.app_state.run_command_current_shell("electrumsv-sdk stop electrumx")
-            self.app_state.run_command_current_shell("electrumsv-sdk stop electrumsv")
-            self.app_state.run_command_current_shell("electrumsv-sdk stop whatsonchain")
-            self.app_state.run_command_current_shell("electrumsv-sdk stop status_monitor")
+            for component_type in self.app_state.component_map.keys():
+                self.app_state.run_command_current_shell(f"electrumsv-sdk stop {component_type}")
             logger.info(f"terminated: all")
 
         # cleanup (leave things as we found them)

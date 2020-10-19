@@ -18,7 +18,7 @@ from electrumsv_node import electrumsv_node
 from .utils import trace_processes_for_cmd, trace_pid, make_bat_file, make_bash_file
 from .constants import ComponentLaunchFailedError
 from .argparsing import ArgParser
-from .components import ComponentName, ComponentOptions, ComponentStore, Component
+from .components import ComponentOptions, ComponentStore, Component
 from .controller import Controller
 from .handlers import Handlers
 from .status_monitor_client import StatusMonitorClient
@@ -94,9 +94,9 @@ class AppState:
         self.status_monitor_logging_path = self.logs_dir.joinpath("status_monitor")
         os.makedirs(self.status_monitor_logging_path, exist_ok=True)
 
-        self.selected_component: Optional[ComponentName] = None
+        self.selected_component: Optional[str] = None
 
-        self.global_cli_flags: Dict[ComponentName] = {}
+        self.global_cli_flags: Dict[str] = {}
         self.node_args = None
 
         self.global_cli_flags[ComponentOptions.NEW] = False
@@ -108,12 +108,13 @@ class AppState:
 
     def get_component_map(self):
         component_map = {}  # component_name: <component_dir>
+        ignored = {'__init__.py', '__pycache__', '.idea', '.vscode'}
 
         # Layer 1
         builtin_components_list = [
             component_type for component_type
             in os.listdir(self.builtin_components_dir)
-            if component_type not in {'__init__.py', '__pycache__'}
+            if component_type not in ignored
         ]
         for component_type in builtin_components_list:
             component_map[component_type] = self.builtin_components_dir
@@ -122,7 +123,7 @@ class AppState:
         user_plugins_list = [
             component_type for component_type
             in os.listdir(self.user_plugins_dir)
-            if component_type not in {'__init__.py', '__pycache__'}
+            if component_type not in ignored
         ]
         for component_type in user_plugins_list:
             component_map[component_type] = self.user_plugins_dir
@@ -132,13 +133,14 @@ class AppState:
             local_components_list = [
                 component_type for component_type
                 in os.listdir(self.local_plugins_dir)
-                if component_type not in {'__init__.py', '__pycache__'}
+                if component_type not in ignored
             ]
             for component_type in local_components_list:
                 component_map[component_type] = self.local_plugins_dir
+
         return component_map
 
-    def get_id(self, component_name: ComponentName):
+    def get_id(self, component_name: str):
         id = self.global_cli_flags[ComponentOptions.ID]
         if not id:  # Default component_name
             id = component_name + "1"
@@ -217,7 +219,7 @@ class AppState:
 
     def is_component_running_http(self, status_endpoint: str, retries:
             int=6, duration: float=1.0, timeout: float=0.5, http_method='get',
-            payload: Dict=None, component_name: ComponentName=None) -> bool:
+            payload: Dict=None, component_name: str=None) -> bool:
 
         if not component_name and self.component_info:
             component_name = self.component_info.component_type
@@ -328,7 +330,7 @@ class AppState:
             process_handle = self.run_command_new_window(command)
             return process_handle
 
-    def import_plugin_component(self, component_name: ComponentName) -> Optional[ModuleType]:
+    def import_plugin_component(self, component_name: str) -> Optional[ModuleType]:
         plugin_dir = self.component_map.get(component_name)
         if not plugin_dir:
             logger.error(f"plugin for {component_name} not found")
@@ -350,15 +352,14 @@ class AppState:
 
         return component_module
 
-
-    def configure_paths(self, component_name: ComponentName):
+    def configure_paths(self, component_name: str):
         repo = self.global_cli_flags[ComponentOptions.REPO]
         branch = self.global_cli_flags[ComponentOptions.BRANCH]
         component = self.import_plugin_component(component_name)
         if hasattr(component, 'configure_paths'):
             self.component_module.configure_paths(self, repo, branch)
 
-    def call_for_component_id_or_type(self, component_name: ComponentName, callable: Callable):
+    def call_for_component_id_or_type(self, component_name: str, callable: Callable):
         """Used to either kill/stop/reset components by --id or <component_type>)
         - callable is called with one argument: component_dict with all relevant info about the
         component of interest - if there are many components of a particular type then the
@@ -391,7 +392,7 @@ class AppState:
             return self.import_plugin_component(component_name)
 
     def make_shell_script_for_component(self, list_of_shell_commands: List[str],
-            component_name: ComponentName):
+            component_name: str):
 
         if sys.platform == "win32":
             make_bat_file(component_name + ".bat", list_of_shell_commands)
@@ -399,7 +400,7 @@ class AppState:
         elif sys.platform in ["linux", "darwin"]:
             make_bash_file(component_name + ".sh", list_of_shell_commands)
 
-    def get_component_datadir(self, component_name: ComponentName):
+    def get_component_datadir(self, component_name: str):
         # Todo - use this generically for node and electrumsv
         """to run multiple instances of a component requires multiple data directories"""
         def is_new_and_no_id(id, new) -> bool:

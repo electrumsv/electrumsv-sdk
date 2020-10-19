@@ -12,7 +12,7 @@ import sys
 import textwrap
 from argparse import RawTextHelpFormatter
 
-from .components import ComponentName, ComponentStore
+from .components import ComponentStore
 
 logger = logging.getLogger("argparsing")
 
@@ -79,10 +79,10 @@ class ArgParser:
                 elif not arg.startswith("-") and not component_selected:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
-                    if arg in ComponentName.__dict__.values():
+                    if arg in self.app_state.component_map.keys():
                         self.app_state.selected_component = arg
                     else:
-                        logger.error(f"Must select from: {self.app_state.component_map}")
+                        logger.error(f"Must select from: {self.app_state.component_map.keys()}")
                         sys.exit()
                     component_selected = True
                     continue
@@ -102,11 +102,10 @@ class ArgParser:
                 if not arg.startswith("-") and not component_selected:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
-                    if arg in ComponentName.__dict__.values():
+                    if arg in self.app_state.component_map.keys():
                         self.app_state.selected_component = arg
                     else:
-                        logger.error("Must select from: node, electrumx, electrumsv, indexer, "
-                              "status_monitor]")
+                        logger.error(f"Must select from: {self.app_state.component_map.keys()}")
                         sys.exit()
                     component_selected = True
                     continue
@@ -121,10 +120,10 @@ class ArgParser:
                 if not arg.startswith("-") and not component_selected:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
-                    if arg in ComponentName.__dict__.values():
+                    if arg in self.app_state.component_map.keys():
                         self.app_state.selected_component = arg
                     else:
-                        logger.error(f"Must select from: {self.app_state.component_map}")
+                        logger.error(f"Must select from: {self.app_state.component_map.keys()}")
                         sys.exit()
                     component_selected = True
                     continue
