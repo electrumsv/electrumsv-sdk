@@ -90,8 +90,8 @@ def reset(app_state):
 
 def status_check(app_state) -> Optional[bool]:
     """
-    True -> ComponentState.Running;
-    False -> ComponentState.Failed;
+    True -> ComponentState.RUNNING;
+    False -> ComponentState.FAILED;
     None -> skip status monitoring updates (e.g. using app's cli interface transiently)
     """
     # Offline CLI interface

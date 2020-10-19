@@ -83,7 +83,7 @@ class Controller:
         if component_list:
             for component_dict in component_list:
                 component_obj = Component.from_dict(component_dict)
-                component_obj.component_state = str(ComponentState.Stopped)
+                component_obj.component_state = ComponentState.STOPPED
                 self.app_state.component_store.update_status_file(component_obj)
                 if status_monitor_is_selected_stop_component:
                     return  # skip impossible task of updating itself after killing itself...
@@ -154,11 +154,11 @@ class Controller:
                 return
 
             if is_running is False:
-                self.app_state.component_info.component_state = ComponentState.Failed
+                self.app_state.component_info.component_state = ComponentState.FAILED
                 logger.error(f"{component_name} failed to start")
 
             elif is_running is True:
-                self.app_state.component_info.component_state = ComponentState.Running
+                self.app_state.component_info.component_state = ComponentState.RUNNING
                 logger.debug(f"{component_name} online")
             self.app_state.component_store.update_status_file(self.app_state.component_info)
             self.app_state.status_monitor_client.update_status(self.app_state.component_info)

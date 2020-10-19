@@ -1,6 +1,7 @@
 import logging
 import sys
 
+from electrumsv_sdk.argparsing import NameSpace
 from electrumsv_sdk.components import ComponentOptions
 from electrumsv_sdk.app_state import AppState  # pylint: disable=E0401
 
@@ -31,9 +32,7 @@ def main():
     app_state.arparser.manual_argparsing(sys.argv)
     app_state.handlers.handle_cli_args()
 
-    app_state.selected_component = app_state.selected_start_component or \
-                                   app_state.selected_stop_component or \
-                                   app_state.selected_reset_component
+    app_state.selected_component = app_state.get_selected_component()
 
     component_id = app_state.global_cli_flags[ComponentOptions.ID]
     if app_state.selected_component:
@@ -42,21 +41,21 @@ def main():
         app_state.component_module = app_state.import_plugin_component_from_id(component_id)
 
     # Call relevant entrypoint
-    if app_state.NAMESPACE == app_state.START:
+    if app_state.NAMESPACE == NameSpace.START:
         app_state.controller.start()  # -> install() -> start() -> status_check() plugin entrypoints
 
-    if app_state.NAMESPACE == app_state.STOP:
+    if app_state.NAMESPACE == NameSpace.STOP:
         app_state.controller.stop()  # -> stop() entrypoint of plugin
 
-    if app_state.NAMESPACE == app_state.RESET:
+    if app_state.NAMESPACE == NameSpace.RESET:
         app_state.controller.reset()  # -> reset() entrypoint of plugin
 
     # Special built-in execution pathway (not part of plugin system)
-    if app_state.NAMESPACE == app_state.NODE:
+    if app_state.NAMESPACE == NameSpace.NODE:
         app_state.controller.node()
 
     # Http 'GET' request to status_monitor
-    if app_state.NAMESPACE == app_state.STATUS:
+    if app_state.NAMESPACE == NameSpace.STATUS:
         app_state.controller.status()
 
 

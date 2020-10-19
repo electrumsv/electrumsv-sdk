@@ -27,7 +27,6 @@ state=Running.
 - terminated builtin_components without using the SDK interface      state=Failed
 """
 import datetime
-import enum
 import json
 import logging
 import os
@@ -67,13 +66,12 @@ class ComponentOptions:
     BRANCH = "branch"
 
 
-class ComponentState(enum.IntEnum):
+class ComponentState:
     """If the user terminates an application without using the SDK, it will be registered as
     'Failed' status."""
-    NONE = 0
-    Running = 1
-    Stopped = 2
-    Failed = 3
+    RUNNING = "Running"
+    STOPPED = "Stopped"
+    FAILED = "Failed"
 
 
 class Component:
@@ -84,7 +82,8 @@ class Component:
         component_type: str,
         location: Union[str, Path],
         status_endpoint: str,
-        component_state: Optional[ComponentState]=ComponentState.Running,
+        component_state:
+            Union[ComponentState.RUNNING, ComponentState.STOPPED, ComponentState.FAILED] = None,
         metadata: Optional[dict] = None,
         logging_path: Optional[Union[str, Path]] = None,
     ):
@@ -128,7 +127,11 @@ class ComponentStore:
         self.lock_path = app_state.sdk_home_dir / "component_state.json.lock"
         self.file_lock = FileLock(self.lock_path, timeout=1)
         self.component_state_path = app_state.sdk_home_dir / self.file_path
-        self.component_list = os.listdir(self.app_state.builtin_components_dir)
+        self.component_list = [
+            component_type for component_type
+            in os.listdir(self.app_state.builtin_components_dir)
+            if component_type not in {'__init__.py', '__pycache__'}
+        ]
 
     def get_component_data_dir(self, component_name: ComponentName):
         # Todo - use this generically for node and electrumsv
@@ -226,7 +229,7 @@ class ComponentStore:
         with open(self.component_state_path, "w") as f:
             f.write(json.dumps(component_state, indent=4))
 
-    def component_status_data_by_id(self, component_id: int) -> Dict:
+    def component_status_data_by_id(self, component_id: str) -> Dict:
         component_state = self.get_status()
         for component in component_state:
             if component.get('id') == component_id:

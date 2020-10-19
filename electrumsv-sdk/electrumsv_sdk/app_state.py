@@ -17,7 +17,7 @@ from electrumsv_node import electrumsv_node
 from .utils import trace_processes_for_cmd, trace_pid, kill_process
 from .constants import ComponentLaunchFailedError
 from .argparsing import ArgParser
-from .components import ComponentName, ComponentOptions, ComponentStore, ComponentState, Component
+from .components import ComponentName, ComponentOptions, ComponentStore, Component
 from .controller import Controller
 from .handlers import Handlers
 from .status_monitor_client import StatusMonitorClient
@@ -75,22 +75,14 @@ class AppState:
         else:
             self.python = sys.executable
 
-        # namespaces
-        self.NAMESPACE = ""  # 'start', 'stop' or 'reset'
-
-        # Todo - move these into constants under a CLICommands class (or something)
-        self.TOP_LEVEL = "top_level"
-        self.START = "start"
-        self.STOP = "stop"
-        self.RESET = "reset"
-        self.NODE = "node"
-        self.STATUS = "status"
-
-        self.subcmd_map: Dict[str, argparse.ArgumentParser] = {}  # cmd_name: ArgumentParser
-        self.subcmd_raw_args_map: Dict[str, List[str]] = {}  # cmd_name: raw arguments
-        self.subcmd_parsed_args_map = {}  # cmd_name: parsed arguments
+        # namespaces and argparsing
+        self.NAMESPACE = ""  # 'start', 'stop', 'reset', 'node', or 'status'
+        self.parser_map: Dict[str, argparse.ArgumentParser] = {}  # namespace: ArgumentParser
+        self.parser_raw_args_map: Dict[str, List[str]] = {}  # {namespace: raw arguments}
+        self.parser_parsed_args_map = {}  # {namespace: parsed arguments}
         self.component_args = []  # e.g. store arguments to pass to the electrumsv's cli interface
 
+        # status_monitor special-case component type
         self.status_monitor_dir = self.sdk_package_dir.joinpath("status_server")
         self.status_monitor_logging_path = self.logs_dir.joinpath("status_monitor")
         os.makedirs(self.status_monitor_logging_path, exist_ok=True)
@@ -102,7 +94,6 @@ class AppState:
         self.global_cli_flags: Dict[ComponentName] = {}
         self.node_args = None
 
-        # Todo - just make these app_state attributes
         self.global_cli_flags[ComponentOptions.NEW] = False
         self.global_cli_flags[ComponentOptions.GUI] = False
         self.global_cli_flags[ComponentOptions.BACKGROUND] = False
@@ -331,8 +322,7 @@ class AppState:
         # stop component according to unique: --id
         if id:
             for component in components_state:
-                if component.get("id") == id and \
-                        component.get("component_state") == ComponentState.Running:
+                if component.get("id") == id:
                     kill_process(component['pid'])
                     logger.info(f"terminated: {id}")
 
@@ -344,3 +334,9 @@ class AppState:
         else:
             component_name = component_data['component_type']
             return self.import_plugin_component(component_name)
+
+    def get_selected_component(self):
+        selected_component = self.selected_start_component or \
+                                  self.selected_stop_component or \
+                                  self.selected_reset_component
+        return selected_component

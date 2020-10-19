@@ -4,7 +4,7 @@ from typing import Optional, Dict
 
 from electrumsv_node import electrumsv_node
 
-from electrumsv_sdk.components import ComponentOptions, ComponentName, Component
+from electrumsv_sdk.components import ComponentOptions, Component
 from electrumsv_sdk.utils import get_directory_name
 
 from .install import fetch_node, configure_paths
@@ -28,16 +28,15 @@ def install(app_state):
 
 
 def start(app_state):
-    component_name = ComponentName.NODE
     rpcport = app_state.component_port
     p2p_port = app_state.component_p2p_port
     data_path = app_state.component_datadir
-    id = app_state.get_id(component_name)
+    id = app_state.get_id(COMPONENT_NAME)
     process_pid = electrumsv_node.start(data_path=data_path, rpcport=rpcport,
                                         p2p_port=p2p_port, network='regtest')
     logging_path = Path(app_state.component_datadir).joinpath("regtest/bitcoind.log")
 
-    app_state.component_info = Component(id, process_pid, component_name,
+    app_state.component_info = Component(id, process_pid, COMPONENT_NAME,
         str(app_state.component_source_dir),
         f"http://rpcuser:rpcpassword@127.0.0.1:{rpcport}",
         logging_path=logging_path,
@@ -82,8 +81,8 @@ def reset(app_state):
 
 def status_check(app_state) -> Optional[bool]:
     """
-    True -> ComponentState.Running;
-    False -> ComponentState.Failed;
+    True -> ComponentState.RUNNING;
+    False -> ComponentState.FAILED;
     None -> skip status monitoring updates (e.g. using app's cli interface transiently)
     """
     return app_state.node_status_check_result

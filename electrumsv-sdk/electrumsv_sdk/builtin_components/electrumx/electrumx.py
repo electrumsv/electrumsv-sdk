@@ -4,7 +4,7 @@ import os
 import shutil
 from typing import Optional
 
-from electrumsv_sdk.components import ComponentOptions, ComponentName, Component
+from electrumsv_sdk.components import ComponentOptions, Component
 from electrumsv_sdk.utils import is_remote_repo, get_directory_name
 
 from .install import configure_paths, fetch_electrumx, packages_electrumx, \
@@ -36,12 +36,11 @@ def install(app_state):
 
 
 def start(app_state):
-    component_name = ComponentName.ELECTRUMX
     logger.debug(f"Starting RegTest electrumx server...")
-    script_path = app_state.derive_shell_script_path(ComponentName.ELECTRUMX)
+    script_path = app_state.derive_shell_script_path(COMPONENT_NAME)
     process = app_state.spawn_process(script_path)
-    id = app_state.get_id(component_name)
-    app_state.component_info = Component(id, process.pid, ComponentName.ELECTRUMX,
+    id = app_state.get_id(COMPONENT_NAME)
+    app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
         location=str(app_state.component_source_dir), status_endpoint="http://127.0.0.1:51001",
         metadata={"data_dir": str(app_state.component_data_dir)}, logging_path=None)
 
@@ -51,6 +50,7 @@ def stop(app_state):
     generic 'app_state.kill_component()' function to track down the pid and kill the process."""
     app_state.kill_component()
     logger.info(f"stopped selected {COMPONENT_NAME} instance(s) (if any)")
+
 
 def reset(app_state):
     repo = app_state.global_cli_flags[ComponentOptions.REPO]
@@ -69,8 +69,8 @@ def reset(app_state):
 
 def status_check(app_state) -> Optional[bool]:
     """
-    True -> ComponentState.Running;
-    False -> ComponentState.Failed;
+    True -> ComponentState.RUNNING;
+    False -> ComponentState.FAILED;
     None -> skip status monitoring updates (e.g. using app's cli interface transiently)
     """
     is_running = asyncio.run(is_electrumx_running())

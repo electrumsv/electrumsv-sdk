@@ -6,6 +6,7 @@ from pathlib import Path
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 commands = [
+    "electrumsv-sdk --version",
     "electrumsv-sdk reset",
 
     "electrumsv-sdk start --background node",
@@ -30,4 +31,3 @@ try:
         subprocess.run(command, shell=True, check=True)
 finally:
     subprocess.run("electrumsv-sdk stop", shell=True, check=True)
-
