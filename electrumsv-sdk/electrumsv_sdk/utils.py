@@ -4,7 +4,7 @@ import shlex
 import subprocess
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 import psutil
 from electrumsv_node import electrumsv_node
@@ -131,7 +131,8 @@ def get_directory_name(component__file__):
     return component_name
 
 
-def kill_process(pid: int):
+def kill_process(component_dict: Dict):
+    pid = component_dict.get('pid')
     if sys.platform in ("linux", "darwin"):
         subprocess.run(f"pkill -P {pid}", shell=True)
     elif sys.platform == "win32":

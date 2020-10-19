@@ -5,7 +5,7 @@ import shutil
 from typing import Optional
 
 from electrumsv_sdk.components import ComponentOptions, Component
-from electrumsv_sdk.utils import is_remote_repo, get_directory_name
+from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process
 
 from .install import configure_paths, fetch_electrumx, packages_electrumx, \
     generate_run_script
@@ -48,7 +48,7 @@ def start(app_state):
 def stop(app_state):
     """some components require graceful shutdown via a REST API or RPC API but most can use the
     generic 'app_state.kill_component()' function to track down the pid and kill the process."""
-    app_state.kill_component()
+    app_state.call_for_component_id_or_type(COMPONENT_NAME, callable=kill_process)
     logger.info(f"stopped selected {COMPONENT_NAME} instance(s) (if any)")
 
 

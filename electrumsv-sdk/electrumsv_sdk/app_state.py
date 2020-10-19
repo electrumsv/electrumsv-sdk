@@ -9,12 +9,12 @@ from pathlib import Path
 import shutil
 import stat
 import sys
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Callable
 
 import requests
 from electrumsv_node import electrumsv_node
 
-from .utils import trace_processes_for_cmd, trace_pid, kill_process, make_bat_file, make_bash_file
+from .utils import trace_processes_for_cmd, trace_pid, make_bat_file, make_bash_file
 from .constants import ComponentLaunchFailedError
 from .argparsing import ArgParser
 from .components import ComponentName, ComponentOptions, ComponentStore, Component
@@ -301,23 +301,27 @@ class AppState:
         if hasattr(component, 'configure_paths'):
             self.component_module.configure_paths(self, repo, branch)
 
-    def kill_component(self):
-        """generic, cross-platform way of killing components (by --id or <component_type>)"""
+    def call_for_component_id_or_type(self, component_name: ComponentName, callable: Callable):
+        """Used to either kill/stop/reset components by --id or <component_type>)
+        - callable is called with one argument: component_dict with all relevant info about the
+        component of interest - if there are many components of a particular type then the
+        'callable' will be called multiple times.
+        """
         id = self.global_cli_flags[ComponentOptions.ID]
         components_state = self.component_store.get_status()
 
         # stop all running components of: <component_type>
         if self.selected_component:
-            for component in components_state:
-                if component.get("component_type") == self.selected_component:
-                    kill_process(component['pid'])
-                    logger.info(f"terminated: {component.get('id')}")
+            for component_dict in components_state:
+                if component_dict.get("component_type") == component_name:
+                    callable(component_dict)
+                    logger.info(f"terminated: {component_dict.get('id')}")
 
         # stop component according to unique: --id
         if id:
-            for component in components_state:
-                if component.get("id") == id:
-                    kill_process(component['pid'])
+            for component_dict in components_state:
+                if component_dict.get("id") == id:
+                    callable(component_dict)
                     logger.info(f"terminated: {id}")
 
     def import_plugin_component_from_id(self, component_id: str):
