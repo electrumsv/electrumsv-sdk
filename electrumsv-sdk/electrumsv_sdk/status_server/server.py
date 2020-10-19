@@ -25,13 +25,13 @@ logger = logging.getLogger("status-server")
 filelock_logger = logging.getLogger("filelock")
 filelock_logger.setLevel(logging.WARNING)
 
-data_dir = None
+datadir = None
 if sys.platform == "win32":
-    data_dir = Path(os.environ.get("LOCALAPPDATA")) / "ElectrumSV-SDK"
-if data_dir is None:
-    data_dir = Path.home() / ".electrumsv-sdk"
+    datadir = Path(os.environ.get("LOCALAPPDATA")) / "ElectrumSV-SDK"
+if datadir is None:
+    datadir = Path.home() / ".electrumsv-sdk"
 
-logging_path = data_dir.joinpath("logs").joinpath("status_monitor")
+logging_path = datadir.joinpath("logs").joinpath("status_monitor")
 os.makedirs(logging_path, exist_ok=True)
 logging_filename = str(int(time.time())) + ".log"
 

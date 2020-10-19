@@ -2,7 +2,8 @@ import asyncio
 import logging
 import os
 import shutil
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Dict
 
 from electrumsv_sdk.components import ComponentOptions, Component
 from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process
@@ -42,7 +43,7 @@ def start(app_state):
     id = app_state.get_id(COMPONENT_NAME)
     app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
         location=str(app_state.component_source_dir), status_endpoint="http://127.0.0.1:51001",
-        metadata={"data_dir": str(app_state.component_data_dir)}, logging_path=None)
+        metadata={"datadir": str(app_state.component_datadir)}, logging_path=None)
 
 
 def stop(app_state):
@@ -53,18 +54,18 @@ def stop(app_state):
 
 
 def reset(app_state):
-    repo = app_state.global_cli_flags[ComponentOptions.REPO]
-    branch = app_state.global_cli_flags[ComponentOptions.BRANCH]
-    configure_paths(app_state, repo, branch)
+    def reset_electrumx(component_dict: Dict):
+        logger.debug("Resetting state of RegTest electrumx server...")
+        datadir = Path(component_dict.get('metadata').get("datadir"))
+        if datadir.exists():
+            shutil.rmtree(datadir)
+            os.mkdir(datadir)
+        else:
+            os.makedirs(datadir, exist_ok=True)
+        logger.debug("Reset of RegTest electrumx server completed successfully.")
 
-    logger.debug("Resetting state of RegTest electrumx server...")
-    electrumx_data_dir = app_state.component_data_dir
-    if electrumx_data_dir.exists():
-        shutil.rmtree(electrumx_data_dir)
-        os.mkdir(electrumx_data_dir)
-    else:
-        os.makedirs(electrumx_data_dir, exist_ok=True)
-    logger.debug("Reset of RegTest electrumx server completed successfully.")
+    app_state.call_for_component_id_or_type(COMPONENT_NAME, callable=reset_electrumx)
+    logger.debug("Reset of RegTest electrumsv wallet completed successfully")
 
 
 def status_check(app_state) -> Optional[bool]:

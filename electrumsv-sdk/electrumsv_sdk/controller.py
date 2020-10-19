@@ -106,7 +106,6 @@ class Controller:
     def reset(self):
         """No choice is given to the user at present - resets node, electrumx and electrumsv
         wallet. If stop_set is empty, all processes terminate."""
-        status_monitor_was_already_running = self.is_status_monitor_online()
         self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = True
         component_id = self.app_state.global_cli_flags[ComponentOptions.ID]
 

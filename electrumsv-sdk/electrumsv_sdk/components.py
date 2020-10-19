@@ -30,7 +30,6 @@ import datetime
 import json
 import logging
 import os
-import sys
 from pathlib import Path
 from typing import Optional, List, Union, Dict, Tuple
 
@@ -133,57 +132,6 @@ class ComponentStore:
             in os.listdir(self.app_state.builtin_components_dir)
             if component_type not in {'__init__.py', '__pycache__'}
         ]
-
-    def get_component_data_dir(self, component_name: ComponentName):
-        # Todo - use this generically for node and electrumsv
-        """to run multiple instances of a component requires multiple data directories"""
-        def is_new_and_no_id(id, new) -> bool:
-            return id == "" and new
-        def is_new_and_id(id, new) -> bool:
-            return id != "" and new
-        def is_not_new_and_no_id(id, new) -> bool:
-            return id == "" and not new
-        def is_not_new_and_id(id, new) -> bool:
-            return id != "" and not new
-
-        new = self.app_state.global_cli_flags[ComponentOptions.NEW]
-        id = self.app_state.global_cli_flags[ComponentOptions.ID]
-
-        # autoincrement <component_name>1 -> <component_name>2 etc. new datadir is found
-        if is_new_and_no_id(id, new):
-            count = 1
-            while True:
-                self.app_state.global_cli_flags[ComponentOptions.ID] = id = \
-                    str(component_name) + str(count)
-                new_dir = self.app_state.data_dir.joinpath(f"{component_name}/{id}")
-                if not new_dir.exists():
-                    break
-                else:
-                    count += 1
-            logger.debug(f"Using new user-specified data dir ({id})")
-
-        elif is_new_and_id(id, new):
-            new_dir = self.app_state.data_dir.joinpath(f"{component_name}/{id}")
-            if new_dir.exists():
-                logger.debug(f"User-specified data directory: {new_dir} already exists ("
-                      f"either drop the --new flag or choose a unique identifier).")
-                sys.exit(1)
-            logger.debug(f"Using user-specified data dir ({new_dir})")
-
-        elif is_not_new_and_id(id, new):
-            new_dir = self.app_state.data_dir.joinpath(f"{component_name}/{id}")
-            if not new_dir.exists():
-                logger.debug(f"User-specified data directory: {new_dir} does not exist"
-                             f" and so will be created anew.")
-            logger.debug(f"Using user-specified data dir ({new_dir})")
-
-        elif is_not_new_and_no_id(id, new):
-            id = self.app_state.get_id(component_name)  # default
-            new_dir = self.app_state.data_dir.joinpath(f"{component_name}/{id}")
-            logger.debug(f"Using default data dir ({new_dir})")
-
-        logger.debug(f"data dir = {new_dir}")
-        return new_dir
 
     def get_status(self) -> List[Dict]:
         filelock_logger = logging.getLogger("filelock")
