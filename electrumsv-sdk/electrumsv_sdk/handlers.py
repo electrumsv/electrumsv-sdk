@@ -53,7 +53,7 @@ class Handlers:
             return parsed_args.new or parsed_args.gui or id != "" or repo != "" or branch != ""
 
         if has_startup_flags():
-            if len(self.app_state.selected_start_component) == 0:
+            if len(self.app_state.selected_component) == 0:
                 logger.error("must select a component type when specifying startup flags")
                 sys.exit()
 
@@ -75,7 +75,7 @@ class Handlers:
             return
 
         self.app_state.global_cli_flags[ComponentOptions.ID] = id = parsed_args.id
-        component_name = self.app_state.selected_stop_component
+        component_name = self.app_state.selected_component
         if id and component_name:
             logger.error("stop command cannot handle both --id flag and <component_type>. Please "
                          "select one or the other.")

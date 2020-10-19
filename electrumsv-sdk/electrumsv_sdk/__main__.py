@@ -32,8 +32,6 @@ def main():
     app_state.arparser.manual_argparsing(sys.argv)
     app_state.handlers.handle_cli_args()
 
-    app_state.selected_component = app_state.get_selected_component()
-
     component_id = app_state.global_cli_flags[ComponentOptions.ID]
     if app_state.selected_component:
         app_state.component_module = app_state.import_plugin_component(app_state.selected_component)

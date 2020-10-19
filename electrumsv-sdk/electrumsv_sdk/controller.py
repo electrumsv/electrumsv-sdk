@@ -55,15 +55,15 @@ class Controller:
     def stop(self):
         """if stop_set is empty, all processes terminate."""
         status_monitor_was_already_running = self.is_status_monitor_online()
-        status_monitor_is_selected_stop_component = self.app_state.selected_stop_component and \
-            self.app_state.selected_stop_component == ComponentName.STATUS_MONITOR
+        status_monitor_is_selected_component = self.app_state.selected_component and \
+            self.app_state.selected_component == ComponentName.STATUS_MONITOR
         if not status_monitor_was_already_running:
             self.launch_status_monitor()
 
         self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = True
         id = self.app_state.global_cli_flags[ComponentOptions.ID]
 
-        if id or self.app_state.selected_stop_component:
+        if id or self.app_state.selected_component:
             self.app_state.component_module.stop(self.app_state)
 
         # update status_monitor
@@ -73,11 +73,11 @@ class Controller:
             if component_dict:
                 component_list.append(component_dict)
 
-        if self.app_state.selected_stop_component:
+        if self.app_state.selected_component:
             component_list = [
                 component_dict for component_dict
                 in self.app_state.component_store.get_status()
-                if component_dict.get('component_type') == self.app_state.selected_stop_component
+                if component_dict.get('component_type') == self.app_state.selected_component
             ]
 
         if component_list:
@@ -85,13 +85,13 @@ class Controller:
                 component_obj = Component.from_dict(component_dict)
                 component_obj.component_state = ComponentState.STOPPED
                 self.app_state.component_store.update_status_file(component_obj)
-                if status_monitor_is_selected_stop_component:
+                if status_monitor_is_selected_component:
                     return  # skip impossible task of updating itself after killing itself...
                 self.app_state.status_monitor_client.update_status(component_obj)
 
         # no args implies stop all (status_monitor, node, electrumx, electrumsv, whatsonchain)
         # call sdk recursively to achieve this (greatly simplifies code)
-        if not id and not self.app_state.selected_stop_component:
+        if not id and not self.app_state.selected_component:
             self.app_state.run_command_current_shell("electrumsv-sdk stop node")
             self.app_state.run_command_current_shell("electrumsv-sdk stop electrumx")
             self.app_state.run_command_current_shell("electrumsv-sdk stop electrumsv")
@@ -125,7 +125,7 @@ class Controller:
             logger.info(f"Reset of: {self.app_state.selected_component} complete.")
         elif component_id != "":
             logger.info(f"Reset of: {component_id} complete.")
-        elif not self.app_state.selected_reset_component:
+        elif not self.app_state.selected_component:
             logger.info(f"Reset of: all components complete")
 
     def status_check(self, component_module=None):

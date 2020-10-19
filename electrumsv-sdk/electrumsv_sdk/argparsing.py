@@ -80,7 +80,7 @@ class ArgParser:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
                     if arg in ComponentName.__dict__.values():
-                        self.app_state.selected_start_component = arg
+                        self.app_state.selected_component = arg
                     else:
                         logger.error(f"Must select from: {self.component_store.component_list}")
                         sys.exit()
@@ -103,7 +103,7 @@ class ArgParser:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
                     if arg in ComponentName.__dict__.values():
-                        self.app_state.selected_stop_component = arg
+                        self.app_state.selected_component = arg
                     else:
                         logger.error("Must select from: node, electrumx, electrumsv, indexer, "
                               "status_monitor]")
@@ -122,7 +122,7 @@ class ArgParser:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
                     if arg in ComponentName.__dict__.values():
-                        self.app_state.selected_reset_component = arg
+                        self.app_state.selected_component = arg
                     else:
                         logger.error(f"Must select from: {self.component_store.component_list}")
                         sys.exit()
