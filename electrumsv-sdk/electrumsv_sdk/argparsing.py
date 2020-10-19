@@ -82,7 +82,7 @@ class ArgParser:
                     if arg in ComponentName.__dict__.values():
                         self.app_state.selected_component = arg
                     else:
-                        logger.error(f"Must select from: {self.component_store.component_list}")
+                        logger.error(f"Must select from: {self.app_state.component_map}")
                         sys.exit()
                     component_selected = True
                     continue
@@ -124,7 +124,7 @@ class ArgParser:
                     if arg in ComponentName.__dict__.values():
                         self.app_state.selected_component = arg
                     else:
-                        logger.error(f"Must select from: {self.component_store.component_list}")
+                        logger.error(f"Must select from: {self.app_state.component_map}")
                         sys.exit()
                     component_selected = True
                     continue
@@ -171,7 +171,7 @@ class ArgParser:
         # add <component_types> from plugins
         subparsers = start_parser.add_subparsers(help="subcommand", required=False)
         start_namespace_subcommands = []
-        for component_type in self.app_state.component_store.component_list:
+        for component_type in self.app_state.component_map:
             component_parser = subparsers.add_parser(component_type, help=f"start {component_type}")
             start_namespace_subcommands.append(component_parser)
         return start_parser, start_namespace_subcommands
@@ -184,7 +184,7 @@ class ArgParser:
         # add <component_types> from plugins
         subparsers = stop_parser.add_subparsers(help="subcommand", required=False)
         stop_namespace_subcommands = []
-        for component_type in self.app_state.component_store.component_list:
+        for component_type in self.app_state.component_map:
             component_parser = subparsers.add_parser(component_type, help=f"stop {component_type}")
             stop_namespace_subcommands.append(component_parser)
 
@@ -202,7 +202,7 @@ class ArgParser:
         # add <component_types> from plugins
         subparsers = reset_parser.add_subparsers(help="subcommand", required=False)
         reset_namespace_subcommands = []
-        for component_type in self.app_state.component_store.component_list:
+        for component_type in self.app_state.component_map:
             component_parser = subparsers.add_parser(component_type, help=f"reset {component_type}")
             reset_namespace_subcommands.append(component_parser)
 

@@ -1,5 +1,5 @@
 import argparse
-import importlib
+from importlib import import_module
 import json
 import logging
 import os
@@ -9,6 +9,7 @@ from pathlib import Path
 import shutil
 import stat
 import sys
+from types import ModuleType
 from typing import Dict, List, Optional, Callable
 
 import requests
@@ -46,6 +47,7 @@ class AppState:
         self.remote_repos_dir = self.sdk_home_dir.joinpath("remote_repos")
         self.shell_scripts_dir = self.sdk_home_dir.joinpath("shell_scripts")
         self.datadir = self.sdk_home_dir.joinpath("component_datadirs")
+        sys.path.append(f"{self.sdk_home_dir}")
         self.logs_dir = self.sdk_home_dir.joinpath("logs")
         self.config_path = self.sdk_home_dir.joinpath("config.json")
         os.makedirs(self.remote_repos_dir, exist_ok=True)
@@ -54,9 +56,14 @@ class AppState:
         os.makedirs(self.logs_dir, exist_ok=True)
 
         self.sdk_package_dir = Path(MODULE_DIR)
-        # plugins - 'user_components' overrides 'builtin_components' if there are name clashes
+
+        # plugins
         self.builtin_components_dir = Path(MODULE_DIR).joinpath("builtin_components")
-        self.user_components_dir = self.sdk_home_dir.joinpath("user_components")
+        self.user_plugins_dir = self.sdk_home_dir.joinpath("user_plugins")
+        self.local_plugins_dir = Path(os.getcwd()).joinpath("electrumsv_sdk_plugins")
+        os.makedirs(self.user_plugins_dir, exist_ok=True)
+
+        self.component_map = self.get_component_map()
 
         self.component_store = ComponentStore(self)
         self.arparser = ArgParser(self)
@@ -98,6 +105,38 @@ class AppState:
         self.global_cli_flags[ComponentOptions.ID] = ""
         self.global_cli_flags[ComponentOptions.REPO] = ""
         self.global_cli_flags[ComponentOptions.BRANCH] = ""
+
+    def get_component_map(self):
+        component_map = {}  # component_name: <component_dir>
+
+        # Layer 1
+        builtin_components_list = [
+            component_type for component_type
+            in os.listdir(self.builtin_components_dir)
+            if component_type not in {'__init__.py', '__pycache__'}
+        ]
+        for component_type in builtin_components_list:
+            component_map[component_type] = self.builtin_components_dir
+
+        # Layer 2 - overrides builtins (if there is a name clash)
+        user_plugins_list = [
+            component_type for component_type
+            in os.listdir(self.user_plugins_dir)
+            if component_type not in {'__init__.py', '__pycache__'}
+        ]
+        for component_type in user_plugins_list:
+            component_map[component_type] = self.user_plugins_dir
+
+        # Layer 3 - overrides both builtin & user_plugins_list (if there is a name clash)
+        if self.local_plugins_dir.exists():
+            local_components_list = [
+                component_type for component_type
+                in os.listdir(self.local_plugins_dir)
+                if component_type not in {'__init__.py', '__pycache__'}
+            ]
+            for component_type in local_components_list:
+                component_map[component_type] = self.local_plugins_dir
+        return component_map
 
     def get_id(self, component_name: ComponentName):
         id = self.global_cli_flags[ComponentOptions.ID]
@@ -289,10 +328,28 @@ class AppState:
             process_handle = self.run_command_new_window(command)
             return process_handle
 
-    def import_plugin_component(self, component_name: ComponentName):
-        component = importlib.import_module(f'.{component_name}',
-                                            package='electrumsv_sdk.builtin_components')
-        return component
+    def import_plugin_component(self, component_name: ComponentName) -> Optional[ModuleType]:
+        plugin_dir = self.component_map.get(component_name)
+        if not plugin_dir:
+            logger.error(f"plugin for {component_name} not found")
+            sys.exit(1)
+        basename = os.path.basename(plugin_dir)
+        logger.debug(f"loading plugin module '{component_name}' from: {plugin_dir}")
+        if basename == 'builtin_components':
+            # do relative import
+            component_module = import_module(f'.{basename}.{component_name}',
+                package="electrumsv_sdk")
+
+        elif basename == 'user_plugins':
+            # do absolute import (sdk_home_dir was added to sys.path to make this work)
+            component_module = import_module(f'{basename}.{component_name}')
+
+        elif basename == 'electrumsv_sdk_plugins':
+            # do absolute import
+            component_module = import_module(f'{basename}.{component_name}')
+
+        return component_module
+
 
     def configure_paths(self, component_name: ComponentName):
         repo = self.global_cli_flags[ComponentOptions.REPO]
