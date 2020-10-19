@@ -61,13 +61,13 @@ def stop(app_state):
         logger.info(f"terminated: {component_dict.get('id')}")
 
     # stop all running components of: <component_type>
-    if not id and app_state.selected_stop_component:
+    if not id and app_state.selected_component:
         for component in components_state:
-            if component.get("component_type") == app_state.selected_stop_component:
+            if component.get("component_type") == app_state.selected_component:
                 stop_node(component)
 
     # stop component according to unique: --id
-    if id and not app_state.selected_stop_component:
+    if id and not app_state.selected_component:
         for component in components_state:
             if component.get("id") == id:
                 stop_node(component)
@@ -75,6 +75,9 @@ def stop(app_state):
 
 
 def reset(app_state):
+    # Todo for this + stop() can likely generalise it by passing it a 'callable' (function that
+    #  takes one argument (component_name)... and the helper function can do the rest... calling
+    #  our custom reset or stop function as appropriate for --id or component_name settings.
     id = app_state.global_cli_flags[ComponentOptions.ID]
     components_state = app_state.component_store.get_status()
 
@@ -87,13 +90,13 @@ def reset(app_state):
         logger.info(f"terminated: {component_dict.get('id')}")
 
     # reset all running components of: <component_type>
-    if not id and app_state.selected_reset_component:
+    if not id and app_state.selected_component:
         for component in components_state:
-            if component.get("component_type") == app_state.selected_reset_component:
+            if component.get("component_type") == app_state.selected_component:
                 reset_node(component)
 
     # reset component according to unique: --id
-    if id and not app_state.selected_reset_component:
+    if id and not app_state.selected_component:
         for component in components_state:
             if component.get("id") == id:
                 reset_node(component)

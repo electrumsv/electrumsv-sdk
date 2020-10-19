@@ -87,9 +87,7 @@ class AppState:
         self.status_monitor_logging_path = self.logs_dir.joinpath("status_monitor")
         os.makedirs(self.status_monitor_logging_path, exist_ok=True)
 
-        self.selected_start_component: Optional[ComponentName] = None
-        self.selected_stop_component: Optional[ComponentName] = None
-        self.selected_reset_component: Optional[ComponentName] = None
+        self.selected_component: Optional[ComponentName] = None
 
         self.global_cli_flags: Dict[ComponentName] = {}
         self.node_args = None
@@ -309,9 +307,9 @@ class AppState:
         components_state = self.component_store.get_status()
 
         # stop all running components of: <component_type>
-        if self.selected_stop_component:
+        if self.selected_component:
             for component in components_state:
-                if component.get("component_type") == self.selected_stop_component:
+                if component.get("component_type") == self.selected_component:
                     kill_process(component['pid'])
                     logger.info(f"terminated: {component.get('id')}")
 
@@ -330,12 +328,6 @@ class AppState:
         else:
             component_name = component_data['component_type']
             return self.import_plugin_component(component_name)
-
-    def get_selected_component(self):
-        selected_component = self.selected_start_component or \
-                                  self.selected_stop_component or \
-                                  self.selected_reset_component
-        return selected_component
 
     def make_shell_script_for_component(self, list_of_shell_commands: List[str],
             component_name: ComponentName):
