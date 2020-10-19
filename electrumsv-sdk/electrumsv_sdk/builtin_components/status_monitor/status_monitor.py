@@ -7,7 +7,7 @@ from electrumsv_sdk.components import ComponentOptions, Component
 from electrumsv_sdk.constants import ComponentLaunchFailedError
 from electrumsv_sdk.utils import get_directory_name
 
-from .install import generate_run_script_status_monitor
+from .install import generate_run_script
 
 
 DEFAULT_PORT_ELECTRUMX = 51001
@@ -25,7 +25,7 @@ def install(app_state):
     # 2) fetch (as needed) - (NOT APPLICABLE)
     # 3) pip install (or npm install) packages/dependencies - (NOT APPLICABLE)
     # 4) generate run script - (SEE BELOW)
-    generate_run_script_status_monitor(app_state)
+    generate_run_script(app_state)
 
 
 def start(app_state):

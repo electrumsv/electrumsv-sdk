@@ -6,7 +6,7 @@ from pathlib import Path
 
 from electrumsv_sdk.components import ComponentOptions
 from electrumsv_sdk.utils import is_remote_repo, checkout_branch, \
-    make_shell_script_for_component, get_directory_name, get_component_port
+    get_directory_name, get_component_port
 
 DEFAULT_PORT_ELECTRUMSV = 9999
 COMPONENT_NAME = get_directory_name(__file__)
@@ -94,66 +94,57 @@ def packages_electrumsv(app_state, url, branch):
     process2.wait()
 
 
-def add_esv_default_args(commandline_string, esv_data_dir, port):
-    commandline_string += (
-        f" --portable --dir {esv_data_dir} "
-        f"--regtest daemon -dapp restapi --v=debug --file-logging "
-        f"--restapi --restapi-port={port} --server=127.0.0.1:51001:t "
-    )
-    return commandline_string
+def generate_run_script(app_state):
+    """
+    The electrumsv component type can be executed in 1 of 3 ways:
+     1) custom script (if args are supplied to the right-hand-side of <component_name>)
+     2) daemon script
+     3) gui script for running in GUI mode
 
+    NOTE: This is about as complex as it gets!
+    """
+    os.makedirs(app_state.shell_scripts_dir, exist_ok=True)
+    os.chdir(app_state.shell_scripts_dir)
 
-def make_esv_custom_script(base_cmd, env_vars, component_args, esv_data_dir):
-    """if cli args are supplied to electrumsv then it gives a "clean slate" (discarding the default
-    configuration. (but ensures that the --dir and --restapi flags are set if not already)"""
-    commandline_string = base_cmd
-    additional_args = " ".join(component_args)
-    commandline_string += " " + additional_args
-    if "--dir" not in component_args:
-        commandline_string += " " + f"--dir {esv_data_dir}"
-
-    # so that polling works
-    if "--restapi" not in component_args:
-        commandline_string += " " + f"--restapi"
-
-    make_shell_script_for_component(COMPONENT_NAME, commandline_string, env_vars)
-
-
-def make_esv_daemon_script(base_cmd, env_vars, esv_data_dir, port):
-    commandline_string = base_cmd + (
-        f" --portable --dir {esv_data_dir} "
-        f"--regtest daemon -dapp restapi --v=debug --file-logging "
-        f"--restapi --restapi-port={port} --server=127.0.0.1:51001:t --restapi-user rpcuser"
-        f" --restapi-password= "
-    )
-    make_shell_script_for_component(COMPONENT_NAME, commandline_string, env_vars)
-
-
-def make_esv_gui_script(base_cmd, env_vars, esv_data_dir, port):
-    commandline_string = base_cmd + (
-        f" gui --regtest --restapi --restapi-port={port} "
-        f"--v=debug --file-logging --server=127.0.0.1:51001:t --dir {esv_data_dir}"
-    )
-    make_shell_script_for_component(COMPONENT_NAME, commandline_string, env_vars)
-
-
-def generate_run_scripts_electrumsv(app_state):
-    """makes both the daemon script and a script for running the GUI"""
-    app_state.init_run_script_dir()
-    path_to_dapp_example_apps = app_state.component_source_dir.joinpath("examples/applications")
-    esv_env_vars = {"PYTHONPATH": str(path_to_dapp_example_apps)}
-    esv_script = str(app_state.component_source_dir.joinpath("electrum-sv"))
+    esv_launcher = str(app_state.component_source_dir.joinpath("electrum-sv"))
     esv_data_dir = app_state.component_datadir
     port = app_state.component_port
-    component_args = \
-        app_state.component_args if len(app_state.component_args) != 0 else None
-
     logger.debug(f"esv_data_dir = {esv_data_dir}")
 
-    base_cmd = (f"{app_state.python} {esv_script}")
+    # custom script (user-specified arguments are fed to ESV)
+    component_args = app_state.component_args if len(app_state.component_args) != 0 else None
     if component_args:
-        make_esv_custom_script(base_cmd, esv_env_vars, component_args, esv_data_dir)
+        additional_args = " ".join(component_args)
+        line1 = f"{app_state.python} {esv_launcher} {additional_args}"
+        if "--dir" not in component_args:
+            line1 += " " + f"--dir {esv_data_dir}"
+
+        # so that polling works
+        if "--restapi" not in component_args:
+            line1 += " " + f"--restapi"
+
+        lines = [line1]
+
+    # daemon script
     elif not app_state.global_cli_flags[ComponentOptions.GUI]:
-        make_esv_daemon_script(base_cmd, esv_env_vars, esv_data_dir, port)
+        path_to_example_dapps = app_state.component_source_dir.joinpath("examples/applications")
+        line1 = f"set PYTHONPATH={path_to_example_dapps}"
+        if sys.platform in {'linux', 'darwin'}:
+            line1 = f"export PYTHONPATH={path_to_example_dapps}"
+
+        line2 = (
+            f"{app_state.python} {esv_launcher} --portable --dir {esv_data_dir} --regtest daemon "
+            f"-dapp restapi --v=debug --file-logging --restapi --restapi-port={port} "
+            f"--server=127.0.0.1:51001:t --restapi-user rpcuser --restapi-password= "
+        )
+        lines = [line1, line2]
+
+    # GUI script
     else:
-        make_esv_gui_script(base_cmd, esv_env_vars, esv_data_dir, port)
+        line1 = (
+            f"{app_state.python} {esv_launcher} gui --regtest --restapi --restapi-port={port} "
+            f"--v=debug --file-logging --server=127.0.0.1:51001:t --dir {esv_data_dir}"
+        )
+        lines = [line1]
+    app_state.make_shell_script_for_component(list_of_shell_commands=lines,
+        component_name=COMPONENT_NAME)

@@ -14,7 +14,7 @@ from typing import Dict, List, Optional
 import requests
 from electrumsv_node import electrumsv_node
 
-from .utils import trace_processes_for_cmd, trace_pid, kill_process
+from .utils import trace_processes_for_cmd, trace_pid, kill_process, make_bat_file, make_bash_file
 from .constants import ComponentLaunchFailedError
 from .argparsing import ArgParser
 from .components import ComponentName, ComponentOptions, ComponentStore, Component
@@ -178,10 +178,6 @@ class AppState:
 
             electrumsv_node.reset()
 
-    def init_run_script_dir(self):
-        os.makedirs(self.shell_scripts_dir, exist_ok=True)
-        os.chdir(self.shell_scripts_dir)
-
     def is_component_running_http(self, status_endpoint: str, retries:
             int=6, duration: float=1.0, timeout: float=0.5, http_method='get',
             payload: Dict=None, component_name: ComponentName=None) -> bool:
@@ -340,3 +336,12 @@ class AppState:
                                   self.selected_stop_component or \
                                   self.selected_reset_component
         return selected_component
+
+    def make_shell_script_for_component(self, list_of_shell_commands: List[str],
+            component_name: ComponentName):
+
+        if sys.platform == "win32":
+            make_bat_file(component_name + ".bat", list_of_shell_commands)
+
+        elif sys.platform in ["linux", "darwin"]:
+            make_bash_file(component_name + ".sh", list_of_shell_commands)

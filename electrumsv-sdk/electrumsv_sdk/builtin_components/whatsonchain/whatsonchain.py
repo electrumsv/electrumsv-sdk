@@ -5,7 +5,7 @@ from typing import Optional
 from electrumsv_sdk.components import ComponentOptions, Component
 from electrumsv_sdk.utils import get_directory_name
 
-from .install import fetch_whatsonchain, generate_run_script_whatsonchain, packages_whatsonchain
+from .install import fetch_whatsonchain, generate_run_script, packages_whatsonchain
 from .start import check_node_for_woc
 
 DEFAULT_PORT_WHATSONCHAIN = 3002
@@ -28,7 +28,7 @@ def install(app_state):
     packages_whatsonchain(app_state)
 
     # 4) generate run script (SEE BELOW)
-    generate_run_script_whatsonchain(app_state)
+    generate_run_script(app_state)
 
 
 def start(app_state):
