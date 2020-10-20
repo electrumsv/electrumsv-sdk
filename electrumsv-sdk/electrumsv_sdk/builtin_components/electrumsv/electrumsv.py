@@ -1,6 +1,5 @@
 import logging
-import subprocess
-import sys
+import os
 from pathlib import Path
 from typing import Optional, Dict
 
@@ -10,7 +9,7 @@ from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_proces
 from .install import configure_paths, fetch_electrumsv, packages_electrumsv, \
     generate_run_script
 from .reset import delete_wallet, create_wallet, cleanup
-from .start import init_electrumsv_wallet_dir, is_offline_cli_mode
+from .start import is_offline_cli_mode, wallet_db_exists
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -35,26 +34,26 @@ def install(app_state):
     generate_run_script(app_state)
 
 
-def start(app_state, is_first_run=False):
+def start(app_state):
     logger.debug(f"Starting RegTest electrumsv daemon...")
+    os.makedirs(app_state.component_datadir.joinpath("regtest/wallets"), exist_ok=True)
 
-    # Offline CLI interface
     if is_offline_cli_mode(app_state):
-        return
+        # 'reset' recurses into here...
+        script_path = app_state.derive_shell_script_path(COMPONENT_NAME)
+        _process = app_state.spawn_process(script_path)
+        return  # skip the unnecessary status updates
 
-    # Daemon or GUI mode
-    init_electrumsv_wallet_dir(app_state)
+    # If daemon or gui mode continue...
+    if not wallet_db_exists(app_state):
+        reset(app_state)  # create first-time wallet
+        if wallet_db_exists(app_state):
+            generate_run_script(app_state)  # 'reset' mutates shell script
+        else:
+            logger.exception("wallet db creation failed unexpectedly")
 
     script_path = app_state.derive_shell_script_path(COMPONENT_NAME)
     process = app_state.spawn_process(script_path)
-    if is_first_run:
-        reset(app_state)  # create first-time wallet
-
-        if sys.platform in ("linux", "darwin"):
-            subprocess.run(f"pkill -P {process.pid}", shell=True)
-        elif sys.platform == "win32":
-            subprocess.run(f"taskkill.exe /PID {process.pid} /T /F", check=True)
-        return start(app_state, is_first_run=False)
 
     id = app_state.get_id(COMPONENT_NAME)
     logging_path = app_state.component_datadir.joinpath("logs")
@@ -62,8 +61,8 @@ def start(app_state, is_first_run=False):
                 "datadir": str(app_state.component_datadir)}
 
     app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
-        str(app_state.component_source_dir), "http://127.0.0.1:9999", metadata=metadata,
-        logging_path=logging_path)
+        str(app_state.component_source_dir), f"http://127.0.0.1:{app_state.component_port}",
+        metadata=metadata, logging_path=logging_path)
 
 
 def stop(app_state):
@@ -76,10 +75,9 @@ def stop(app_state):
 def reset(app_state):
     def reset_electrumsv(component_dict: Dict):
         logger.debug("Resetting state of RegTest electrumsv server...")
-        id = component_dict.get('id')
         datadir = Path(component_dict.get('metadata').get("datadir"))
         delete_wallet(datadir=datadir, wallet_name='worker1.sqlite')
-        create_wallet(app_state, id=id, datadir=datadir, wallet_name='worker1.sqlite')
+        create_wallet(app_state, datadir=datadir, wallet_name='worker1.sqlite')
         cleanup(app_state)
 
     app_state.call_for_component_id_or_type(COMPONENT_NAME, callable=reset_electrumsv)

@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 from electrumsv_sdk.utils import get_directory_name
 
@@ -14,5 +15,11 @@ def is_offline_cli_mode(app_state):
     return False
 
 
-def init_electrumsv_wallet_dir(app_state):
-    os.makedirs(app_state.component_datadir.joinpath("regtest/wallets"), exist_ok=True)
+def wallet_db_exists(app_state):
+    if os.path.exists(app_state.component_datadir.joinpath("regtest/wallets/worker1.sqlite")):
+        return True
+    time.sleep(3)  # takes a short time for .sqlite file to become visible
+    if os.path.exists(app_state.component_datadir.joinpath("regtest/wallets/worker1.sqlite")):
+        return True
+    return False
+

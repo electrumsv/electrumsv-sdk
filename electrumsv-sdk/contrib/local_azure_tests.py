@@ -6,9 +6,11 @@ from pathlib import Path
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 commands = [
+    "electrumsv-sdk stop",
     "electrumsv-sdk --version",
     "electrumsv-sdk reset",
 
+    "electrumsv-sdk start --background status_monitor",
     "electrumsv-sdk start --background node",
     "electrumsv-sdk start --background electrumx",
     "electrumsv-sdk start --background electrumsv",
