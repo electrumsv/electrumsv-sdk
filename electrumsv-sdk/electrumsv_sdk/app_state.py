@@ -219,7 +219,7 @@ class AppState:
 
     def is_component_running_http(self, status_endpoint: str, retries:
             int=6, duration: float=1.0, timeout: float=0.5, http_method='get',
-            payload: Dict=None, component_name: str=None) -> bool:
+            payload: Dict=None, component_name: str=None, verify_ssl=False) -> bool:
 
         if not component_name and self.component_info:
             component_name = self.component_info.component_type
@@ -230,7 +230,7 @@ class AppState:
             logger.debug(f"Polling {component_name}...")
             try:
                 result = getattr(requests, http_method)(status_endpoint, timeout=timeout,
-                    data=payload)
+                    data=payload, verify=False)
                 result.raise_for_status()
                 return True
             except Exception as e:
