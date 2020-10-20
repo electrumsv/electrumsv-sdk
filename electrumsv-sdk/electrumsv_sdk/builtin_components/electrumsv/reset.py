@@ -20,7 +20,7 @@ def normalize_wallet_name(wallet_name: str):
     return wallet_name
 
 
-def create_wallet(app_state, id: str, datadir: Path, wallet_name: str = None):
+def create_wallet(app_state, datadir: Path, wallet_name: str = None):
     repo = app_state.global_cli_flags[ComponentOptions.REPO]
     branch = app_state.global_cli_flags[ComponentOptions.BRANCH]
     try:
@@ -30,7 +30,7 @@ def create_wallet(app_state, id: str, datadir: Path, wallet_name: str = None):
         password = "test"
 
         command = (
-            f"electrumsv-sdk start --id={id} --repo={repo} --branch={branch} --background "
+            f"electrumsv-sdk start --repo={repo} --branch={branch} --background "
             f"electrumsv create_wallet --wallet {wallet_path} "
             f"--walletpassword {password} --portable --no-password-check")
 
