@@ -2,7 +2,7 @@ import json
 import logging
 
 from constants import COMPONENT_STATE_PATH  # pylint: disable=E0611
-from trinket import Request, Response
+from trinket import Response
 
 logger = logging.getLogger("trinket-routes")
 
@@ -23,18 +23,6 @@ async def get_status(app, request):
     except Exception as e:
         logger.exception(e)
         payload = {"status": None, "error": str(e)}
-        return Response.json(json.dumps(payload), status=500)
-
-
-# /api/status/update_status
-async def update_status(app, request: Request):
-    try:
-        app.update_status(json.loads(request.body))
-        payload = {"status": "success", "error": None}
-        return Response.json(json.dumps(payload))
-    except Exception as e:
-        logger.exception(e)
-        payload = {"status": None, "error": str(e) + f" request.body={request.body}"}
         return Response.json(json.dumps(payload), status=500)
 
 

@@ -4,14 +4,14 @@ import sys
 import time
 from functools import partial
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 
 import curio
 import logging
 import logging.handlers
 import signal
 
-from constants import FILE_LOCK_PATH  # pylint: disable=E0611
+from constants import FILE_LOCK_PATH, COMPONENT_STATE_PATH  # pylint: disable=E0611
 from curio.monitor import Monitor
 from filelock import FileLock
 from trinket import Trinket
@@ -69,12 +69,14 @@ class StatusServer:
 
     def __init__(self):
         super(StatusServer, self).__init__()
-        self.file_lock = FileLock(FILE_LOCK_PATH, timeout=1)
+        self.file_lock = FileLock(FILE_LOCK_PATH, timeout=5)
         self.curio_status_queue: Optional[curio.UniversalQueue] = None
         self.intentional_task_cancellation = False
         self.kernel = curio.Kernel(debug=False)
         m = Monitor(self.kernel)
         self.kernel._call_at_shutdown(m.close)
+        self.previous_state = self.read_state()  # compare at regular intervals to detect
+        # change
 
     def run(self):
         self.logger = logging.getLogger("status-server")
@@ -94,13 +96,13 @@ class StatusServer:
         _tasks = [
             await curio.spawn(server.serve, self.server),
             await curio.spawn(self.publish_status_update),
+            await curio.spawn(self.update_status),
         ]
         await Goodbye.wait()
 
     def add_api_routes(self, server: Trinket) -> Trinket:
         """add routes such that application state is accessable in context of handlers"""
         server.route("/api/status/get_status")(partial(routes.get_status, self))
-        server.route("/api/status/update_status", ["POST"])(partial(routes.update_status, self))
         server.route("/api/status/unsubscribe", ["POST"])(partial(routes.unsubscribe, self))
 
         server.websocket("/api/status/subscribe")(partial(routes.subscribe, self))
@@ -121,9 +123,47 @@ class StatusServer:
                 _component = await self.curio_status_queue.get()
             await curio.sleep(0.2)
 
-    def update_status(self, component):
-        self.curio_status_queue.put(component)
-        logger.debug(f"Got status update for component: {component['id']}")
+    def read_state(self) -> Dict:
+        with self.file_lock:
+            with open(COMPONENT_STATE_PATH, 'r') as f:
+                data = f.read()
+                if data:
+                    component_state = json.loads(data)
+                    return component_state
+
+    async def update_status(self):
+        def log_change(current_component_state):
+            logger.debug(
+                f"Status change for: "
+                f"Component(id={current_component_state['id']}, "
+                f"component_type={current_component_state.get('component_type')}, "
+                f"component_state={current_component_state.get('component_state')})"
+            )
+
+        while True:
+            current_state = self.read_state()
+            if not current_state:
+                await curio.sleep(10)
+                logger.debug("there is no state in component_state.json yet...")
+                continue
+
+            # status change from previous
+            for id in current_state.keys():
+                current_component_state = current_state.get(id)
+                prev_component_state = self.previous_state.get(id)
+
+                # new component (new id)
+                if not prev_component_state:
+                    log_change(current_component_state)
+
+                # change from previous
+                match = current_component_state.get('last_updated') == \
+                        prev_component_state.get('last_updated')
+                if current_component_state and not match:
+                    log_change(current_component_state)
+
+            self.previous_state = current_state
+            await curio.sleep(3)
 
 
 if __name__ == "__main__":

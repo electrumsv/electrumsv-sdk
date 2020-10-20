@@ -32,13 +32,8 @@ class Controller:
 
     def start(self):
         logger.info("Starting component...")
-        # The status_monitor is a special-case component because it must be running for start/stop()
-        if not self.is_status_monitor_online():
-            self.launch_status_monitor()
-
         # All other component types
-        if self.app_state.selected_component and \
-                self.app_state.selected_component != "status_monitor":
+        if self.app_state.selected_component:
             self.app_state.component_module.install(self.app_state)
             self.app_state.component_module.start(self.app_state)
             self.status_check()
@@ -47,6 +42,7 @@ class Controller:
 
         # no args implies (node, electrumx, electrumsv, whatsonchain)
         if not self.app_state.selected_component:
+            self.app_state.run_command_current_shell("electrumsv-sdk start status_monitor")
             self.app_state.run_command_current_shell("electrumsv-sdk start node")
             self.app_state.run_command_current_shell("electrumsv-sdk start electrumx")
             self.app_state.run_command_current_shell("electrumsv-sdk start electrumsv")
@@ -54,10 +50,6 @@ class Controller:
 
     def stop(self):
         """if stop_set is empty, all processes terminate."""
-        status_monitor_was_already_running = self.is_status_monitor_online()
-        status_monitor_is_selected_component = self.app_state.selected_component and \
-            self.app_state.selected_component == "status_monitor"
-
         self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = True
         id = self.app_state.global_cli_flags[ComponentOptions.ID]
 
@@ -72,9 +64,10 @@ class Controller:
                 component_list.append(component_dict)
 
         if self.app_state.selected_component:
+            component_state = self.app_state.component_store.get_status()
             component_list = [
                 component_dict for component_dict
-                in self.app_state.component_store.get_status()
+                in component_state.values()
                 if component_dict.get('component_type') == self.app_state.selected_component
             ]
 
@@ -83,9 +76,6 @@ class Controller:
                 component_obj = Component.from_dict(component_dict)
                 component_obj.component_state = ComponentState.STOPPED
                 self.app_state.component_store.update_status_file(component_obj)
-                if status_monitor_is_selected_component:
-                    return  # skip impossible task of updating itself after killing itself...
-                self.app_state.component_store.update_status_file(component_obj)
 
         # no args implies stop all (status_monitor, node, electrumx, electrumsv, whatsonchain)
         # call sdk recursively to achieve this (greatly simplifies code)
@@ -93,10 +83,6 @@ class Controller:
             for component_type in self.app_state.component_map.keys():
                 self.app_state.run_command_current_shell(f"electrumsv-sdk stop {component_type}")
             logger.info(f"terminated: all")
-
-        # cleanup (leave things as we found them)
-        if not status_monitor_was_already_running:
-            self.app_state.run_command_current_shell("electrumsv-sdk stop status_monitor")
 
     def reset(self):
         """No choice is given to the user at present - resets node, electrumx and electrumsv
@@ -153,7 +139,6 @@ class Controller:
                 self.app_state.component_info.component_state = ComponentState.RUNNING
                 logger.debug(f"{component_name} online")
             self.app_state.component_store.update_status_file(self.app_state.component_info)
-            self.app_state.status_monitor_client.update_status(self.app_state.component_info)
         else:
             raise Exception("neither component --id or component_name given")
 
