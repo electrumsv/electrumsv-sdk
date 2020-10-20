@@ -21,7 +21,6 @@ from .argparsing import ArgParser
 from .components import ComponentOptions, ComponentStore, Component
 from .controller import Controller
 from .handlers import Handlers
-from .status_monitor_client import StatusMonitorClient
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -69,7 +68,6 @@ class AppState:
         self.arparser = ArgParser(self)
         self.controller = Controller(self)
         self.handlers = Handlers(self)
-        self.status_monitor_client = StatusMonitorClient(self)
 
         self.component_module = None  # e.g. builtin_components.node.node.py module
         self.component_info: Optional[Component] = None  # dict conversion <-> status_monitor
@@ -370,14 +368,14 @@ class AppState:
 
         # stop all running components of: <component_type>
         if self.selected_component:
-            for component_dict in components_state:
+            for component_dict in components_state.values():
                 if component_dict.get("component_type") == component_name:
                     callable(component_dict)
                     logger.info(f"terminated: {component_dict.get('id')}")
 
         # stop component according to unique: --id
         if id:
-            for component_dict in components_state:
+            for component_dict in components_state.values():
                 if component_dict.get("id") == id:
                     callable(component_dict)
                     logger.info(f"terminated: {id}")

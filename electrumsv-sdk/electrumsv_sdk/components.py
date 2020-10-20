@@ -31,7 +31,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Optional, List, Union, Dict, Tuple
+from typing import Optional, Union, Dict
 
 from filelock import FileLock
 
@@ -113,10 +113,10 @@ class ComponentStore:
         self.app_state = app_state
         self.file_path = "component_state.json"
         self.lock_path = app_state.sdk_home_dir / "component_state.json.lock"
-        self.file_lock = FileLock(self.lock_path, timeout=1)
+        self.file_lock = FileLock(self.lock_path, timeout=5)
         self.component_state_path = app_state.sdk_home_dir / self.file_path
 
-    def get_status(self) -> List[Dict]:
+    def get_status(self) -> Dict:
         filelock_logger = logging.getLogger("filelock")
         filelock_logger.setLevel(logging.WARNING)
 
@@ -132,16 +132,10 @@ class ComponentStore:
             else:
                 return []
 
-    def find_component_if_exists(self, id: str, component_state: List[dict]) \
-            -> Optional[Tuple[int, Dict]]:
-        for index, comp in enumerate(component_state):
-            if comp.get("id") == id:
-                return (index, comp)
-
-    def update_status_file(self, component_info: Component):
+    def update_status_file(self, new_component_info: Component):
         """updates to the *file* (component.json) - does *not* update the server"""
 
-        component_state = []
+        component_state = {}
         with self.file_lock:
             if self.component_state_path.exists():
                 with open(self.component_state_path, "r") as f:
@@ -149,23 +143,18 @@ class ComponentStore:
                     if data:
                         component_state = json.loads(data)
                     else:
-                        component_state = []
-
-        result = self.find_component_if_exists(component_info.id, component_state)
-        if not result:
-            component_state.append(component_info.to_dict())
-        else:
-            index, _component_dict = result
-            component_state[index] = component_info.to_dict()
+                        component_state = {}
+        assert isinstance(component_state, dict)
+        component_state[new_component_info.id] = new_component_info.to_dict()
 
         with open(self.component_state_path, "w") as f:
             f.write(json.dumps(component_state, indent=4))
+        logger.debug(f"updated status: {new_component_info}")
 
     def component_status_data_by_id(self, component_id: str) -> Dict:
         component_state = self.get_status()
-        for component in component_state:
-            if component.get('id') == component_id:
-                return component
-
+        component_info = component_state.get(component_id)
+        if component_info:
+            return component_info
         logger.error("component id not found")
         return {}
