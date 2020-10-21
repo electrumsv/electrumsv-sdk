@@ -155,6 +155,7 @@ class StatusServer:
                 # new component (new id)
                 if not prev_component_state:
                     log_change(current_component_state)
+                    continue
 
                 # change from previous
                 match = current_component_state.get('last_updated') == \

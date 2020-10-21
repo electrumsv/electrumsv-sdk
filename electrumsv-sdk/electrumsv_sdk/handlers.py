@@ -53,7 +53,7 @@ class Handlers:
             return parsed_args.new or parsed_args.gui or id != "" or repo != "" or branch != ""
 
         if has_startup_flags():
-            if len(self.app_state.selected_component) == 0:
+            if not self.app_state.selected_component:
                 logger.error("must select a component type when specifying startup flags")
                 sys.exit()
 

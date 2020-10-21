@@ -22,20 +22,29 @@ def normalize_wallet_name(wallet_name: str):
 
 def create_wallet(app_state, datadir: Path, wallet_name: str = None):
     repo = app_state.global_cli_flags[ComponentOptions.REPO]
-    branch = app_state.global_cli_flags[ComponentOptions.BRANCH]
     try:
         logger.debug("Creating wallet...")
         wallet_name = normalize_wallet_name(wallet_name)
         wallet_path = datadir.joinpath(f"regtest/wallets/{wallet_name}")
         password = "test"
 
+        # todo direct this directly at the electrum-sv launcher to avoid spawning console
+        #  windows...
         command = (
-            f"electrumsv-sdk start --repo={repo} --branch={branch} --background "
+            f"electrumsv-sdk start --repo={repo} --background "
             f"electrumsv create_wallet --wallet {wallet_path} "
             f"--walletpassword {password} --portable --no-password-check")
 
         subprocess.run(command, shell=True, check=True)
         logger.debug(f"New wallet created at : {wallet_path} ")
+
+        command = (
+            f"electrumsv-sdk start --repo={repo} --background "
+            f"electrumsv create_account --wallet {wallet_path} "
+            f"--walletpassword {password} --portable --no-password-check")
+
+        subprocess.run(command, shell=True, check=True)
+        print(f"New standard (bip32) account created for: '{wallet_path}'")
     except Exception as e:
         logger.exception("unexpected problem creating new wallet")
         raise
@@ -52,11 +61,7 @@ def delete_wallet(datadir: Path, wallet_name: str = None):
         logger.debug(
             "Wallet directory before: %s", os.listdir(esv_wallet_db_directory),
         )
-        file_names = [
-            wallet_name,
-            wallet_name + "-shm",
-            wallet_name + "-wal",
-        ]
+        file_names = os.listdir(esv_wallet_db_directory)
         for file_name in file_names:
             file_path = esv_wallet_db_directory.joinpath(file_name)
             if Path.exists(file_path):
