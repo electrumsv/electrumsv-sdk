@@ -111,10 +111,12 @@ class Component:
 class ComponentStore:
     def __init__(self, app_state: "AppState"):
         self.app_state = app_state
-        self.file_path = "component_state.json"
+        self.file_name = "component_state.json"
         self.lock_path = app_state.sdk_home_dir / "component_state.json.lock"
         self.file_lock = FileLock(self.lock_path, timeout=5)
-        self.component_state_path = app_state.sdk_home_dir / self.file_path
+        self.component_state_path = app_state.sdk_home_dir / self.file_name
+        if not self.component_state_path.exists():
+            open(self.component_state_path, 'w').close()
 
     def get_status(self) -> Dict:
         filelock_logger = logging.getLogger("filelock")

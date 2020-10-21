@@ -75,7 +75,7 @@ class StatusServer:
         self.kernel = curio.Kernel(debug=False)
         m = Monitor(self.kernel)
         self.kernel._call_at_shutdown(m.close)
-        self.previous_state = self.read_state()  # compare at regular intervals to detect
+        self.previous_state: Dict = self.read_state()  # compare at regular intervals to detect
         # change
 
     def run(self):
@@ -130,6 +130,8 @@ class StatusServer:
                 if data:
                     component_state = json.loads(data)
                     return component_state
+                else:
+                    return {}
 
     async def update_status(self):
         def log_change(current_component_state):
