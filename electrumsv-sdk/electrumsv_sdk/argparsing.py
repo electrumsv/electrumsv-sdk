@@ -33,7 +33,8 @@ class ArgParser:
         self.component_store = ComponentStore(self.app_state)
 
     def parse_first_arg(self, arg, cur_cmd_name, subcommand_indices):
-        if arg in {NameSpace.START, NameSpace.STOP, NameSpace.RESET, NameSpace.NODE}:
+        if arg in {NameSpace.START, NameSpace.STOP, NameSpace.RESET, NameSpace.NODE,
+                   NameSpace.STATUS}:
             cur_cmd_name = arg
             self.app_state.NAMESPACE = arg
             subcommand_indices[arg] = []
