@@ -129,10 +129,10 @@ class ComponentStore:
                     if data:
                         component_state = json.loads(data)
                     else:
-                        component_state = []
+                        component_state = {}
                 return component_state
             else:
-                return []
+                return {}
 
     def update_status_file(self, new_component_info: Component):
         """updates to the *file* (component.json) - does *not* update the server"""
