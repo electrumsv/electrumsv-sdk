@@ -7,13 +7,13 @@ from electrumsv_sdk.app_state import AppState
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
 
-from .server_app import PING_URL
-
+from .server_app import PING_URL, SERVER_PORT
 
 COMPONENT_NAME = get_directory_name(__file__)
 COMPONENT_PATH = Path(os.path.dirname(os.path.abspath(__file__)))
 SCRIPT_PATH = COMPONENT_PATH / "server_app.py"
 
+RESERVED_PORTS = {SERVER_PORT}
 
 logger = logging.getLogger(COMPONENT_NAME)
 

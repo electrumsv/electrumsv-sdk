@@ -9,6 +9,9 @@ from electrumsv_sdk.utils import get_directory_name
 
 from .install import fetch_node, configure_paths
 
+DEFAULT_PORT = 18332
+DEFAULT_P2P_PORT_NODE = 18444
+RESERVED_PORTS = {DEFAULT_PORT, DEFAULT_P2P_PORT_NODE}
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 

@@ -4,12 +4,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-from electrumsv_sdk.argparsing import NameSpace
 from electrumsv_sdk.components import ComponentOptions
 from electrumsv_sdk.utils import is_remote_repo, checkout_branch, \
-    get_directory_name, get_component_port
+    get_directory_name
 
-DEFAULT_PORT_ELECTRUMSV = 9999
+DEFAULT_PORT = 9999
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
@@ -24,16 +23,11 @@ def configure_paths(app_state, repo, branch):
             checkout_branch(branch)
         app_state.component_source_dir = Path(repo)
 
-    app_state.electrumsv_requirements_path = (
-        app_state.component_source_dir.joinpath("contrib/deterministic-build/requirements.txt")
-    )
-    app_state.electrumsv_binary_requirements_path = (
-        app_state.component_source_dir.joinpath(
-            "contrib/deterministic-build/requirements-binaries.txt")
-    )
-    app_state.component_port = get_component_port(DEFAULT_PORT_ELECTRUMSV)
-    if app_state.NAMESPACE == NameSpace.START:
-        app_state.component_datadir = app_state.get_component_datadir(COMPONENT_NAME)
+    app_state.component_datadir = app_state.get_component_datadir(COMPONENT_NAME)
+
+    component_id = app_state.get_id(COMPONENT_NAME)
+    app_state.component_port = app_state.get_component_port(DEFAULT_PORT,
+        COMPONENT_NAME, component_id)
 
 
 def fetch_electrumsv(app_state, url, branch):
@@ -79,11 +73,19 @@ def packages_electrumsv(app_state, url, branch):
     os.chdir(app_state.component_source_dir)
     checkout_branch(branch)
 
+    electrumsv_requirements_path = (
+        app_state.component_source_dir.joinpath("contrib/deterministic-build/requirements.txt")
+    )
+    electrumsv_binary_requirements_path = (
+        app_state.component_source_dir.joinpath(
+            "contrib/deterministic-build/requirements-binaries.txt")
+    )
+
     if sys.platform == 'win32':
         cmd1 = f"{app_state.python} -m pip install --user --upgrade -r " \
-               f"{app_state.electrumsv_requirements_path}"
+               f"{electrumsv_requirements_path}"
         cmd2 = f"{app_state.python} -m pip install --user --upgrade -r " \
-               f"{app_state.electrumsv_binary_requirements_path}"
+               f"{electrumsv_binary_requirements_path}"
     elif sys.platform in ['linux', 'darwin']:
         cmd1 = f"sudo {app_state.python} -m pip install --upgrade -r " \
                f"{app_state.electrumsv_requirements_path}"
@@ -105,9 +107,6 @@ def generate_run_script(app_state):
 
     NOTE: This is about as complex as it gets!
     """
-    os.makedirs(app_state.shell_scripts_dir, exist_ok=True)
-    os.chdir(app_state.shell_scripts_dir)
-
     esv_launcher = str(app_state.component_source_dir.joinpath("electrum-sv"))
     esv_datadir = app_state.component_datadir
     port = app_state.component_port
@@ -120,10 +119,6 @@ def generate_run_script(app_state):
         line1 = f"{app_state.python} {esv_launcher} {additional_args}"
         if "--dir" not in component_args:
             line1 += " " + f"--dir {esv_datadir}"
-
-        # so that polling works
-        if "--restapi" not in component_args:
-            line1 += " " + f"--restapi"
 
         lines = [line1]
 

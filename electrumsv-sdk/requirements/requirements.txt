@@ -9,3 +9,4 @@ aiorpcX>=0.18.4
 bitcoinX>=0.2.4
 peewee>=3.13.3
 wheel
+aiohttp

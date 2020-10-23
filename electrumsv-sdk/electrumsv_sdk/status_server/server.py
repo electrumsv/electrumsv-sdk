@@ -45,6 +45,8 @@ root.setLevel(logging.DEBUG)
 logging.root.addHandler(handler)
 logging.root.addHandler(logging.StreamHandler())
 
+REFRESH_INTERVAL = 1.0  # seconds
+
 
 class ServerRunner(Server):
     """overwrites 'serve' method to change 'print' statements to logging instead"""
@@ -166,7 +168,7 @@ class StatusServer:
                     log_change(current_component_state)
 
             self.previous_state = current_state
-            await curio.sleep(3)
+            await curio.sleep(REFRESH_INTERVAL)
 
 
 if __name__ == "__main__":

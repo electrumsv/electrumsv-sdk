@@ -8,9 +8,11 @@ from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_proces
 
 from .install import configure_paths, fetch_electrumsv, packages_electrumsv, \
     generate_run_script
-from .reset import delete_wallet, create_wallet, cleanup
+from .reset import delete_wallet, create_wallet
 from .start import is_offline_cli_mode, wallet_db_exists
 
+DEFAULT_PORT = 9999
+RESERVED_PORTS = {DEFAULT_PORT}
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
@@ -45,7 +47,7 @@ def start(app_state):
         return  # skip the unnecessary status updates
 
     # If daemon or gui mode continue...
-    if not wallet_db_exists(app_state):
+    elif not wallet_db_exists(app_state):
         reset(app_state)  # create first-time wallet
         if wallet_db_exists(app_state):
             generate_run_script(app_state)  # 'reset' mutates shell script
@@ -78,7 +80,6 @@ def reset(app_state):
         datadir = Path(component_dict.get('metadata').get("datadir"))
         delete_wallet(datadir=datadir, wallet_name='worker1.sqlite')
         create_wallet(app_state, datadir=datadir, wallet_name='worker1.sqlite')
-        cleanup(app_state)
 
     app_state.call_for_component_id_or_type(COMPONENT_NAME, callable=reset_electrumsv)
     logger.debug("Reset of RegTest electrumsv wallet completed successfully")

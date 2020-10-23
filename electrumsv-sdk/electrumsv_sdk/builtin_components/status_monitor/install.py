@@ -3,7 +3,7 @@ import os
 
 from electrumsv_sdk.utils import get_directory_name
 
-DEFAULT_PORT_ELECTRUMX = 5000
+DEFAULT_PORT = 5000
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
