@@ -9,8 +9,8 @@ from electrumsv_sdk.utils import get_directory_name, kill_process
 
 from .install import generate_run_script
 
-
-DEFAULT_PORT_ELECTRUMX = 51001
+DEFAULT_PORT = 5000
+RESERVED_PORTS = {DEFAULT_PORT}
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
@@ -43,7 +43,7 @@ def start(app_state):
 
     id = app_state.get_id(COMPONENT_NAME)
     app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
-        str(app_state.status_monitor_dir), "http://127.0.0.1:5000/api/status/get_status")
+        str(app_state.status_monitor_dir), f"http://127.0.0.1:{DEFAULT_PORT}/api/status/get_status")
 
 
 def stop(app_state):
@@ -54,7 +54,7 @@ def stop(app_state):
 
 
 def reset(app_state):
-    logger.info("resetting the status monitor is not supported.")
+    logger.info("resetting the status monitor is not applicable.")
 
 
 def status_check(app_state) -> Optional[bool]:

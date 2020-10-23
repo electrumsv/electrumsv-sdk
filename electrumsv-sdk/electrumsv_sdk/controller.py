@@ -1,5 +1,8 @@
 import pprint
 import logging
+from types import ModuleType
+from typing import Optional, List
+
 from electrumsv_node import electrumsv_node
 
 from electrumsv_sdk.components import ComponentStore, ComponentOptions, \
@@ -30,85 +33,121 @@ class Controller:
         component_module.start(self.app_state)
         self.status_check(component_module)
 
-    def start(self):
+    def get_relevant_components(self, component_id: Optional[str]=None,
+            selected_component: Optional[str]=None) -> List[dict]:
+        relevant_components = []
+        if component_id:
+            component_dict = \
+                self.app_state.component_store.component_status_data_by_id(component_id)
+            if component_dict:
+                relevant_components.append(component_dict)
+
+        elif selected_component:
+            component_state = self.app_state.component_store.get_status()
+            for component_dict in component_state.values():
+                if component_dict.get('component_type') == selected_component:
+                    relevant_components.append(component_dict)
+        return relevant_components
+
+    def start(self, selected_component: Optional[str]=None, repo: str="", component_id: str="",
+              background: bool=False, component_args: Optional[List]=None) -> None:
+
+        # Todo beware: global_cli_flags can mutate globally. I think it should change to a named
+        #  tuple and passed into the module entrypoints.
+
         logger.info("Starting component...")
-        # All other component types
-        if self.app_state.selected_component:
-            self.app_state.component_module.install(self.app_state)
-            self.app_state.component_module.start(self.app_state)
-            self.status_check()
+        if background:
+            self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = background
+        if repo:
+            self.app_state.global_cli_flags[ComponentOptions.REPO] = repo
+        if component_id:
+            self.app_state.global_cli_flags[ComponentOptions.ID] = component_id
+        self.app_state.component_args = component_args
+        selected_component = selected_component if selected_component else \
+            self.app_state.selected_component
+
+        if component_id or selected_component:
+            # global_cli_flags component_id (if any) is retrieved from global state
+            if component_id:
+                component_dict = \
+                    self.app_state.component_store.component_status_data_by_id(component_id)
+                component_type = component_dict.get("component_type")
+                component_module = self.app_state.import_plugin_component(component_type)
+            else:
+                component_module = self.app_state.import_plugin_component(selected_component)
+            component_module.install(self.app_state)
+            component_module.start(self.app_state)
+            self.status_check(component_module)
 
         self.app_state.save_repo_paths()
 
-        # no args implies (node, electrumx, electrumsv, whatsonchain)
-        if not self.app_state.selected_component:
-            self.app_state.run_command_current_shell("electrumsv-sdk start status_monitor")
-            self.app_state.run_command_current_shell("electrumsv-sdk start node")
-            self.app_state.run_command_current_shell("electrumsv-sdk start electrumx")
-            self.app_state.run_command_current_shell("electrumsv-sdk start electrumsv")
-            self.app_state.run_command_current_shell("electrumsv-sdk start whatsonchain")
+        # no args implies start all
+        if not selected_component:
+            for component in self.app_state.component_map:
+                self.start(selected_component=component, background=background)
 
-    def stop(self):
+    def stop(self, selected_component: str=None, component_id: Optional[str]="",
+            background: bool=True) -> None:
         """if stop_set is empty, all processes terminate."""
-        self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = True
-        id = self.app_state.global_cli_flags[ComponentOptions.ID]
+        self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = background
+        if component_id:
+            self.app_state.global_cli_flags[ComponentOptions.ID] = component_id
 
-        if id or self.app_state.selected_component:
-            self.app_state.component_module.stop(self.app_state)
+        selected_component = selected_component if selected_component else \
+            self.app_state.selected_component
 
-        # update status_monitor
-        component_list = []
-        if id:
-            component_dict = self.app_state.component_store.component_status_data_by_id(id)
-            if component_dict:
-                component_list.append(component_dict)
-
-        if self.app_state.selected_component:
-            component_state = self.app_state.component_store.get_status()
-            component_list = [
-                component_dict for component_dict
-                in component_state.values()
-                if component_dict.get('component_type') == self.app_state.selected_component
-            ]
-
-        if component_list:
-            for component_dict in component_list:
+        relevant_components = self.get_relevant_components(component_id, selected_component)
+        if relevant_components:
+            # dynamic imports of plugin
+            for component_dict in relevant_components:
+                component_name = component_dict.get("component_type")
+                component_module = self.app_state.import_plugin_component(component_name)
+                component_module.stop(self.app_state)
                 component_obj = Component.from_dict(component_dict)
                 component_obj.component_state = ComponentState.STOPPED
                 self.app_state.component_store.update_status_file(component_obj)
 
-        # no args implies stop all (status_monitor, node, electrumx, electrumsv, whatsonchain)
-        # call sdk recursively to achieve this (greatly simplifies code)
-        if not id and not self.app_state.selected_component:
-            for component_type in self.app_state.component_map.keys():
-                self.app_state.run_command_current_shell(f"electrumsv-sdk stop {component_type}")
+        # no args implies stop all - (recursive)
+        if not component_id and not selected_component:
+            for component_type in sorted(self.app_state.component_map.keys(), reverse=True):
+                self.stop(selected_component=component_type, component_id="")
             logger.info(f"terminated: all")
 
-    def reset(self):
+    def reset(self, selected_component: str=None, component_id: str="", background: bool=True) \
+            -> None:
         """No choice is given to the user at present - resets node, electrumx and electrumsv
         wallet. If stop_set is empty, all processes terminate."""
-        self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = True
-        component_id = self.app_state.global_cli_flags[ComponentOptions.ID]
+        self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = background
 
-        # reset by selected by --id flag or by <component_type>
-        if component_id != "" or self.app_state.selected_component:
-            self.app_state.component_module.reset(self.app_state)
+        selected_component = selected_component if selected_component else \
+            self.app_state.selected_component
+        component_id = component_id if component_id else \
+            self.app_state.global_cli_flags[ComponentOptions.ID]
+
+        # reset by --id flag or by <component_type>
+        component_set = self.get_relevant_components(component_id, selected_component)
+        if component_set:
+            # dynamic imports of plugin
+            for component_dict in component_set:
+                component_name = component_dict.get("component_type")
+                component_module = self.app_state.import_plugin_component(component_name)
+                component_module.reset(self.app_state)
 
         # no args (no --id or <component_type>) implies reset all (node, electrumx, electrumsv)
-        elif component_id == "" and not self.app_state.selected_component:
-            self.app_state.run_command_current_shell("electrumsv-sdk reset node")
-            self.app_state.run_command_current_shell("electrumsv-sdk reset electrumx")
-            self.app_state.run_command_current_shell("electrumsv-sdk reset electrumsv")
+        if not component_id and not selected_component:
+            for component_type in self.app_state.component_map.keys():
+                self.reset(selected_component=component_type, component_id="")
+            logger.info(f"reset: all")
 
         # logging
-        if component_id == "" and self.app_state.selected_component:
-            logger.info(f"Reset of: {self.app_state.selected_component} complete.")
+        if component_id == "" and selected_component:
+            logger.info(f"Reset of: {selected_component} complete.")
         elif component_id != "":
             logger.info(f"Reset of: {component_id} complete.")
         elif not self.app_state.selected_component:
             logger.info(f"Reset of: all components complete")
 
-    def status_check(self, component_module=None):
+    def status_check(self, component_module: ModuleType):
         """The 'status_check()' entrypoint of the plugin must always run after the start()
         command.
 
@@ -120,8 +159,6 @@ class Controller:
 
         The status_monitor subsequently is updated with the status."""
         component_id = self.app_state.global_cli_flags[ComponentOptions.ID]
-        component_module = component_module if component_module else \
-            self.app_state.component_module
         component_name = component_module.COMPONENT_NAME
 
         # if --id flag or <component_type> are set and the

@@ -8,7 +8,8 @@ from electrumsv_sdk.utils import get_directory_name, kill_process
 from .install import fetch_whatsonchain, generate_run_script, packages_whatsonchain
 from .start import check_node_for_woc
 
-DEFAULT_PORT_WHATSONCHAIN = 3002
+DEFAULT_PORT = 3002
+RESERVED_PORTS = {DEFAULT_PORT}
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
@@ -19,7 +20,7 @@ def install(app_state):
         logger.error("ignoring --repo flag for whatsonchain - not applicable.")
 
     # 1) configure_paths (SEE BELOW)
-    app_state.woc_dir = app_state.remote_repos_dir.joinpath("woc-explorer")
+    app_state.src_dir = app_state.remote_repos_dir.joinpath("woc-explorer")
 
     # 2) fetch (as needed) (SEE BELOW)
     fetch_whatsonchain(app_state, url="https://github.com/AustEcon/woc-explorer.git", branch='')
@@ -40,7 +41,7 @@ def start(app_state):
     process = app_state.spawn_process(script_path)
     id = app_state.get_id(COMPONENT_NAME)
     app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
-        str(app_state.woc_dir), "http://127.0.0.1:3002")
+        str(app_state.src_dir), "http://127.0.0.1:3002")
 
 
 def stop(app_state):

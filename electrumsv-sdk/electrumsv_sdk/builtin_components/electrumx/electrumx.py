@@ -12,6 +12,9 @@ from .install import configure_paths, fetch_electrumx, packages_electrumx, \
     generate_run_script
 from .start import is_electrumx_running
 
+
+DEFAULT_PORT = 51001
+RESERVED_PORTS = {DEFAULT_PORT}
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 

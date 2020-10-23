@@ -1,8 +1,8 @@
 import logging
 import sys
 
-from electrumsv_sdk.argparsing import NameSpace
 from electrumsv_sdk.components import ComponentOptions
+from electrumsv_sdk.argparsing import NameSpace
 from electrumsv_sdk.app_state import AppState  # pylint: disable=E0401
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',
@@ -32,21 +32,31 @@ def main():
     app_state.arparser.manual_argparsing(sys.argv)
     app_state.handlers.handle_cli_args()
 
-    component_id = app_state.global_cli_flags[ComponentOptions.ID]
-    if app_state.selected_component:
-        app_state.component_module = app_state.import_plugin_component(app_state.selected_component)
-    elif component_id != "":
-        app_state.component_module = app_state.import_plugin_component_from_id(component_id)
-
     # Call relevant entrypoint
     if app_state.NAMESPACE == NameSpace.START:
-        app_state.controller.start()  # -> install() -> start() -> status_check() plugin entrypoints
+        app_state.controller.start(
+            selected_component=app_state.selected_component,
+            repo=app_state.global_cli_flags[ComponentOptions.REPO],
+            component_id=app_state.global_cli_flags[ComponentOptions.ID],
+            background=app_state.global_cli_flags[ComponentOptions.BACKGROUND],
+            component_args=app_state.component_args,
+        )  # -> install() -> start() ->
+        # status_check() plugin
+        # entrypoints
 
     if app_state.NAMESPACE == NameSpace.STOP:
-        app_state.controller.stop()  # -> stop() entrypoint of plugin
+        app_state.controller.stop(
+            selected_component=app_state.selected_component,
+            component_id=app_state.global_cli_flags[ComponentOptions.ID],
+            background=app_state.global_cli_flags[ComponentOptions.BACKGROUND],
+        )  # -> stop() entrypoint of plugin
 
     if app_state.NAMESPACE == NameSpace.RESET:
-        app_state.controller.reset()  # -> reset() entrypoint of plugin
+        app_state.controller.reset(
+            selected_component=app_state.selected_component,
+            component_id=app_state.global_cli_flags[ComponentOptions.ID],
+            background=app_state.global_cli_flags[ComponentOptions.BACKGROUND],
+        )  # -> reset() entrypoint of plugin
 
     # Special built-in execution pathway (not part of plugin system)
     if app_state.NAMESPACE == NameSpace.NODE:

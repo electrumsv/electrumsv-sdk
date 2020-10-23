@@ -50,12 +50,12 @@ class Handlers:
         self.app_state.global_cli_flags[ComponentOptions.BRANCH] = branch = parsed_args.branch
 
         def has_startup_flags():
-            return parsed_args.new or parsed_args.gui or id != "" or repo != "" or branch != ""
+            return parsed_args.new or parsed_args.gui
 
         if has_startup_flags():
             if not self.app_state.selected_component:
-                logger.error("must select a component type when specifying startup flags")
-                sys.exit()
+                logger.error("must select a component type when specifying --new or --gui flags")
+                sys.exit(1)
 
         # logging
         if parsed_args.new:

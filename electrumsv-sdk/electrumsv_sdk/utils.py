@@ -131,20 +131,27 @@ def get_directory_name(component__file__):
     return component_name
 
 
-def kill_process(component_dict: Dict):
-    pid = component_dict.get('pid')
+def kill_by_pid(pid: id):
     if sys.platform in ("linux", "darwin"):
         subprocess.run(f"pkill -P {pid}", shell=True)
     elif sys.platform == "win32":
         subprocess.run(f"taskkill.exe /PID {pid} /T /F")
 
 
-def get_component_port(default_component_port):
-    """find any port that is not currently in use"""
-    port = default_component_port
-    while True:
-        if port_is_in_use(port):
-            port += 1
-        else:
-            break
-    return port
+def kill_process(component_dict: Dict):
+    pid = component_dict.get('pid')
+    kill_by_pid(pid)
+
+
+def is_default_component_id(component_name, component_id):
+    return component_name + str(1) == component_id
+
+
+def split_command(command: str) -> List[str]:
+    if sys.platform == 'win32':
+        split_command = shlex.split(command, posix=0)
+    elif sys.platform in {'darwin', 'linux'}:
+        split_command = shlex.split(command, posix=1)
+    else:
+        raise NotImplementedError("OS not supported")
+    return split_command

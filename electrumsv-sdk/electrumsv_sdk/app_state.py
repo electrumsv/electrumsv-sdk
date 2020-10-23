@@ -15,8 +15,9 @@ from typing import Dict, List, Optional, Callable
 import requests
 from electrumsv_node import electrumsv_node
 
-from .utils import trace_processes_for_cmd, trace_pid, make_bat_file, make_bash_file
-from .constants import ComponentLaunchFailedError
+from .utils import trace_processes_for_cmd, trace_pid, make_bat_file, make_bash_file, \
+    port_is_in_use, is_default_component_id
+from .constants import ComponentLaunchFailedError, LOCAL_PLUGINS_DIRNAME
 from .argparsing import ArgParser
 from .components import ComponentOptions, ComponentStore, Component
 from .controller import Controller
@@ -53,6 +54,7 @@ class AppState:
         os.makedirs(self.shell_scripts_dir, exist_ok=True)
         os.makedirs(self.datadir, exist_ok=True)
         os.makedirs(self.logs_dir, exist_ok=True)
+        self.calling_context_dir = Path(os.getcwd())
 
         self.sdk_package_dir = Path(MODULE_DIR)
 
@@ -60,6 +62,8 @@ class AppState:
         self.builtin_components_dir = Path(MODULE_DIR).joinpath("builtin_components")
         self.user_plugins_dir = self.sdk_home_dir.joinpath("user_plugins")
         self.local_plugins_dir = Path(os.getcwd()).joinpath("electrumsv_sdk_plugins")
+        self.add_local_plugin_to_sys_path()
+        sys.path.append(str(MODULE_DIR))  # for dynamic import of builtin_components
         os.makedirs(self.user_plugins_dir, exist_ok=True)
 
         self.component_map = self.get_component_map()
@@ -138,11 +142,27 @@ class AppState:
 
         return component_map
 
-    def get_id(self, component_name: str):
+    def get_default_id(self, component_name: str) -> str:
+        return component_name + str(1)
+
+    def get_id(self, component_name: str) -> str:
+        """four scenarios:
+        1)  no --id flag set -> default id
+        2a) --id flag set -> use the id flag that was set by user
+        2b) --new flag set; --id flag not set; a global id was allocated already
+        3)  --new flag set; --id flag not set; a global id has not yet been allocated"""
         id = self.global_cli_flags[ComponentOptions.ID]
-        if not id:  # Default component_name
-            id = component_name + "1"
-        return id
+        new = self.global_cli_flags[ComponentOptions.NEW]
+        if not id and not new:  # Default component id (and port + datadir)
+            id = self.get_default_id(component_name)
+            return id
+
+        elif id:
+            return id
+
+        elif new and not id:
+            logger.exception("Component id not set. Need to call 'get_component_datadir()' to "
+                "allocate a datadir and id first")
 
     def save_repo_paths(self):
         """overwrites config.json"""
@@ -253,7 +273,7 @@ class AppState:
             return self.spawn_in_new_console(command)
 
     def run_command_current_shell(self, command: str):
-        subprocess.run(command, shell=True, check=True)
+        return subprocess.run(command, shell=True, check=True)
 
     def run_command_background(self, command: str):
         if sys.platform in ('linux', 'darwin'):
@@ -334,7 +354,7 @@ class AppState:
             logger.error(f"plugin for {component_name} not found")
             sys.exit(1)
         basename = os.path.basename(plugin_dir)
-        logger.debug(f"loading plugin module '{component_name}' from: {plugin_dir}")
+        # logger.debug(f"loading plugin module '{component_name}' from: {plugin_dir}")
         if basename == 'builtin_components':
             # do relative import
             component_module = import_module(f'.{basename}.{component_name}',
@@ -344,7 +364,7 @@ class AppState:
             # do absolute import (sdk_home_dir was added to sys.path to make this work)
             component_module = import_module(f'{basename}.{component_name}')
 
-        elif basename == 'electrumsv_sdk_plugins':
+        elif basename == LOCAL_PLUGINS_DIRNAME:
             # do absolute import
             component_module = import_module(f'{basename}.{component_name}')
 
@@ -366,13 +386,6 @@ class AppState:
         id = self.global_cli_flags[ComponentOptions.ID]
         components_state = self.component_store.get_status()
 
-        # stop all running components of: <component_type>
-        if self.selected_component:
-            for component_dict in components_state.values():
-                if component_dict.get("component_type") == component_name:
-                    callable(component_dict)
-                    logger.info(f"terminated: {component_dict.get('id')}")
-
         # stop component according to unique: --id
         if id:
             for component_dict in components_state.values():
@@ -380,23 +393,28 @@ class AppState:
                     callable(component_dict)
                     logger.info(f"terminated: {id}")
 
-    def import_plugin_component_from_id(self, component_id: str):
-        component_data = self.component_store.component_status_data_by_id(component_id)
-        if component_data == {}:
-            logger.error(f"no component data found for id: {component_id}")
-            sys.exit(1)
-        else:
-            component_name = component_data['component_type']
-            return self.import_plugin_component(component_name)
+        # stop all running components of: <component_type>
+        elif component_name:
+            for component_dict in components_state.values():
+                if component_dict.get("component_type") == component_name:
+                    callable(component_dict)
+                    logger.info(f"terminated: {component_dict.get('id')}")
 
     def make_shell_script_for_component(self, list_of_shell_commands: List[str],
             component_name: str):
+        os.makedirs(self.shell_scripts_dir, exist_ok=True)
+        os.chdir(self.shell_scripts_dir)
 
         if sys.platform == "win32":
             make_bat_file(component_name + ".bat", list_of_shell_commands)
 
         elif sys.platform in ["linux", "darwin"]:
             make_bash_file(component_name + ".sh", list_of_shell_commands)
+
+    def add_local_plugin_to_sys_path(self):
+        """the parent dir of the 'electrumsv_sdk_plugins' dir needs to be on sys.path to be
+        locatable for dynamic importing."""
+        sys.path.append(self.calling_context_dir)
 
     def get_component_datadir(self, component_name: str):
         # Todo - use this generically for node and electrumsv
@@ -446,5 +464,38 @@ class AppState:
             new_dir = self.datadir.joinpath(f"{component_name}/{id}")
             logger.debug(f"Using default data dir ({new_dir})")
 
+        os.makedirs(new_dir, exist_ok=True)
         logger.debug(f"data dir = {new_dir}")
         return new_dir
+
+    def port_clash_check_ok(self):
+        reserved_ports = set()
+        for component_name in self.component_map:
+            component_module = self.import_plugin_component(component_name)
+            if component_module.RESERVED_PORTS in reserved_ports:
+                logger.exception(f"There is a conflict of reserved ports for component_module: "
+                                 f"{component_module} on ports: {component_module.RESERVED_PORTS}. "
+                                 f"Please choose default ports for the plugin that do not clash.")
+                return False
+        return True
+
+    def get_component_port(self, default_component_port, component_name, component_id):
+        """ensure that no other plugin uses any of the default ports as they are strictly
+        reserved for the default component ids."""
+        if not self.port_clash_check_ok():
+            return sys.exit(1)
+
+        # reserved ports
+        if is_default_component_id(component_name, component_id):
+            assert not port_is_in_use(default_component_port), \
+                f"an unknown application is using this port: {default_component_port}"
+            return default_component_port
+
+        # a non-default component id -> unreserved + unused ports only
+        port = default_component_port + 10
+        while True:
+            if port_is_in_use(port):
+                port += 10
+            else:
+                break
+        return port
