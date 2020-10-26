@@ -47,7 +47,7 @@ def create_wallet(app_state, datadir: Path, wallet_name: str = None):
         command_string = f"create_wallet --wallet {wallet_path} --walletpassword" \
                          f" {password} --portable --no-password-check"
         line = feed_commands_to_esv(app_state, command_string)
-        process = subprocess.Popen(line)
+        process = subprocess.Popen(line, shell=True)
         process.wait()
         logger.debug(f"New wallet created at : {wallet_path} ")
 
@@ -56,7 +56,7 @@ def create_wallet(app_state, datadir: Path, wallet_name: str = None):
             f"create_account --wallet {wallet_path} --walletpassword {password} --portable "
             f"--no-password-check")
         line = feed_commands_to_esv(app_state, command_string)
-        process = subprocess.Popen(line)
+        process = subprocess.Popen(line, shell=True)
         process.wait()
         logger.debug(f"New standard (bip32) account created for: '{wallet_path}'")
 
