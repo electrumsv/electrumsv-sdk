@@ -10,7 +10,7 @@ import shutil
 import stat
 import sys
 from types import ModuleType
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional, Callable, Union
 
 import requests
 from electrumsv_node import electrumsv_node
@@ -257,7 +257,7 @@ class AppState:
             time.sleep(sleep_time)
         return False
 
-    def derive_shell_script_path(self, component_name):
+    def derive_shell_script_path(self, component_name: str) -> Path:
         script_name = component_name
 
         if sys.platform == "win32":

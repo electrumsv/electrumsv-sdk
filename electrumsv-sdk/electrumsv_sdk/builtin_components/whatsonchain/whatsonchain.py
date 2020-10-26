@@ -38,7 +38,7 @@ def start(app_state):
         sys.exit(1)
 
     script_path = app_state.derive_shell_script_path(COMPONENT_NAME)
-    process = app_state.spawn_process(script_path)
+    process = app_state.spawn_process(f"{script_path}")
     id = app_state.get_id(COMPONENT_NAME)
     app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
         str(app_state.src_dir), "http://127.0.0.1:3002")

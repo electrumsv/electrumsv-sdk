@@ -43,7 +43,7 @@ def start(app_state):
     if is_offline_cli_mode(app_state):
         # 'reset' recurses into here...
         script_path = app_state.derive_shell_script_path(COMPONENT_NAME)
-        _process = app_state.spawn_process(script_path)
+        _process = app_state.spawn_process(f"{script_path}")
         return  # skip the unnecessary status updates
 
     # If daemon or gui mode continue...
@@ -55,7 +55,7 @@ def start(app_state):
             logger.exception("wallet db creation failed unexpectedly")
 
     script_path = app_state.derive_shell_script_path(COMPONENT_NAME)
-    process = app_state.spawn_process(script_path)
+    process = app_state.spawn_process(f"{script_path}")
 
     id = app_state.get_id(COMPONENT_NAME)
     logging_path = app_state.component_datadir.joinpath("logs")

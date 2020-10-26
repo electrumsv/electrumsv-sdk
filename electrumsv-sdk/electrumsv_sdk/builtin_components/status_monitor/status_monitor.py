@@ -32,7 +32,7 @@ def start(app_state):
     logger.debug(f"Starting status monitor daemon...")
     try:
         script_path = app_state.derive_shell_script_path(COMPONENT_NAME)  # move to app_state
-        process = app_state.spawn_process(script_path)
+        process = app_state.spawn_process(f"{script_path}")
     except ComponentLaunchFailedError:
         log_path = app_state.status_monitor_logging_path
         log_files = os.listdir(log_path)
