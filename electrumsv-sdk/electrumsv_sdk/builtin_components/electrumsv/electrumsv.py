@@ -48,7 +48,9 @@ def start(app_state):
 
     # If daemon or gui mode continue...
     elif not wallet_db_exists(app_state):
-        reset(app_state)  # create first-time wallet
+        # reset wallet
+        delete_wallet(datadir=app_state.component_datadir, wallet_name='worker1.sqlite')
+        create_wallet(app_state, datadir=app_state.component_datadir, wallet_name='worker1.sqlite')
         if wallet_db_exists(app_state):
             generate_run_script(app_state)  # 'reset' mutates shell script
         else:

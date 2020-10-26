@@ -10,7 +10,7 @@ import shutil
 import stat
 import sys
 from types import ModuleType
-from typing import Dict, List, Optional, Callable, Union
+from typing import Dict, List, Optional, Callable
 
 import requests
 from electrumsv_node import electrumsv_node
