@@ -414,7 +414,7 @@ class AppState:
     def add_local_plugin_to_sys_path(self):
         """the parent dir of the 'electrumsv_sdk_plugins' dir needs to be on sys.path to be
         locatable for dynamic importing."""
-        sys.path.append(self.calling_context_dir)
+        sys.path.append(f"{self.calling_context_dir}")
 
     def get_component_datadir(self, component_name: str):
         # Todo - use this generically for node and electrumsv
