@@ -57,7 +57,7 @@ def topup_wallet():
         logger.debug(f"Generated {nblocks}: {result.json()['result']} to {toaddress}")
 
 
-def cast_str_int_args_to_int(node_args):
+def cast_str_int_args_to_int(node_args: List[str]) -> List[str]:
     int_indices = []
     for index, arg in enumerate(node_args):
         if arg.isdigit():
@@ -68,7 +68,7 @@ def cast_str_int_args_to_int(node_args):
     return node_args
 
 
-def trace_processes_for_cmd(command):
+def trace_processes_for_cmd(command: str) -> List[int]:
     command = Path(command)
     processes = []
     for p in psutil.process_iter():
@@ -81,7 +81,7 @@ def trace_processes_for_cmd(command):
     return processes
 
 
-def trace_pid(command):
+def trace_pid(command: str) -> psutil.Process:
     """
     Linux workaround:
     - gnome-terminal only ever returns back an ephemeral pid and makes it basically impossible

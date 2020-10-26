@@ -10,8 +10,9 @@ import shutil
 import stat
 import sys
 from types import ModuleType
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional, Callable, Union, Any
 
+import psutil
 import requests
 from electrumsv_node import electrumsv_node
 
@@ -43,46 +44,46 @@ class AppState:
             datadir = Path.home() / ".electrumsv-sdk"
 
         # set main application paths
-        self.sdk_home_dir = datadir
-        self.remote_repos_dir = self.sdk_home_dir.joinpath("remote_repos")
-        self.shell_scripts_dir = self.sdk_home_dir.joinpath("shell_scripts")
-        self.datadir = self.sdk_home_dir.joinpath("component_datadirs")
+        self.sdk_home_dir: Path = datadir
+        self.remote_repos_dir: Path = self.sdk_home_dir.joinpath("remote_repos")
+        self.shell_scripts_dir: Path = self.sdk_home_dir.joinpath("shell_scripts")
+        self.datadir: Path = self.sdk_home_dir.joinpath("component_datadirs")
         sys.path.append(f"{self.sdk_home_dir}")
-        self.logs_dir = self.sdk_home_dir.joinpath("logs")
-        self.config_path = self.sdk_home_dir.joinpath("config.json")
+        self.logs_dir: Path = self.sdk_home_dir.joinpath("logs")
+        self.config_path: Path = self.sdk_home_dir.joinpath("config.json")
         os.makedirs(self.remote_repos_dir, exist_ok=True)
         os.makedirs(self.shell_scripts_dir, exist_ok=True)
         os.makedirs(self.datadir, exist_ok=True)
         os.makedirs(self.logs_dir, exist_ok=True)
-        self.calling_context_dir = Path(os.getcwd())
+        self.calling_context_dir: Path = Path(os.getcwd())
 
-        self.sdk_package_dir = Path(MODULE_DIR)
+        self.sdk_package_dir: Path = Path(MODULE_DIR)
 
         # plugins
-        self.builtin_components_dir = Path(MODULE_DIR).joinpath("builtin_components")
-        self.user_plugins_dir = self.sdk_home_dir.joinpath("user_plugins")
-        self.local_plugins_dir = Path(os.getcwd()).joinpath("electrumsv_sdk_plugins")
+        self.builtin_components_dir: Path = Path(MODULE_DIR).joinpath("builtin_components")
+        self.user_plugins_dir: Path = self.sdk_home_dir.joinpath("user_plugins")
+        self.local_plugins_dir: Path = Path(os.getcwd()).joinpath("electrumsv_sdk_plugins")
         self.add_local_plugin_to_sys_path()
         sys.path.append(str(MODULE_DIR))  # for dynamic import of builtin_components
         os.makedirs(self.user_plugins_dir, exist_ok=True)
 
-        self.component_map = self.get_component_map()
+        self.component_map: Dict[str, Path] = self.get_component_map()
 
-        self.component_store = ComponentStore(self)
-        self.arparser = ArgParser(self)
-        self.controller = Controller(self)
-        self.handlers = Handlers(self)
+        self.component_store: ComponentStore = ComponentStore(self)
+        self.arparser: ArgParser = ArgParser(self)
+        self.controller: Controller = Controller(self)
+        self.handlers: Handlers = Handlers(self)
 
-        self.component_module = None  # e.g. builtin_components.node.node.py module
+        self.component_module: Optional[ModuleType] = None  # e.g. builtin_components.node
         self.component_info: Optional[Component] = None  # dict conversion <-> status_monitor
 
         if sys.platform in ['linux', 'darwin']:
             self.linux_venv_dir = self.sdk_home_dir.joinpath("sdk_venv")
-            self.python = self.linux_venv_dir.joinpath("bin").joinpath("python")
+            self.python = str(self.linux_venv_dir.joinpath("bin").joinpath("python"))
             self.run_command_current_shell(
                 f"{sys.executable} -m venv {self.linux_venv_dir}")
         else:
-            self.python = sys.executable
+            self.python: str = sys.executable
 
         # namespaces and argparsing
         self.NAMESPACE = ""  # 'start', 'stop', 'reset', 'node', or 'status'
@@ -98,7 +99,7 @@ class AppState:
 
         self.selected_component: Optional[str] = None
 
-        self.global_cli_flags: Dict[str] = {}
+        self.global_cli_flags: Dict[str, Any] = {}
         self.node_args = None
 
         self.global_cli_flags[ComponentOptions.NEW] = False
@@ -108,7 +109,7 @@ class AppState:
         self.global_cli_flags[ComponentOptions.REPO] = ""
         self.global_cli_flags[ComponentOptions.BRANCH] = ""
 
-    def get_component_map(self):
+    def get_component_map(self) -> Dict[str, Path]:
         component_map = {}  # component_name: <component_dir>
         ignored = {'__init__.py', '__pycache__', '.idea', '.vscode'}
 
@@ -164,7 +165,7 @@ class AppState:
             logger.exception("Component id not set. Need to call 'get_component_datadir()' to "
                 "allocate a datadir and id first")
 
-    def save_repo_paths(self):
+    def save_repo_paths(self) -> None:
         """overwrites config.json"""
         config_path = self.config_path
         with open(config_path, "r") as f:
@@ -177,7 +178,7 @@ class AppState:
         with open(config_path, "w") as f:
             f.write(json.dumps(config, indent=4))
 
-    def purge_prev_installs_if_exist(self):
+    def purge_prev_installs_if_exist(self) -> None:
         def remove_readonly(func, path, excinfo):  # .git is read-only
             os.chmod(path, stat.S_IWRITE)
             func(path)
@@ -189,7 +190,7 @@ class AppState:
             shutil.rmtree(self.shell_scripts_dir, onerror=remove_readonly)
             os.makedirs(self.shell_scripts_dir, exist_ok=True)
 
-    def setup_python_venv(self):
+    def setup_python_venv(self) -> None:
         logger.debug("Setting up python virtualenv (linux/unix only)")
         sdk_datadir = Path.home() / ".electrumsv-sdk"
         linux_venv_dir = sdk_datadir.joinpath("sdk_venv")
@@ -203,7 +204,7 @@ class AppState:
         subprocess.run(f"sudo {python} -m pip install -r {sdk_requirements_linux_path}",
                        shell=True, check=True)
 
-    def handle_first_ever_run(self):
+    def handle_first_ever_run(self) -> None:
         """nukes previously installed dependencies and .bat/.sh scripts for the first ever run of
         the electrumsv-sdk."""
         try:
@@ -257,16 +258,20 @@ class AppState:
             time.sleep(sleep_time)
         return False
 
-    def derive_shell_script_path(self, component_name: str) -> Path:
+    def derive_shell_script_path(self, component_name: str) -> str:
         script_name = component_name
 
         if sys.platform == "win32":
             script = self.shell_scripts_dir.joinpath(f"{script_name}.bat")
         elif sys.platform in ("linux", "darwin"):
             script = self.shell_scripts_dir.joinpath(f"{script_name}.sh")
-        return script
+        else:
+            logger.error(f"unsupported platform: {sys.platform}")
+            raise NotImplementedError
+        return str(script)
 
-    def spawn_process(self, command: str):
+    def spawn_process(self, command: str) -> subprocess.Popen:
+        assert isinstance(command, str)
         if self.global_cli_flags[ComponentOptions.BACKGROUND]:
             return self.spawn_in_background(command)
         else:
@@ -275,7 +280,7 @@ class AppState:
     def run_command_current_shell(self, command: str):
         return subprocess.run(command, shell=True, check=True)
 
-    def run_command_background(self, command: str):
+    def run_command_background(self, command: str) -> subprocess.Popen:
         if sys.platform in ('linux', 'darwin'):
             process_handle = subprocess.Popen(f"nohup {command} &", shell=True,
                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -291,7 +296,7 @@ class AppState:
             )
             return process_handle
 
-    def run_command_new_window(self, command: str):
+    def run_command_new_window(self, command: str) -> subprocess.Popen:
         if sys.platform in ('linux', 'darwin'):
             # todo gnome-terminal part will not work cross-platform for spawning new terminals
             process_handle = subprocess.Popen(f"gnome-terminal -- {command}", shell=True,
@@ -303,7 +308,7 @@ class AppState:
             process_handle = self.run_command_background(command)
             return process_handle
 
-    def linux_trace_pid(self, command: str, num_processes_before: int):
+    def linux_trace_pid(self, command: str, num_processes_before: int) -> psutil.Process:
         num_processes_after = len(trace_processes_for_cmd(command))
         if num_processes_before == num_processes_after:
             raise ComponentLaunchFailedError()
@@ -311,10 +316,11 @@ class AppState:
         process_handle = trace_pid(command)
         return process_handle
 
-    def spawn_in_background(self, command):
+    def spawn_in_background(self, command: str) -> Union[subprocess.Popen, psutil.Process]:
         """for long-running processes / servers - on linux there is a process id
         tracing step because Popen returns a pid for a detached process (not the one we actually
         want)"""
+        assert isinstance(command, str)
         if sys.platform in ('linux', 'darwin'):
             num_processes_before = len(trace_processes_for_cmd(command))
             self.run_command_background(command)
@@ -327,7 +333,7 @@ class AppState:
             process_handle = self.run_command_background(command)
             return process_handle
 
-    def spawn_in_new_console(self, command):
+    def spawn_in_new_console(self, command: str) -> Union[subprocess.Popen, psutil.Process]:
         """for long-running processes / servers - on linux there is a process id tracing step
         because Popen returns a pid for a detached process (not the one we actually want)"""
         if sys.platform in ('linux', 'darwin'):
@@ -419,13 +425,13 @@ class AppState:
     def get_component_datadir(self, component_name: str):
         # Todo - use this generically for node and electrumsv
         """to run multiple instances of a component requires multiple data directories"""
-        def is_new_and_no_id(id, new) -> bool:
+        def is_new_and_no_id(id: str, new: bool) -> bool:
             return id == "" and new
-        def is_new_and_id(id, new) -> bool:
+        def is_new_and_id(id: str, new: bool) -> bool:
             return id != "" and new
-        def is_not_new_and_no_id(id, new) -> bool:
+        def is_not_new_and_no_id(id: str, new: bool) -> bool:
             return id == "" and not new
-        def is_not_new_and_id(id, new) -> bool:
+        def is_not_new_and_id(id: str, new: bool) -> bool:
             return id != "" and not new
 
         new = self.global_cli_flags[ComponentOptions.NEW]
@@ -468,7 +474,7 @@ class AppState:
         logger.debug(f"data dir = {new_dir}")
         return new_dir
 
-    def port_clash_check_ok(self):
+    def port_clash_check_ok(self) -> bool:
         reserved_ports = set()
         for component_name in self.component_map:
             component_module = self.import_plugin_component(component_name)
@@ -479,7 +485,7 @@ class AppState:
                 return False
         return True
 
-    def get_component_port(self, default_component_port, component_name, component_id):
+    def get_component_port(self, default_component_port, component_name, component_id) -> int:
         """ensure that no other plugin uses any of the default ports as they are strictly
         reserved for the default component ids."""
         if not self.port_clash_check_ok():
