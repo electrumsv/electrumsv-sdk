@@ -69,12 +69,12 @@ def cast_str_int_args_to_int(node_args: List[str]) -> List[str]:
 
 
 def trace_processes_for_cmd(command: str) -> List[int]:
-    command = Path(command)
+    str(command)
     processes = []
     for p in psutil.process_iter():
         try:
-            process_name = p.name()
-            if command.stem in process_name:
+            cmd = p.cmdline()
+            if command in cmd:
                 processes.append(p.pid)
         except Exception:
             pass
