@@ -88,9 +88,9 @@ def packages_electrumsv(app_state, url, branch):
                f"{electrumsv_binary_requirements_path}"
     elif sys.platform in ['linux', 'darwin']:
         cmd1 = f"sudo {app_state.python} -m pip install --upgrade -r " \
-               f"{app_state.electrumsv_requirements_path}"
+               f"{electrumsv_requirements_path}"
         cmd2 = f"sudo {app_state.python} -m pip install --upgrade -r " \
-               f"{app_state.electrumsv_binary_requirements_path}"
+               f"{electrumsv_binary_requirements_path}"
 
     process1 = subprocess.Popen(cmd1, shell=True)
     process1.wait()

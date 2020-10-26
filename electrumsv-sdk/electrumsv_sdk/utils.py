@@ -69,6 +69,7 @@ def cast_str_int_args_to_int(node_args):
 
 
 def trace_processes_for_cmd(command):
+    command = Path(command)
     processes = []
     for p in psutil.process_iter():
         try:
