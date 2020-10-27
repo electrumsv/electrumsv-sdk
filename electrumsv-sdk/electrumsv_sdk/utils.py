@@ -74,8 +74,9 @@ def trace_processes_for_cmd(command: str) -> List[int]:
     for p in psutil.process_iter():
         try:
             cmd = p.cmdline()
-            if command in cmd:
-                processes.append(p.pid)
+            for subcommand in command.split(" "):
+                if subcommand in cmd:
+                    processes.append(p.pid)
         except Exception:
             pass
     return processes
@@ -156,3 +157,10 @@ def split_command(command: str) -> List[str]:
     else:
         raise NotImplementedError("OS not supported")
     return split_command
+
+def is_docker():
+    path = '/proc/self/cgroup'
+    return (
+        os.path.exists('/.dockerenv') or
+        os.path.isfile(path) and any('docker' in line for line in open(path))
+    )
