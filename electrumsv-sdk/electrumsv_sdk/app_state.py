@@ -76,14 +76,7 @@ class AppState:
 
         self.component_module: Optional[ModuleType] = None  # e.g. builtin_components.node
         self.component_info: Optional[Component] = None  # dict conversion <-> status_monitor
-
-        if sys.platform in ['linux', 'darwin']:
-            self.linux_venv_dir = self.sdk_home_dir.joinpath("sdk_venv")
-            self.python = str(self.linux_venv_dir.joinpath("bin").joinpath("python"))
-            self.run_command_current_shell(
-                f"{sys.executable} -m venv {self.linux_venv_dir}")
-        else:
-            self.python: str = sys.executable
+        self.python = sys.executable
 
         # namespaces and argparsing
         self.NAMESPACE = ""  # 'start', 'stop', 'reset', 'node', or 'status'
@@ -199,9 +192,9 @@ class AppState:
             .joinpath("requirements.txt")
         sdk_requirements_linux_path = Path(MODULE_DIR).parent.joinpath("requirements").joinpath(
             "requirements-linux.txt")
-        subprocess.run(f"sudo {python} -m pip install -r {sdk_requirements_path}",
+        subprocess.run(f"{python} -m pip install --user -r {sdk_requirements_path}",
                        shell=True, check=True)
-        subprocess.run(f"sudo {python} -m pip install -r {sdk_requirements_linux_path}",
+        subprocess.run(f"{python} -m pip install --user -r {sdk_requirements_linux_path}",
                        shell=True, check=True)
 
     def handle_first_ever_run(self) -> None:

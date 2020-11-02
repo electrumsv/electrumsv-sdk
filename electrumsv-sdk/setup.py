@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import os
+import site
 
 from setuptools import find_packages, setup
 import sys
+site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 _ = """
 py -3.7-32 .\setup.py build bdist_wheel --plat-name win32
