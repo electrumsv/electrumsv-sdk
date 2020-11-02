@@ -87,9 +87,9 @@ def packages_electrumsv(app_state, url, branch):
         cmd2 = f"{app_state.python} -m pip install --user --upgrade -r " \
                f"{electrumsv_binary_requirements_path}"
     elif sys.platform in ['linux', 'darwin']:
-        cmd1 = f"sudo {app_state.python} -m pip install --upgrade -r " \
+        cmd1 = f"{app_state.python} -m pip install --user --upgrade -r " \
                f"{electrumsv_requirements_path}"
-        cmd2 = f"sudo {app_state.python} -m pip install --upgrade -r " \
+        cmd2 = f"{app_state.python} -m pip install --user --upgrade -r " \
                f"{electrumsv_binary_requirements_path}"
 
     process1 = subprocess.Popen(cmd1, shell=True)

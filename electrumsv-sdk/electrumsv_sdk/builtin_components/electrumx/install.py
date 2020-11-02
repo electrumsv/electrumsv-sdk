@@ -80,7 +80,7 @@ def packages_electrumx(app_state, url, branch):
 
     if sys.platform in ['linux', 'darwin']:
         process = subprocess.Popen(
-            f"sudo {app_state.python} -m pip install -r {requirements_path}", shell=True)
+            f"{app_state.python} -m pip install --user -r {requirements_path}", shell=True)
         process.wait()
 
     elif sys.platform == 'win32':
