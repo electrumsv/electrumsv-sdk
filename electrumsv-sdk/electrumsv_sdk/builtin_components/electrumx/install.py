@@ -115,6 +115,7 @@ def generate_run_script(app_state):
         f"{env_var_setter} MAX_SEND=10000000",
         f"{env_var_setter} LOG_LEVEL=debug",
         f"{env_var_setter} NET=regtest",
+        f"{env_var_setter} ALLOW_ROOT=1",
         f"{app_state.python} {app_state.component_source_dir.joinpath('electrumx_server')}"
     ]
     app_state.make_shell_script_for_component(list_of_shell_commands=lines,

@@ -115,8 +115,6 @@ class Controller:
 
     def reset(self, selected_component: str=None, component_id: str="", background: bool=True) \
             -> None:
-        """No choice is given to the user at present - resets node, electrumx and electrumsv
-        wallet. If stop_set is empty, all processes terminate."""
         self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = background
 
         selected_component = selected_component if selected_component else \
@@ -125,13 +123,18 @@ class Controller:
             self.app_state.global_cli_flags[ComponentOptions.ID]
 
         # reset by --id flag or by <component_type>
-        component_set = self.get_relevant_components(component_id, selected_component)
-        if component_set:
-            # dynamic imports of plugin
-            for component_dict in component_set:
-                component_name = component_dict.get("component_type")
-                component_module = self.app_state.import_plugin_component(component_name)
-                component_module.reset(self.app_state)
+        if selected_component:
+            # some components will not have a datadir if they've never been started before but
+            # it is the responsibility of the plugin to handle this
+            component_module = self.app_state.import_plugin_component(selected_component)
+            component_module.reset(self.app_state)
+
+        elif component_id:
+            component_dict = self.app_state.component_store.component_status_data_by_id(
+                component_id)
+            component_name = component_dict.get("component_type")
+            component_module = self.app_state.import_plugin_component(component_name)
+            component_module.reset(self.app_state)
 
         # no args (no --id or <component_type>) implies reset all (node, electrumx, electrumsv)
         if not component_id and not selected_component:
