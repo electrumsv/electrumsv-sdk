@@ -59,12 +59,11 @@ def start(app_state):
     script_path = app_state.derive_shell_script_path(COMPONENT_NAME)
     process = app_state.spawn_process(f"{script_path}")
 
-    id = app_state.get_id(COMPONENT_NAME)
     logging_path = app_state.component_datadir.joinpath("logs")
     metadata = {"config": str(app_state.component_datadir.joinpath("regtest/config")),
                 "datadir": str(app_state.component_datadir)}
 
-    app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
+    app_state.component_info = Component(app_state.component_id, process.pid, COMPONENT_NAME,
         str(app_state.component_source_dir), f"http://127.0.0.1:{app_state.component_port}",
         metadata=metadata, logging_path=logging_path)
 

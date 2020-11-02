@@ -43,8 +43,7 @@ def start(app_state):
     logger.debug(f"Starting RegTest electrumx server...")
     script_path = app_state.derive_shell_script_path(COMPONENT_NAME)
     process = app_state.spawn_process(f"{script_path}")
-    id = app_state.get_id(COMPONENT_NAME)
-    app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
+    app_state.component_info = Component(app_state.component_id, process.pid, COMPONENT_NAME,
         location=str(app_state.component_source_dir), status_endpoint="http://127.0.0.1:51001",
         metadata={"datadir": str(app_state.component_datadir)}, logging_path=None)
 

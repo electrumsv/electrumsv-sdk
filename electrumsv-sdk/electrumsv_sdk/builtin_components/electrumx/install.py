@@ -21,10 +21,11 @@ def configure_paths(app_state, repo, branch):
             checkout_branch(branch)
         app_state.component_source_dir = Path(repo)
 
-    app_state.component_datadir = app_state.get_component_datadir(COMPONENT_NAME)
-    component_id = app_state.get_id(COMPONENT_NAME)
+    if not app_state.component_datadir:
+        app_state.component_datadir, app_state.component_id = \
+            app_state.get_component_datadir(COMPONENT_NAME)
     app_state.component_port = app_state.get_component_port(DEFAULT_PORT_ELECTRUMX, COMPONENT_NAME,
-        component_id)
+        app_state.component_id)
 
 
 def fetch_electrumx(app_state, url, branch):
