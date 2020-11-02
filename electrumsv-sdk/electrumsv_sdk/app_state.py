@@ -10,7 +10,7 @@ import shutil
 import stat
 import sys
 from types import ModuleType
-from typing import Dict, List, Optional, Callable, Union, Any
+from typing import Dict, List, Optional, Callable, Union, Any, Tuple
 
 import psutil
 import requests
@@ -90,17 +90,22 @@ class AppState:
         self.status_monitor_logging_path = self.logs_dir.joinpath("status_monitor")
         os.makedirs(self.status_monitor_logging_path, exist_ok=True)
 
+        # Todo - these globals should not be mutated (and merely reflect whatever commandline
+        #  configuration was set at the beginning).
+        #  This is not yet adhered to fully but we should work towards it possibly with a
+        #  Configuration object that is instantiated and passed around inside of the plugins
+        #  - AustEcon
         self.selected_component: Optional[str] = None
 
         self.global_cli_flags: Dict[str, Any] = {}
         self.node_args = None
-
         self.global_cli_flags[ComponentOptions.NEW] = False
         self.global_cli_flags[ComponentOptions.GUI] = False
         self.global_cli_flags[ComponentOptions.BACKGROUND] = False
         self.global_cli_flags[ComponentOptions.ID] = ""
         self.global_cli_flags[ComponentOptions.REPO] = ""
         self.global_cli_flags[ComponentOptions.BRANCH] = ""
+        self.component_datadir = None
 
     def get_component_map(self) -> Dict[str, Path]:
         component_map = {}  # component_name: <component_dir>
@@ -415,9 +420,8 @@ class AppState:
         locatable for dynamic importing."""
         sys.path.append(f"{self.calling_context_dir}")
 
-    def get_component_datadir(self, component_name: str):
-        # Todo - use this generically for node and electrumsv
-        """to run multiple instances of a component requires multiple data directories"""
+    def get_component_datadir(self, component_name: str) -> Tuple[Path, Optional[str]]:
+        """to run multiple instances of a component requires multiple data directories."""
         def is_new_and_no_id(id: str, new: bool) -> bool:
             return id == "" and new
         def is_new_and_id(id: str, new: bool) -> bool:
@@ -434,8 +438,7 @@ class AppState:
         if is_new_and_no_id(id, new):
             count = 1
             while True:
-                self.global_cli_flags[ComponentOptions.ID] = id = \
-                    str(component_name) + str(count)
+                id = str(component_name) + str(count)
                 new_dir = self.datadir.joinpath(f"{component_name}/{id}")
                 if not new_dir.exists():
                     break
@@ -465,7 +468,7 @@ class AppState:
 
         os.makedirs(new_dir, exist_ok=True)
         logger.debug(f"data dir = {new_dir}")
-        return new_dir
+        return new_dir, id
 
     def port_clash_check_ok(self) -> bool:
         reserved_ports = set()

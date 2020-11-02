@@ -34,12 +34,12 @@ def start(app_state):
     rpcport = app_state.component_port
     p2p_port = app_state.component_p2p_port
     data_path = app_state.component_datadir
-    id = app_state.get_id(COMPONENT_NAME)
+    component_id = app_state.component_id
     process_pid = electrumsv_node.start(data_path=data_path, rpcport=rpcport,
                                         p2p_port=p2p_port, network='regtest')
     logging_path = Path(app_state.component_datadir).joinpath("regtest/bitcoind.log")
 
-    app_state.component_info = Component(id, process_pid, COMPONENT_NAME,
+    app_state.component_info = Component(component_id, process_pid, COMPONENT_NAME,
         str(app_state.component_source_dir),
         f"http://rpcuser:rpcpassword@127.0.0.1:{rpcport}",
         logging_path=logging_path,

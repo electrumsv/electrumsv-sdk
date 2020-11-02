@@ -11,9 +11,9 @@ commands = [
     "electrumsv-sdk reset",
 
     "electrumsv-sdk start --background status_monitor",
-    "electrumsv-sdk start --background node",
-    "electrumsv-sdk start --background electrumx",
-    "electrumsv-sdk start --background electrumsv",
+    "electrumsv-sdk start --background --new node",
+    "electrumsv-sdk start --background --new electrumx",
+    "electrumsv-sdk start --background --new electrumsv",
     "electrumsv-sdk node generate 1",
     "electrumsv-sdk start --background whatsonchain",
 

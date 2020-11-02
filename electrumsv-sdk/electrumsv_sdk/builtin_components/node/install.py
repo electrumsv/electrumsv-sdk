@@ -14,12 +14,14 @@ logger = logging.getLogger(COMPONENT_NAME)
 
 def configure_paths(app_state, repo=None, branch=None):
     app_state.component_source_dir = Path(electrumsv_node.FILE_PATH).parent
-    app_state.component_datadir = app_state.get_component_datadir(COMPONENT_NAME)
-    component_id = app_state.get_id(COMPONENT_NAME)
+    if not app_state.component_datadir:
+        app_state.component_datadir, app_state.component_id = \
+            app_state.get_component_datadir(COMPONENT_NAME)
+
     app_state.component_port = app_state.get_component_port(DEFAULT_PORT, COMPONENT_NAME,
-                                                            component_id)
+                                                            app_state.component_id)
     app_state.component_p2p_port = app_state.get_component_port(DEFAULT_P2P_PORT_NODE,
-        COMPONENT_NAME, component_id)
+        COMPONENT_NAME, app_state.component_id)
 
 
 def fetch_node(app_state):
