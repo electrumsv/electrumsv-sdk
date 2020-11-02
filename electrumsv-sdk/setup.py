@@ -4,8 +4,7 @@ import os
 from setuptools import find_packages, setup
 import sys
 
-
-"""
+_ = """
 py -3.7-32 .\setup.py build bdist_wheel --plat-name win32
 py -3.8-32 .\setup.py build bdist_wheel --plat-name win32
 py -3.7 .\setup.py build bdist_wheel --plat-name win-amd64
@@ -20,8 +19,7 @@ py -3.8 -m pip uninstall electrumsv-sdk
 
 and install the one you want:
 py -3.8 -m pip install electrumsv-sdk
-"""  # pylint: disable=W0105
-
+"""
 
 with open('electrumsv_sdk/__init__.py', 'r') as f:
     for line in f:
@@ -31,7 +29,7 @@ with open('electrumsv_sdk/__init__.py', 'r') as f:
 
 
 def _locate_requirements():
-    requirement_files = [ "requirements.txt" ]
+    requirement_files = ["requirements.txt"]
     if sys.platform == 'win32':
         requirement_files.append("requirements-win32.txt")
     elif sys.platform in ('linux', 'darwin'):
