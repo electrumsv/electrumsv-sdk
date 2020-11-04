@@ -13,3 +13,4 @@ electrumsv-sdk/electrumsv_sdk/component_state.json
 electrumsv-sdk/build/*
 electrumsv-sdk/dist/*
 docs/_build/*
+venv/*

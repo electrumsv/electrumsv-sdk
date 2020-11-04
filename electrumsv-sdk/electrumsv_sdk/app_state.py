@@ -145,11 +145,9 @@ class AppState:
         return component_name + str(1)
 
     def get_id(self, component_name: str) -> str:
-        """four scenarios:
-        1)  no --id flag set -> default id
-        2a) --id flag set -> use the id flag that was set by user
-        2b) --new flag set; --id flag not set; a global id was allocated already
-        3)  --new flag set; --id flag not set; a global id has not yet been allocated"""
+        """This method is exclusively for single-instance components.
+        Multi-instance components (that use the --new flag) need to get allocated a component_id
+        via the 'get_component_datadir()' method"""
         id = self.global_cli_flags[ComponentOptions.ID]
         new = self.global_cli_flags[ComponentOptions.NEW]
         if not id and not new:  # Default component id (and port + datadir)
@@ -159,9 +157,8 @@ class AppState:
         elif id:
             return id
 
-        elif new and not id:
-            logger.exception("Component id not set. Need to call 'get_component_datadir()' to "
-                "allocate a datadir and id first")
+        elif new:
+            logger.error("The --new flag is only for multi-instance conponents")
 
     def save_repo_paths(self) -> None:
         """overwrites config.json"""
@@ -421,7 +418,7 @@ class AppState:
         sys.path.append(f"{self.calling_context_dir}")
 
     def get_component_datadir(self, component_name: str) -> Tuple[Path, Optional[str]]:
-        """to run multiple instances of a component requires multiple data directories."""
+        """Used for multi-instance components"""
         def is_new_and_no_id(id: str, new: bool) -> bool:
             return id == "" and new
         def is_new_and_id(id: str, new: bool) -> bool:
@@ -462,7 +459,7 @@ class AppState:
             logger.debug(f"Using user-specified data dir ({new_dir})")
 
         elif is_not_new_and_no_id(id, new):
-            id = self.get_id(component_name)  # default
+            id = self.get_default_id(component_name)  # default
             new_dir = self.datadir.joinpath(f"{component_name}/{id}")
             logger.debug(f"Using default data dir ({new_dir})")
 

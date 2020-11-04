@@ -1,9 +1,8 @@
 import logging
 import os
-import sys
 from typing import Optional
 
-from electrumsv_sdk.components import ComponentOptions, Component
+from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
 
 from .install import download_and_install, create_settings_file, get_run_path
@@ -20,7 +19,7 @@ NODE_ZMQ_PORT = 28332
 
 
 def install(app_state):
-    data_path = app_state.get_component_datadir(COMPONENT_NAME)
+    data_path, app_state.component_id = app_state.get_component_datadir(COMPONENT_NAME)
     download_and_install(data_path)
     create_settings_file(data_path, DEFAULT_PORT, NODE_RPC_PORT, NODE_RPC_USERNAME,
         NODE_RPC_PASSWORD, NODE_ZMQ_PORT)
@@ -29,16 +28,14 @@ def install(app_state):
 def start(app_state):
     logger.debug(f"Starting Merchant API")
 
-    data_path = app_state.get_component_datadir(COMPONENT_NAME)
     # The primary reason we need this to be the current directory is so that the `settings.conf`
     # file is directly accessible to the MAPI executable (it should look there first).
-    os.chdir(data_path)
+    os.chdir(app_state.component_datadir)
     # Get the path to the executable file.
-    run_path = get_run_path(data_path)
+    run_path = get_run_path(app_state.component_datadir)
     process = app_state.spawn_process(str(run_path))
-    id = app_state.get_id(COMPONENT_NAME)
-    app_state.component_info = Component(id, process.pid, COMPONENT_NAME,
-        data_path, "???")
+    app_state.component_info = Component(app_state.component_id, process.pid, COMPONENT_NAME,
+        app_state.component_datadir, "???")
 
 
 def stop(app_state):
