@@ -67,7 +67,7 @@ def reset(app_state):
         logger.debug("Reset of RegTest electrumx server completed successfully.")
 
     app_state.call_for_component_id_or_type(COMPONENT_NAME, callable=reset_electrumx)
-    logger.debug("Reset of RegTest electrumsv wallet completed successfully")
+    logger.debug("Reset of RegTest electrumx completed successfully")
 
 
 def status_check(app_state) -> Optional[bool]:
