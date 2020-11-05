@@ -22,13 +22,9 @@ def fetch_whatsonchain(app_state, url="https://github.com/AustEcon/woc-explorer.
 
 def packages_whatsonchain(app_state):
     os.chdir(app_state.src_dir)
-    process = subprocess.Popen("call npm install\n" if sys.platform == "win32"
-                               else "npm install\n",
-                               shell=True)
+    process = subprocess.Popen("npm install", shell=True)
     process.wait()
-    process = subprocess.Popen("call npm run-script build\n" if sys.platform == "win32"
-                               else "npm run-script build\n",
-                               shell=True)
+    process = subprocess.Popen("npm run-script build", shell=True)
     process.wait()
 
 

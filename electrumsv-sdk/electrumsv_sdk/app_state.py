@@ -85,11 +85,6 @@ class AppState:
         self.parser_parsed_args_map = {}  # {namespace: parsed arguments}
         self.component_args = []  # e.g. store arguments to pass to the electrumsv's cli interface
 
-        # status_monitor special-case component type
-        self.status_monitor_dir = self.sdk_package_dir.joinpath("status_server")
-        self.status_monitor_logging_path = self.logs_dir.joinpath("status_monitor")
-        os.makedirs(self.status_monitor_logging_path, exist_ok=True)
-
         # Todo - these globals should not be mutated (and merely reflect whatever commandline
         #  configuration was set at the beginning).
         #  This is not yet adhered to fully but we should work towards it possibly with a
@@ -186,17 +181,13 @@ class AppState:
             os.makedirs(self.shell_scripts_dir, exist_ok=True)
 
     def setup_python_venv(self) -> None:
-        logger.debug("Setting up python virtualenv (linux/unix only)")
-        sdk_datadir = Path.home() / ".electrumsv-sdk"
-        linux_venv_dir = sdk_datadir.joinpath("sdk_venv")
-        python = linux_venv_dir.joinpath("bin").joinpath("python3")
         sdk_requirements_path = Path(MODULE_DIR).parent.joinpath("requirements")\
             .joinpath("requirements.txt")
         sdk_requirements_linux_path = Path(MODULE_DIR).parent.joinpath("requirements").joinpath(
             "requirements-linux.txt")
-        subprocess.run(f"{python} -m pip install --user -r {sdk_requirements_path}",
+        subprocess.run(f"{self.python} -m pip install --user -r {sdk_requirements_path}",
                        shell=True, check=True)
-        subprocess.run(f"{python} -m pip install --user -r {sdk_requirements_linux_path}",
+        subprocess.run(f"{self.python} -m pip install --user -r {sdk_requirements_linux_path}",
                        shell=True, check=True)
 
     def handle_first_ever_run(self) -> None:

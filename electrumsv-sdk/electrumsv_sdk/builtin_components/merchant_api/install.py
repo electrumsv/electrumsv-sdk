@@ -5,7 +5,6 @@ import os
 import pathlib
 import platform
 import requests
-import subprocess
 import sys
 import tarfile
 from typing import Dict
@@ -22,22 +21,26 @@ logger = logging.getLogger(COMPONENT_NAME)
 # The executable name is manually observed in the build file.
 PREBUILT_ENTRIES = {
     ("Darwin", True): {
-        "uri": "https://github.com/bitcoin-sv/merchantapi-reference/releases/download/v1.1.0/mapi_1.1.0_Darwin_x86_64.tar.gz",
+        "uri": "https://github.com/bitcoin-sv/merchantapi-reference/releases/download/v1.1.0/"
+               "mapi_1.1.0_Darwin_x86_64.tar.gz",
         "sha256": "0003e702c7cd10a56cf1f8e89cc01d0492e8102d9ffd753d263058848aba85cd",
         "exe": "mapi-v1.1.0"
     },
     ("Linux", True): {
-        "uri": "https://github.com/bitcoin-sv/merchantapi-reference/releases/download/v1.1.0/mapi_1.1.0_Linux_x86_64.tar.gz",
+        "uri": "https://github.com/bitcoin-sv/merchantapi-reference/releases/download/v1.1.0/"
+               "mapi_1.1.0_Linux_x86_64.tar.gz",
         "sha256": "52af50b4899278038f2475b229b98340eb5ac1f9e5630b885820624ec9cdb0c8",
         "exe": "mapi-v1.1.0"
     },
     ("Windows", False): {
-        "uri": "https://github.com/bitcoin-sv/merchantapi-reference/releases/download/v1.1.0/mapi_1.1.0_Windows_i386.tar.gz",
+        "uri": "https://github.com/bitcoin-sv/merchantapi-reference/releases/download/v1.1.0/"
+               "mapi_1.1.0_Windows_i386.tar.gz",
         "sha256": "650d6e6916ff8afbc3be4a1a366bf4c49f215ad01eee98e5488b4c035419923b",
         "exe": "mapi-v1.1.0.exe"
     },
     ("Windows", True): {
-        "uri": "https://github.com/bitcoin-sv/merchantapi-reference/releases/download/v1.1.0/mapi_1.1.0_Windows_x86_64.tar.gz",
+        "uri": "https://github.com/bitcoin-sv/merchantapi-reference/releases/download/v1.1.0/"
+               "mapi_1.1.0_Windows_x86_64.tar.gz",
         "sha256": "3e36fc57a301fe6c399be82446f455d95aa7873b14d987a0193c886908d6923b",
         "exe": "mapi-v1.1.0.exe"
     },

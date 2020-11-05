@@ -1,5 +1,5 @@
 **.pyc
-.idea/*
+*.idea*
 electrumsv-sdk/electrumsv_sdk.egg-info/*
 electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumsv
 electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumx
@@ -14,3 +14,4 @@ electrumsv-sdk/build/*
 electrumsv-sdk/dist/*
 docs/_build/*
 venv/*
+

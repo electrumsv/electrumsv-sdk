@@ -33,7 +33,7 @@ def install(app_state):
 
 
 def start(app_state):
-    logger.debug(f"Starting whatsonchain daemon...")
+    logger.debug(f"Starting whatsonchain explorer...")
     if not check_node_for_woc():
         sys.exit(1)
 
