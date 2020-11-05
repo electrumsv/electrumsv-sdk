@@ -18,7 +18,11 @@ from filelock import FileLock
 
 from electrumsv_sdk.utils import get_directory_name
 
-from .constants import FILE_LOCK_PATH, COMPONENT_STATE_PATH
+# might be running this as __main__
+try:
+    from constants import FILE_LOCK_PATH, COMPONENT_STATE_PATH
+except ImportError:
+    from .constants import FILE_LOCK_PATH, COMPONENT_STATE_PATH
 
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 56565
