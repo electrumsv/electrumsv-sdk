@@ -8,7 +8,6 @@ from electrumsv_node import electrumsv_node
 from electrumsv_sdk.components import ComponentStore, ComponentOptions, \
     ComponentState, Component
 
-from .constants import STATUS_MONITOR_GET_STATUS
 from .handlers import Handlers
 from .utils import cast_str_int_args_to_int
 
@@ -22,16 +21,6 @@ class Controller:
         self.app_state = app_state
         self.handlers = Handlers(self.app_state)
         self.component_store = ComponentStore(self.app_state)
-
-    def is_status_monitor_online(self) -> bool:
-        return self.app_state.is_component_running_http(STATUS_MONITOR_GET_STATUS, 2, 0.5,
-            component_name="status_monitor")
-
-    def launch_status_monitor(self):
-        component_module = self.app_state.import_plugin_component("status_monitor")
-        component_module.install(self.app_state)
-        component_module.start(self.app_state)
-        self.status_check(component_module)
 
     def get_relevant_components(self, component_id: Optional[str]=None,
             selected_component: Optional[str]=None) -> List[dict]:
@@ -115,8 +104,6 @@ class Controller:
 
     def reset(self, selected_component: str=None, component_id: str="", background: bool=True) \
             -> None:
-        """No choice is given to the user at present - resets node, electrumx and electrumsv
-        wallet. If stop_set is empty, all processes terminate."""
         self.app_state.global_cli_flags[ComponentOptions.BACKGROUND] = background
 
         selected_component = selected_component if selected_component else \
@@ -125,13 +112,18 @@ class Controller:
             self.app_state.global_cli_flags[ComponentOptions.ID]
 
         # reset by --id flag or by <component_type>
-        component_set = self.get_relevant_components(component_id, selected_component)
-        if component_set:
-            # dynamic imports of plugin
-            for component_dict in component_set:
-                component_name = component_dict.get("component_type")
-                component_module = self.app_state.import_plugin_component(component_name)
-                component_module.reset(self.app_state)
+        if selected_component:
+            # some components will not have a datadir if they've never been started before but
+            # it is the responsibility of the plugin to handle this
+            component_module = self.app_state.import_plugin_component(selected_component)
+            component_module.reset(self.app_state)
+
+        elif component_id:
+            component_dict = self.app_state.component_store.component_status_data_by_id(
+                component_id)
+            component_name = component_dict.get("component_type")
+            component_module = self.app_state.import_plugin_component(component_name)
+            component_module.reset(self.app_state)
 
         # no args (no --id or <component_type>) implies reset all (node, electrumx, electrumsv)
         if not component_id and not selected_component:

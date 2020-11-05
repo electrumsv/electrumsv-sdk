@@ -21,10 +21,11 @@ def configure_paths(app_state, repo, branch):
             checkout_branch(branch)
         app_state.component_source_dir = Path(repo)
 
-    app_state.component_datadir = app_state.get_component_datadir(COMPONENT_NAME)
-    component_id = app_state.get_id(COMPONENT_NAME)
+    if not app_state.component_datadir:
+        app_state.component_datadir, app_state.component_id = \
+            app_state.get_component_datadir(COMPONENT_NAME)
     app_state.component_port = app_state.get_component_port(DEFAULT_PORT_ELECTRUMX, COMPONENT_NAME,
-        component_id)
+        app_state.component_id)
 
 
 def fetch_electrumx(app_state, url, branch):
@@ -80,7 +81,7 @@ def packages_electrumx(app_state, url, branch):
 
     if sys.platform in ['linux', 'darwin']:
         process = subprocess.Popen(
-            f"sudo {app_state.python} -m pip install -r {requirements_path}", shell=True)
+            f"{app_state.python} -m pip install -r {requirements_path}", shell=True)
         process.wait()
 
     elif sys.platform == 'win32':
@@ -115,6 +116,7 @@ def generate_run_script(app_state):
         f"{env_var_setter} MAX_SEND=10000000",
         f"{env_var_setter} LOG_LEVEL=debug",
         f"{env_var_setter} NET=regtest",
+        f"{env_var_setter} ALLOW_ROOT=1",
         f"{app_state.python} {app_state.component_source_dir.joinpath('electrumx_server')}"
     ]
     app_state.make_shell_script_for_component(list_of_shell_commands=lines,

@@ -23,11 +23,11 @@ def configure_paths(app_state, repo, branch):
             checkout_branch(branch)
         app_state.component_source_dir = Path(repo)
 
-    app_state.component_datadir = app_state.get_component_datadir(COMPONENT_NAME)
-
-    component_id = app_state.get_id(COMPONENT_NAME)
+    if not app_state.component_datadir:
+        app_state.component_datadir, app_state.component_id = \
+            app_state.get_component_datadir(COMPONENT_NAME)
     app_state.component_port = app_state.get_component_port(DEFAULT_PORT,
-        COMPONENT_NAME, component_id)
+        COMPONENT_NAME, app_state.component_id)
 
 
 def fetch_electrumsv(app_state, url, branch):
@@ -87,9 +87,9 @@ def packages_electrumsv(app_state, url, branch):
         cmd2 = f"{app_state.python} -m pip install --user --upgrade -r " \
                f"{electrumsv_binary_requirements_path}"
     elif sys.platform in ['linux', 'darwin']:
-        cmd1 = f"sudo {app_state.python} -m pip install --upgrade -r " \
+        cmd1 = f"{app_state.python} -m pip install --user --upgrade -r " \
                f"{electrumsv_requirements_path}"
-        cmd2 = f"sudo {app_state.python} -m pip install --upgrade -r " \
+        cmd2 = f"{app_state.python} -m pip install --user --upgrade -r " \
                f"{electrumsv_binary_requirements_path}"
 
     process1 = subprocess.Popen(cmd1, shell=True)
