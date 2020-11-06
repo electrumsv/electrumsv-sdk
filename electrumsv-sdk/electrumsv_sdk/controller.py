@@ -131,14 +131,6 @@ class Controller:
                 self.reset(selected_component=component_type, component_id="")
             logger.info(f"reset: all")
 
-        # logging
-        if component_id == "" and selected_component:
-            logger.info(f"Reset of: {selected_component} complete.")
-        elif component_id != "":
-            logger.info(f"Reset of: {component_id} complete.")
-        elif not self.app_state.selected_component:
-            logger.info(f"Reset of: all components complete")
-
     def status_check(self, component_module: ModuleType):
         """The 'status_check()' entrypoint of the plugin must always run after the start()
         command.
