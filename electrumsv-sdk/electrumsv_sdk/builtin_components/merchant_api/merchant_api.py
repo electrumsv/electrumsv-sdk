@@ -19,10 +19,11 @@ NODE_ZMQ_PORT = 28332
 
 
 def install(app_state):
-    app_state.component_datadir, app_state.component_id = app_state.get_component_datadir(COMPONENT_NAME)
+    app_state.component_datadir, app_state.component_id = \
+        app_state.get_component_datadir(COMPONENT_NAME)
     download_and_install(app_state.component_datadir)
-    create_settings_file(app_state.component_datadir, DEFAULT_PORT, NODE_RPC_PORT, NODE_RPC_USERNAME,
-        NODE_RPC_PASSWORD, NODE_ZMQ_PORT)
+    create_settings_file(app_state.component_datadir, DEFAULT_PORT, NODE_RPC_PORT,
+        NODE_RPC_USERNAME, NODE_RPC_PASSWORD, NODE_ZMQ_PORT)
 
 
 def start(app_state):
