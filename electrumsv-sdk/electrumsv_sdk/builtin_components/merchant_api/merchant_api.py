@@ -19,15 +19,14 @@ NODE_ZMQ_PORT = 28332
 
 
 def install(app_state):
-    data_path, app_state.component_id = app_state.get_component_datadir(COMPONENT_NAME)
-    download_and_install(data_path)
-    create_settings_file(data_path, DEFAULT_PORT, NODE_RPC_PORT, NODE_RPC_USERNAME,
+    app_state.component_datadir, app_state.component_id = app_state.get_component_datadir(COMPONENT_NAME)
+    download_and_install(app_state.component_datadir)
+    create_settings_file(app_state.component_datadir, DEFAULT_PORT, NODE_RPC_PORT, NODE_RPC_USERNAME,
         NODE_RPC_PASSWORD, NODE_ZMQ_PORT)
 
 
 def start(app_state):
     logger.debug(f"Starting Merchant API")
-
     # The primary reason we need this to be the current directory is so that the `settings.conf`
     # file is directly accessible to the MAPI executable (it should look there first).
     os.chdir(app_state.component_datadir)
