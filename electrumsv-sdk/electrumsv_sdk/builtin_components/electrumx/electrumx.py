@@ -76,5 +76,5 @@ def status_check(app_state) -> Optional[bool]:
     False -> ComponentState.FAILED;
     None -> skip status monitoring updates (e.g. using app's cli interface transiently)
     """
-    is_running = asyncio.run(is_electrumx_running())
+    is_running = asyncio.run(is_electrumx_running(app_state))
     return is_running

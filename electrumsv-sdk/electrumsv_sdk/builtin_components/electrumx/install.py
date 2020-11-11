@@ -4,6 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from . import env
 from electrumsv_sdk.utils import checkout_branch, is_remote_repo, get_directory_name
 
 DEFAULT_PORT_ELECTRUMX = 51001
@@ -105,18 +106,25 @@ def generate_run_script(app_state):
     os.makedirs(app_state.shell_scripts_dir, exist_ok=True)
     os.chdir(app_state.shell_scripts_dir)
     env_var_setter = 'set' if sys.platform == 'win32' else 'export'
+
+    # env vars take precedence for port and dbdir
+    if env.ELECTRUMX_PORT:
+        app_state.component_port = env.ELECTRUMX_PORT
+    if env.DB_DIRECTORY:
+        app_state.component_datadir = env.DB_DIRECTORY
+
     lines = [
+        f"{env_var_setter} SERVICES="f"{f'tcp://:{app_state.component_port},rpc://'}",
         f"{env_var_setter} DB_DIRECTORY={app_state.component_datadir}",
-        f"{env_var_setter} DAEMON_URL=http://rpcuser:rpcpassword@127.0.0.1:18332",
-        f"{env_var_setter} DB_ENGINE=leveldb",
-        f"{env_var_setter} SERVICES=tcp://:{app_state.component_port},rpc://",
-        f"{env_var_setter} COIN=BitcoinSV",
-        f"{env_var_setter} COST_SOFT_LIMIT=0",
-        f"{env_var_setter} COST_HARD_LIMIT=0",
-        f"{env_var_setter} MAX_SEND=10000000",
-        f"{env_var_setter} LOG_LEVEL=debug",
-        f"{env_var_setter} NET=regtest",
-        f"{env_var_setter} ALLOW_ROOT=1",
+        f"{env_var_setter} DAEMON_URL={env.DAEMON_URL}",
+        f"{env_var_setter} DB_ENGINE={env.DB_ENGINE}",
+        f"{env_var_setter} COIN={env.COIN}",
+        f"{env_var_setter} COST_SOFT_LIMIT={env.COST_SOFT_LIMIT}",
+        f"{env_var_setter} COST_HARD_LIMIT={env.COST_HARD_LIMIT}",
+        f"{env_var_setter} MAX_SEND={env.MAX_SEND}",
+        f"{env_var_setter} LOG_LEVEL={env.LOG_LEVEL}",
+        f"{env_var_setter} NET={env.NET}",
+        f"{env_var_setter} ALLOW_ROOT={env.ALLOW_ROOT}",
         f"{app_state.python} {app_state.component_source_dir.joinpath('electrumx_server')}"
     ]
     app_state.make_shell_script_for_component(list_of_shell_commands=lines,
