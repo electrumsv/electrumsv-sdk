@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, Dict
 
 from electrumsv_sdk.components import ComponentOptions, Component
-from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process
+from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process, is_docker
 
 from .install import configure_paths, fetch_electrumx, packages_electrumx, \
     generate_run_script
@@ -42,7 +42,12 @@ def install(app_state):
 def start(app_state):
     logger.debug(f"Starting RegTest electrumx server...")
     script_path = app_state.derive_shell_script_path(COMPONENT_NAME)
-    process = app_state.spawn_process(f"{script_path}")
+    # temporary docker workaround - the SDK should allow launching components in current terminal
+    if is_docker():
+        process = app_state.run_command_current_shell(script_path)
+    else:
+        process = app_state.spawn_process(f"{script_path}")
+
     app_state.component_info = Component(app_state.component_id, process.pid, COMPONENT_NAME,
         location=str(app_state.component_source_dir), status_endpoint="http://127.0.0.1:51001",
         metadata={"datadir": str(app_state.component_datadir)}, logging_path=None)

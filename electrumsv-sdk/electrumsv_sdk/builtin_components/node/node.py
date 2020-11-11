@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 from typing import Optional, Dict
 
@@ -8,6 +9,7 @@ from electrumsv_sdk.components import ComponentOptions, Component
 from electrumsv_sdk.utils import get_directory_name
 
 from .install import fetch_node, configure_paths
+from . import env
 
 DEFAULT_PORT = 18332
 DEFAULT_P2P_PORT_NODE = 18444
@@ -31,12 +33,26 @@ def install(app_state):
 
 
 def start(app_state):
+    extra_params = []
+    if env.NODE_RPCALLOWIP:
+        extra_params.append(f"-rpcallowip={env.NODE_RPCALLOWIP}")
+    if env.NODE_RPCBIND:
+        extra_params.append(f"-rpcbind={env.NODE_RPCBIND}")
+    if not extra_params:
+        extra_params = None
+
+    if env.NODE_PORT:
+        app_state.component_port = env.NODE_PORT
+    if env.DB_DIRECTORY:
+        app_state.component_datadir = env.DB_DIRECTORY
+
     rpcport = app_state.component_port
     p2p_port = app_state.component_p2p_port
     data_path = app_state.component_datadir
     component_id = app_state.component_id
+
     process_pid = electrumsv_node.start(data_path=data_path, rpcport=rpcport,
-                                        p2p_port=p2p_port, network='regtest')
+        p2p_port=p2p_port, network='regtest', extra_params=extra_params)
     logging_path = Path(app_state.component_datadir).joinpath("regtest/bitcoind.log")
 
     app_state.component_info = Component(component_id, process_pid, COMPONENT_NAME,

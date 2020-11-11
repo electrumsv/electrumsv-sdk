@@ -28,6 +28,12 @@ def configure_paths(app_state, repo, branch):
     app_state.component_port = app_state.get_component_port(DEFAULT_PORT_ELECTRUMX, COMPONENT_NAME,
         app_state.component_id)
 
+    # env vars take precedence for port and dbdir
+    if env.ELECTRUMX_PORT:
+        app_state.component_port = env.ELECTRUMX_PORT
+    if env.DB_DIRECTORY:
+        app_state.component_datadir = env.DB_DIRECTORY
+
 
 def fetch_electrumx(app_state, url, branch):
     # Todo - make this generic with electrumsv
@@ -106,12 +112,6 @@ def generate_run_script(app_state):
     os.makedirs(app_state.shell_scripts_dir, exist_ok=True)
     os.chdir(app_state.shell_scripts_dir)
     env_var_setter = 'set' if sys.platform == 'win32' else 'export'
-
-    # env vars take precedence for port and dbdir
-    if env.ELECTRUMX_PORT:
-        app_state.component_port = env.ELECTRUMX_PORT
-    if env.DB_DIRECTORY:
-        app_state.component_datadir = env.DB_DIRECTORY
 
     lines = [
         f"{env_var_setter} SERVICES="f"{f'tcp://:{app_state.component_port},rpc://'}",
