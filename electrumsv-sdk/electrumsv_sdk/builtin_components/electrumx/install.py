@@ -31,8 +31,6 @@ def configure_paths(app_state, repo, branch):
     # env vars take precedence for port and dbdir
     if env.ELECTRUMX_PORT:
         app_state.component_port = env.ELECTRUMX_PORT
-    if env.DB_DIRECTORY:
-        app_state.component_datadir = env.DB_DIRECTORY
 
 
 def fetch_electrumx(app_state, url, branch):

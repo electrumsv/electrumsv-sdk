@@ -8,6 +8,8 @@ from electrumsv_sdk.components import ComponentOptions
 from electrumsv_sdk.utils import is_remote_repo, checkout_branch, \
     get_directory_name
 
+from . import env
+
 DEFAULT_PORT = 9999
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -132,7 +134,8 @@ def generate_run_script(app_state):
         line2 = (
             f"{app_state.python} {esv_launcher} --portable --dir {esv_datadir} --regtest daemon "
             f"-dapp restapi --v=debug --file-logging --restapi --restapi-port={port} "
-            f"--server=127.0.0.1:51001:t --restapi-user rpcuser --restapi-password= "
+            f"--server={env.ELECTRUMX_HOST}:{env.ELECTRUMX_PORT}:t --restapi-user rpcuser "
+            f"--restapi-password= "
         )
         lines = [line1, line2]
 
@@ -140,7 +143,8 @@ def generate_run_script(app_state):
     else:
         line1 = (
             f"{app_state.python} {esv_launcher} gui --regtest --restapi --restapi-port={port} "
-            f"--v=debug --file-logging --server=127.0.0.1:51001:t --dir {esv_datadir}"
+            f"--v=debug --file-logging --server={env.ELECTRUMX_HOST}:{env.ELECTRUMX_PORT}:t "
+            f"--dir {esv_datadir}"
         )
         lines = [line1]
     app_state.make_shell_script_for_component(list_of_shell_commands=lines,

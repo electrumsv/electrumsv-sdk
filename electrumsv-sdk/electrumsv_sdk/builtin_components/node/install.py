@@ -28,8 +28,6 @@ def configure_paths(app_state, repo=None, branch=None):
     # env vars take precedence for port and dbdir
     if env.NODE_PORT:
         app_state.component_port = env.NODE_PORT
-    if env.DB_DIRECTORY:
-        app_state.component_datadir = env.DB_DIRECTORY
 
 
 def fetch_node(app_state):

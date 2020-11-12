@@ -43,8 +43,6 @@ def start(app_state):
 
     if env.NODE_PORT:
         app_state.component_port = env.NODE_PORT
-    if env.DB_DIRECTORY:
-        app_state.component_datadir = env.DB_DIRECTORY
 
     rpcport = app_state.component_port
     p2p_port = app_state.component_p2p_port

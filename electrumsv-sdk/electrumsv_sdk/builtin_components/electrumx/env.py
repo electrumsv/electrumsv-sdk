@@ -1,6 +1,5 @@
 import os
 
-DB_DIRECTORY = os.environ.get("DB_DIRECTORY")  # if None -> set by usual deterministic allocation
 ELECTRUMX_PORT = os.environ.get("ELECTRUMX_PORT")  # if None -> set by usual deterministic allocation
 
 DAEMON_URL = os.environ.get("DAEMON_URL") or "http://rpcuser:rpcpassword@127.0.0.1:18332"
