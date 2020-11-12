@@ -55,9 +55,9 @@ def fetch_electrumsv(app_state, url, branch):
             text=True,
         )
         if result.stdout.strip() == url:
-            logger.debug(f"Electrumsv is already installed (url={url})")
-            checkout_branch(branch)
+            logger.debug(f"ElectrumSV is already installed (url={url})")
             subprocess.run(f"git pull", shell=True, check=True)
+            checkout_branch(branch)
         if result.stdout.strip() != url:
             existing_fork = app_state.component_source_dir
             logger.debug(f"Alternate fork of electrumsv is already installed")

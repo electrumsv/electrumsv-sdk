@@ -55,8 +55,8 @@ def fetch_electrumx(app_state, url, branch):
         )
         if result.stdout.strip() == url:
             logger.debug(f"Electrumx is already installed (url={url})")
-            checkout_branch(branch)
             subprocess.run(f"git pull", shell=True, check=True)
+            checkout_branch(branch)
 
         if result.stdout.strip() != url:
             existing_fork = app_state.component_source_dir
