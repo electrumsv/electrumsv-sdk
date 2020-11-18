@@ -54,6 +54,7 @@ def run_server() -> None:
     ])
     web.run_app(web_app, host=SERVER_HOST, port=SERVER_PORT) # type: ignore
 
+
 if __name__ == "__main__":
     run_server()
 
