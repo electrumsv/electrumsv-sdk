@@ -49,13 +49,16 @@ jobs:
       displayName: 'prepare for whatsonchain'
       workingDirectory: electrumsv-sdk/
     - script: |
+        electrumsv-sdk install --background node
+        electrumsv-sdk install --background electrumx
+        electrumsv-sdk install --background electrumsv
+        electrumsv-sdk install --background whatsonchain
         electrumsv-sdk start --background --new node
         electrumsv-sdk start --background --new electrumx
         electrumsv-sdk start --background --new electrumsv
-
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
-      displayName: 'start node, electrumx, electrumsv, whatsonchain'
+      displayName: 'install & start node, electrumx, electrumsv, whatsonchain'
       workingDirectory: electrumsv-sdk/
     - script: |
         electrumsv-sdk stop node
@@ -92,10 +95,13 @@ jobs:
         py -3.7 -m pip install wheel
         py -3.7 -m pip install -e .
         py -3.7 -m pip install pytest pytest-cov
+        electrumsv-sdk install --background node
+        electrumsv-sdk install --background electrumx
+        electrumsv-sdk install --background electrumsv
+        electrumsv-sdk install --background whatsonchain
         electrumsv-sdk start --background --new node
         electrumsv-sdk start --background --new electrumx
         electrumsv-sdk start --background --new electrumsv
-
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
       displayName: 'start node, electrumx, electrumsv, whatsonchain'
