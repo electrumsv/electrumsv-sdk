@@ -16,13 +16,13 @@ import aiohttp
 from aiohttp import web
 from filelock import FileLock
 
-from electrumsv_sdk.utils import get_directory_name
+from electrumsv_sdk.utils import get_directory_name, get_sdk_datadir
 
 # might be running this as __main__
-try:
-    from constants import FILE_LOCK_PATH, COMPONENT_STATE_PATH
-except ImportError:
-    from .constants import FILE_LOCK_PATH, COMPONENT_STATE_PATH
+
+DATA_PATH = get_sdk_datadir()
+FILE_LOCK_PATH = DATA_PATH / "component_state.json.lock"
+COMPONENT_STATE_PATH = DATA_PATH / "component_state.json"
 
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 56565
