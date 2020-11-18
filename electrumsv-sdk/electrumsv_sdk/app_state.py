@@ -8,6 +8,7 @@ import sys
 
 from electrumsv_node import electrumsv_node
 
+from .argparsing import ArgParser
 from .config import ImmutableConfig
 from .constants import SDK_HOME_DIR, REMOTE_REPOS_DIR, SHELL_SCRIPTS_DIR, DATADIR, LOGS_DIR, \
     USER_PLUGINS_DIR, CONFIG_PATH
@@ -25,8 +26,7 @@ orm_logger.setLevel(logging.WARNING)
 class AppState:
     """Global application state"""
 
-    def __init__(self, config: ImmutableConfig):
-        self.config = config
+    def __init__(self):
         os.makedirs(REMOTE_REPOS_DIR, exist_ok=True)
         os.makedirs(SHELL_SCRIPTS_DIR, exist_ok=True)
         os.makedirs(DATADIR, exist_ok=True)
@@ -40,6 +40,9 @@ class AppState:
         sys.path.append(f"{SDK_HOME_DIR}")  # for dynamic import of user_components
         sys.path.append(f"{self.calling_context_dir}")  # for dynamic import of local plugins
 
+        self.argparser = ArgParser()
+        self.config: ImmutableConfig = self.argparser.manual_argparsing(sys.argv)
+        self.argparser.validate_cli_args()
         self.controller = Controller()
 
     def purge_prev_installs_if_exist(self) -> None:
