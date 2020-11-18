@@ -158,9 +158,19 @@ def split_command(command: str) -> List[str]:
         raise NotImplementedError("OS not supported")
     return split_command
 
+
 def is_docker():
     path = '/proc/self/cgroup'
     return (
         os.path.exists('/.dockerenv') or
         os.path.isfile(path) and any('docker' in line for line in open(path))
     )
+
+
+def get_sdk_datadir():
+    sdk_home_datadir = None
+    if sys.platform == "win32":
+        sdk_home_datadir = Path(os.environ.get("LOCALAPPDATA")) / "ElectrumSV-SDK"
+    if sdk_home_datadir is None:
+        sdk_home_datadir = Path.home() / ".electrumsv-sdk"
+    return sdk_home_datadir
