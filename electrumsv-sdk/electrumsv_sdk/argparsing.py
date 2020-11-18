@@ -11,32 +11,55 @@ import logging
 import sys
 import textwrap
 from argparse import RawTextHelpFormatter
+from typing import Optional, Dict, Any, List
 
+from .constants import NameSpace
+from .config import ImmutableConfig
+from .validate_cli_args import ValidateCliArgs
 from .components import ComponentStore
+from .constants import ComponentOptions
 
 logger = logging.getLogger("argparsing")
 
 
-class NameSpace:
-    TOP_LEVEL = "top_level"
-    START = "start"
-    STOP = "stop"
-    RESET = "reset"
-    NODE = "node"
-    STATUS = 'status'
-
-
 class ArgParser:
-    def __init__(self, app_state: "AppState"):
-        self.app_state = app_state
+    def __init__(self):
         self.set_help_text()
-        self.component_store = ComponentStore(self.app_state)
+        self.component_store = ComponentStore()
+
+        # globals that are packed into ImmutableConfig after argparsing
+        self.namespace: Optional[str] = ""  # 'start', 'stop', 'reset', 'node', or 'status'
+        self.selected_component: Optional[str] = None
+        self.component_args = []  # e.g. store arguments to pass to the electrumsv's cli interface
+        self.node_args = None
+        self.global_cli_flags: Dict[str, Any] = {}
+        self.global_cli_flags[ComponentOptions.NEW] = False
+        self.global_cli_flags[ComponentOptions.GUI] = False
+        self.global_cli_flags[ComponentOptions.BACKGROUND] = False
+        self.global_cli_flags[ComponentOptions.ID] = ""
+        self.global_cli_flags[ComponentOptions.REPO] = ""
+        self.global_cli_flags[ComponentOptions.BRANCH] = ""
+
+        # data types for storing intermediate steps of argparsing
+        self.parser_map: Dict[str, argparse.ArgumentParser] = {}  # namespace: ArgumentParser
+        self.parser_raw_args_map: Dict[str, List[str]] = {}  # {namespace: raw arguments}
+        self.subcmd_parsed_args_map = {}  # {namespace: parsed arguments}
+        self.config = None
+
+        self.setup_argparser()
+
+    def validate_cli_args(self):
+        """calls the appropriate handler for the argparsing.NameSpace"""
+        handler = ValidateCliArgs(self.config)
+        parsed_args = self.subcmd_parsed_args_map[self.config.namespace]
+        func = getattr(handler, "handle_" + self.config.namespace + "_args")
+        func(parsed_args)
 
     def parse_first_arg(self, arg, cur_cmd_name, subcommand_indices):
-        if arg in {NameSpace.START, NameSpace.STOP, NameSpace.RESET, NameSpace.NODE,
-                   NameSpace.STATUS}:
+        if arg in {NameSpace.INSTALL, NameSpace.START, NameSpace.STOP, NameSpace.RESET,
+                NameSpace.NODE, NameSpace.STATUS}:
             cur_cmd_name = arg
-            self.app_state.NAMESPACE = arg
+            self.namespace = arg
             subcommand_indices[arg] = []
         elif arg == "--help":
             subcommand_indices[NameSpace.TOP_LEVEL].append(0)
@@ -48,7 +71,7 @@ class ArgParser:
             sys.exit(1)
         return cur_cmd_name, subcommand_indices
 
-    def manual_argparsing(self, args):
+    def manual_argparsing(self, args: List[str]) -> ImmutableConfig:
         """manually iterate through sys.argv and feed arguments to either:
         a) parent ArgumentParser
         b) child ArgumentParsers (aka subcommands)"""
@@ -58,7 +81,7 @@ class ArgParser:
         subcommand_indices = {}  # cmd_name: [index_arg1, index_arg2]
 
         cur_cmd_name = NameSpace.TOP_LEVEL
-        self.app_state.NAMESPACE = NameSpace.TOP_LEVEL
+        self.namespace = NameSpace.TOP_LEVEL
         subcommand_indices[NameSpace.TOP_LEVEL] = []
         for index, arg in enumerate(args):
             if index == 0:
@@ -67,10 +90,10 @@ class ArgParser:
                 )
                 continue
 
-            elif self.app_state.NAMESPACE == NameSpace.TOP_LEVEL:
+            elif self.namespace == NameSpace.TOP_LEVEL:
                 subcommand_indices[NameSpace].append(index)
 
-            elif self.app_state.NAMESPACE == NameSpace.START:
+            elif self.namespace in {NameSpace.START, NameSpace.INSTALL}:
                 # <start options>
                 if arg.startswith("--") and not component_selected:
                     subcommand_indices[cur_cmd_name].append(index)
@@ -80,20 +103,20 @@ class ArgParser:
                 elif not arg.startswith("-") and not component_selected:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
-                    if arg in self.app_state.component_map.keys():
-                        self.app_state.selected_component = arg
+                    if arg in self.component_store.component_map.keys():
+                        self.selected_component = arg
                     else:
-                        logger.error(f"Must select from: {self.app_state.component_map.keys()}")
+                        logger.error(f"Must select from: {self.component_store.component_map.keys()}")
                         sys.exit()
                     component_selected = True
                     continue
 
                 # <arguments to pass to component> (e.g. to standard electrumsv cli interface)
                 elif component_selected:
-                    self.app_state.component_args.append(arg)
+                    self.component_args.append(arg)
                     continue
 
-            elif self.app_state.NAMESPACE == NameSpace.STOP:
+            elif self.namespace == NameSpace.STOP:
                 # <stop options>
                 if arg.startswith("--") and not component_selected:
                     subcommand_indices[cur_cmd_name].append(index)
@@ -103,15 +126,15 @@ class ArgParser:
                 if not arg.startswith("-") and not component_selected:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
-                    if arg in self.app_state.component_map.keys():
-                        self.app_state.selected_component = arg
+                    if arg in self.component_store.component_map.keys():
+                        self.selected_component = arg
                     else:
-                        logger.error(f"Must select from: {self.app_state.component_map.keys()}")
+                        logger.error(f"Must select from: {self.component_store.component_map.keys()}")
                         sys.exit()
                     component_selected = True
                     continue
 
-            elif self.app_state.NAMESPACE == NameSpace.RESET:
+            elif self.namespace == NameSpace.RESET:
                 # <reset options>
                 if arg.startswith("--") and not component_selected:
                     subcommand_indices[cur_cmd_name].append(index)
@@ -121,40 +144,74 @@ class ArgParser:
                 if not arg.startswith("-") and not component_selected:
                     cur_cmd_name = arg
                     subcommand_indices[cur_cmd_name] = []
-                    if arg in self.app_state.component_map.keys():
-                        self.app_state.selected_component = arg
+                    if arg in self.component_store.component_map.keys():
+                        self.selected_component = arg
                     else:
-                        logger.error(f"Must select from: {self.app_state.component_map.keys()}")
+                        logger.error(f"Must select from: {self.component_store.component_map.keys()}")
                         sys.exit()
                     component_selected = True
                     continue
 
-            elif self.app_state.NAMESPACE == NameSpace.NODE:
+            elif self.namespace == NameSpace.NODE:
                 subcommand_indices[cur_cmd_name].append(index)
 
-            elif self.app_state.NAMESPACE == NameSpace.STATUS:
+            elif self.namespace == NameSpace.STATUS:
                 pass
 
             # print(f"subcommand_indices={subcommand_indices}, index={index}, arg={arg}")
         self.feed_to_argparsers(args, subcommand_indices)
 
+        # When using the sdk as a python library this config would be generated via optional kwargs
+        self.config = ImmutableConfig(
+            namespace=self.namespace,
+            selected_component=self.selected_component,
+            node_args=self.node_args,
+            repo=self.global_cli_flags[ComponentOptions.REPO],
+            branch=self.global_cli_flags[ComponentOptions.BRANCH],
+            new_flag=self.global_cli_flags[ComponentOptions.NEW],
+            gui_flag=self.global_cli_flags[ComponentOptions.GUI],
+            background_flag=self.global_cli_flags[ComponentOptions.BACKGROUND],
+            component_id=self.global_cli_flags[ComponentOptions.ID],
+            component_args=self.component_args
+        )
+        return self.config
+
     def update_subcommands_args_map(self, args, subcommand_indices):
         for namespace in subcommand_indices:
             for index in subcommand_indices[namespace]:
-                self.app_state.parser_raw_args_map[namespace].append(args[index])
+                self.parser_raw_args_map[namespace].append(args[index])
 
     def feed_to_argparsers(self, args, subcommand_indices):
         """feeds relevant arguments to each child (or parent) ArgumentParser"""
         self.update_subcommands_args_map(args, subcommand_indices)
 
-        for cmd_name in self.app_state.parser_map:
+        for cmd_name in self.parser_map:
             if cmd_name == NameSpace.NODE:
-                parsed_args = self.app_state.parser_raw_args_map[cmd_name]
+                self.node_args = self.parser_raw_args_map[cmd_name]
             else:
-                parsed_args = self.app_state.parser_map[cmd_name].parse_args(
-                    args=self.app_state.parser_raw_args_map[cmd_name]
+                parsed_args = self.parser_map[cmd_name].parse_args(
+                    args=self.parser_raw_args_map[cmd_name]
                 )
-            self.app_state.parser_parsed_args_map[cmd_name] = parsed_args
+            self.subcmd_parsed_args_map[cmd_name] = parsed_args
+
+    def add_install_argparser(self, namespaces):
+        start_parser = namespaces.add_parser("help", help="specify which servers to run")
+        start_parser.add_argument("--background", action="store_true", help="")
+        start_parser.add_argument("--id", type=str, default="", help="human-readable identifier "
+            "for component (e.g. 'worker1_esv')")
+        start_parser.add_argument("--repo", type=str, default="", help="git repo as either an "
+            "https://github.com url or a local git repo path e.g. G:/electrumsv (optional)")
+        start_parser.add_argument("--branch", type=str, default="", help="git repo branch ("
+            "optional)")
+
+        # add <component_types> from plugins
+        subparsers = start_parser.add_subparsers(help="subcommand", required=False)
+        start_namespace_subcommands = []
+        for component_type in self.component_store.component_map:
+            component_parser = subparsers.add_parser(component_type,
+                help=f"install {component_type}")
+            start_namespace_subcommands.append(component_parser)
+        return start_parser, start_namespace_subcommands
 
     def add_start_argparser(self, namespaces):
         start_parser = namespaces.add_parser("start", help="specify which servers to run")
@@ -171,7 +228,7 @@ class ArgParser:
         # add <component_types> from plugins
         subparsers = start_parser.add_subparsers(help="subcommand", required=False)
         start_namespace_subcommands = []
-        for component_type in self.app_state.component_map:
+        for component_type in self.component_store.component_map:
             component_parser = subparsers.add_parser(component_type, help=f"start {component_type}")
             start_namespace_subcommands.append(component_parser)
         return start_parser, start_namespace_subcommands
@@ -184,14 +241,14 @@ class ArgParser:
         # add <component_types> from plugins
         subparsers = stop_parser.add_subparsers(help="subcommand", required=False)
         stop_namespace_subcommands = []
-        for component_type in self.app_state.component_map:
+        for component_type in self.component_store.component_map:
             component_parser = subparsers.add_parser(component_type, help=f"stop {component_type}")
             stop_namespace_subcommands.append(component_parser)
 
         return stop_parser, stop_namespace_subcommands
 
     def add_reset_argparser(self, namespaces):
-        """only relevant for component types with a datadir (e.g. node, electrumx, electrumsv)"""
+        """only relevant for component types with a DATADIR (e.g. node, electrumx, electrumsv)"""
         reset_parser = namespaces.add_parser("reset", help="reset state of relevant servers to "
             "genesis")
         reset_parser.add_argument("--id", type=str, default="", help="human-readable identifier "
@@ -202,7 +259,7 @@ class ArgParser:
         # add <component_types> from plugins
         subparsers = reset_parser.add_subparsers(help="subcommand", required=False)
         reset_namespace_subcommands = []
-        for component_type in self.app_state.component_map:
+        for component_type in self.component_store.component_map:
             component_parser = subparsers.add_parser(component_type, help=f"reset {component_type}")
             reset_namespace_subcommands.append(component_parser)
 
@@ -236,6 +293,7 @@ class ArgParser:
         self.add_global_flags(top_level_parser)
 
         namespaces = top_level_parser.add_subparsers(help="namespaces", required=False)
+        install_parser, start_namespace_subcommands = self.add_install_argparser(namespaces)
         start_parser, start_namespace_subcommands = self.add_start_argparser(namespaces)
         stop_parser, stop_namespace_subcommands = self.add_stop_argparser(namespaces)
         reset_parser, reset_namespace_subcommands = self.add_reset_argparser(namespaces)
@@ -243,16 +301,17 @@ class ArgParser:
         status_parser = self.add_status_argparser(namespaces)
 
         # register top-level ArgumentParsers
-        self.app_state.parser_map[NameSpace.TOP_LEVEL] = top_level_parser
-        self.app_state.parser_map[NameSpace.START] = start_parser
-        self.app_state.parser_map[NameSpace.STOP] = stop_parser
-        self.app_state.parser_map[NameSpace.RESET] = reset_parser
-        self.app_state.parser_map[NameSpace.NODE] = node_parser
-        self.app_state.parser_map[NameSpace.STATUS] = status_parser
+        self.parser_map[NameSpace.TOP_LEVEL] = top_level_parser
+        self.parser_map[NameSpace.INSTALL] = install_parser
+        self.parser_map[NameSpace.START] = start_parser
+        self.parser_map[NameSpace.STOP] = stop_parser
+        self.parser_map[NameSpace.RESET] = reset_parser
+        self.parser_map[NameSpace.NODE] = node_parser
+        self.parser_map[NameSpace.STATUS] = status_parser
 
         # prepare raw_args
-        for namespace in self.app_state.parser_map.keys():
-            self.app_state.parser_raw_args_map[namespace] = []
+        for namespace in self.parser_map.keys():
+            self.parser_raw_args_map[namespace] = []
 
     def set_help_text(self):
         self.help_text = textwrap.dedent(
@@ -316,13 +375,3 @@ class ArgParser:
 
             """
         )
-
-    def no_start_component_selected(self, namespace, component_selected):
-        if namespace == self.app_state.START and not component_selected:
-            return False
-        return True
-
-    def no_stop_component_selected(self, namespace, component_selected):
-        if namespace == self.app_state.START and not component_selected:
-            return False
-        return True
