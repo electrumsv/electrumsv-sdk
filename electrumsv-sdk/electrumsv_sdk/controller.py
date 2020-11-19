@@ -1,6 +1,6 @@
 import pprint
 import logging
-from typing import Optional, List
+from typing import List
 
 from electrumsv_node import electrumsv_node
 
@@ -99,7 +99,7 @@ class Controller:
     def reset(self, config: ImmutableConfig) -> None:
         if config.component_id or config.selected_component:
             component_module = self.component_store.instantiate_plugin(config)
-            component_module.stop()
+            component_module.reset()
 
         # no args (no --id or <component_type>) implies reset all (node, electrumx, electrumsv)
         if not config.component_id and not config.selected_component:

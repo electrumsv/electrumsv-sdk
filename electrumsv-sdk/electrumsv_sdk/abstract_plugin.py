@@ -24,16 +24,16 @@ class AbstractPlugin(abc.ABC):
         self.component_info: Optional["Component"] = None
 
     def install(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def start(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def stop(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def reset(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def status_check(self) -> Optional[bool]:
-        raise NotImplemented
+        raise NotImplementedError

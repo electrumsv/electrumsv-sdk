@@ -4,7 +4,7 @@ import subprocess
 import time
 from pathlib import Path
 import sys
-from typing import Dict, List, Optional, Callable, Union, Tuple, Set
+from typing import Dict, List, Optional, Callable, Union, Tuple
 import psutil
 import requests
 
@@ -26,13 +26,14 @@ class PluginTools:
         self.logger = logging.getLogger("plugin-tools")
 
     def allocate_port(self):
-        component_port = self.plugin.plugin_tools.get_component_port(self.plugin.DEFAULT_PORT,
+        assert self.plugin.id is not None
+        component_port = self.get_component_port(self.plugin.DEFAULT_PORT,
             self.plugin.COMPONENT_NAME, self.plugin.id)
         return component_port
 
     def allocate_datadir_and_id(self):
         component_datadir, component_id = \
-            self.plugin.plugin_tools.get_component_datadir(self.plugin.COMPONENT_NAME)
+            self.get_component_datadir(self.plugin.COMPONENT_NAME)
         return component_datadir, component_id
 
     def get_source_dir(self, dirname: str) -> Path:
@@ -141,7 +142,8 @@ class PluginTools:
                 component_module.Plugin: AbstractPlugin
                 # avoids instantiation by accessing RESERVED_PORTS as a class attribute
                 if component_module.Plugin.RESERVED_PORTS in reserved_ports:
-                    self.logger.exception(f"There is a conflict of reserved ports for component_module: "
+                    self.logger.exception(
+                        f"There is a conflict of reserved ports for component_module: "
                         f"{component_module} on ports: {component_module.Plugin.RESERVED_PORTS}. "
                         f"Please choose default ports for the plugin that do not clash.")
                     return False
@@ -158,7 +160,7 @@ class PluginTools:
             return sys.exit(1)
 
         # reserved ports
-        if is_default_component_id(component_name, component_id) or not self.config.component_id:
+        if is_default_component_id(component_name, component_id):
             assert not port_is_in_use(default_component_port), \
                 f"an unknown application is using this port: {default_component_port}"
             return default_component_port
@@ -277,9 +279,10 @@ class PluginTools:
             try:
                 self.run_command_new_window(command)
             except ComponentLaunchFailedError:
-                self.logger.error(f"failed to launch long-running process: {command}. On linux cloud "
-                             f"servers try using the --background flag e.g. electrumsv-sdk start "
-                             f"--background node.")
+                self.logger.error(
+                    f"failed to launch long-running process: {command}. On linux cloud "
+                    f"servers try using the --background flag e.g. electrumsv-sdk start "
+                    f"--background node.")
                 raise
             time.sleep(1)  # allow brief time window for process to fail at startup
 

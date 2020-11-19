@@ -47,6 +47,7 @@ class LocalTools:
 
     def check_node_for_woc(self):
         if not electrumsv_node.is_running():
+            self.logger.error("bitcoin node must be running")
             return False
 
         result = electrumsv_node.call_any("getinfo")
