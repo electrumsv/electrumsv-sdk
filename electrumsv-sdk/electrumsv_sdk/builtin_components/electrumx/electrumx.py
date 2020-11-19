@@ -90,7 +90,8 @@ class Plugin(AbstractPlugin):
                 os.makedirs(datadir, exist_ok=True)
             self.logger.debug("Reset of RegTest electrumx server completed successfully.")
 
-        self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=reset_electrumx)
+        self.plugin_tools.call_for_component_id_or_type(
+            self.COMPONENT_NAME, callable=reset_electrumx)
         self.logger.debug("Reset of RegTest electrumx completed successfully")
 
     def status_check(self) -> Optional[bool]:

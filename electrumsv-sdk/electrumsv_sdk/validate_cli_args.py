@@ -7,7 +7,7 @@ from .constants import NameSpace
 from .config import ImmutableConfig
 from .utils import read_sdk_version
 
-logger = logging.getLogger("install-handlers")
+logger = logging.getLogger("validate-cli-args")
 
 
 class ValidateCliArgs:
@@ -45,7 +45,7 @@ class ValidateCliArgs:
             return
 
         # logging
-        if id != "":
+        if parsed_args.id != "":
             logger.debug(f"id flag={parsed_args.id}")
         if parsed_args.repo != "":
             logger.debug(f"repo flag={parsed_args.repo}")
@@ -75,7 +75,7 @@ class ValidateCliArgs:
             logger.debug("new flag=set")
         if parsed_args.gui:
             logger.debug("gui flag=set")
-        if id != "":
+        if parsed_args.id != "":
             logger.debug(f"id flag={parsed_args.id}")
         if parsed_args.repo != "":
             logger.debug(f"repo flag={parsed_args.repo}")

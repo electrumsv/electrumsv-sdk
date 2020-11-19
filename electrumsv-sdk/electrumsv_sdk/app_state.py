@@ -41,7 +41,8 @@ class AppState:
         sys.path.append(f"{self.calling_context_dir}")  # for dynamic import of local plugins
 
         self.argparser = ArgParser()
-        self.config: ImmutableConfig = self.argparser.manual_argparsing(sys.argv)
+        self.argparser.manual_argparsing(sys.argv)
+        self.config: ImmutableConfig = self.argparser.generate_immutable_config()
         self.argparser.validate_cli_args()
         self.controller = Controller()
 

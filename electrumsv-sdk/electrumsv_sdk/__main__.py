@@ -1,8 +1,6 @@
 import logging
-import sys
 
-from electrumsv_sdk.config import ImmutableConfig
-from electrumsv_sdk.argparsing import NameSpace, ArgParser
+from electrumsv_sdk.argparsing import NameSpace
 from electrumsv_sdk.app_state import AppState  # pylint: disable=E0401
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',

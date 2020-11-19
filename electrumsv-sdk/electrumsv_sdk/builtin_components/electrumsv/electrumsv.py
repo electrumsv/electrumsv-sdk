@@ -100,7 +100,8 @@ class Plugin(AbstractPlugin):
             self.tools.delete_wallet(datadir=datadir, wallet_name='worker1.sqlite')
             self.tools.create_wallet(datadir=datadir, wallet_name='worker1.sqlite')
 
-        self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=reset_electrumsv)
+        self.plugin_tools.call_for_component_id_or_type(
+            self.COMPONENT_NAME, callable=reset_electrumsv)
         self.logger.debug("Reset of RegTest electrumsv wallet completed successfully")
 
     def status_check(self) -> Optional[bool]:

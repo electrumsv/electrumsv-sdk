@@ -44,11 +44,11 @@ class Plugin(AbstractPlugin):
         self.tools.fetch_node()
 
     def start(self):
+        self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         if self.NODE_PORT:
             self.port = self.NODE_PORT
         else:
             self.port = self.plugin_tools.allocate_port()
-        self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.p2p_port = self.plugin_tools.get_component_port(self.DEFAULT_P2P_PORT,
             self.COMPONENT_NAME, self.id)
 

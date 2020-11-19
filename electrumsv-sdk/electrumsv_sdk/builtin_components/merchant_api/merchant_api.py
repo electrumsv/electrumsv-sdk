@@ -1,9 +1,6 @@
 import logging
 import os
-from pathlib import Path
 from typing import Optional
-
-from electrumsv_node import electrumsv_node
 
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
 from electrumsv_sdk.config import ImmutableConfig

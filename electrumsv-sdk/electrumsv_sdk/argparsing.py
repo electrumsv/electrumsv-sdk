@@ -106,7 +106,8 @@ class ArgParser:
                     if arg in self.component_store.component_map.keys():
                         self.selected_component = arg
                     else:
-                        logger.error(f"Must select from: {self.component_store.component_map.keys()}")
+                        logger.error(f"Must select from: "
+                                     f"{self.component_store.component_map.keys()}")
                         sys.exit()
                     component_selected = True
                     continue
@@ -129,7 +130,8 @@ class ArgParser:
                     if arg in self.component_store.component_map.keys():
                         self.selected_component = arg
                     else:
-                        logger.error(f"Must select from: {self.component_store.component_map.keys()}")
+                        logger.error(f"Must select from: "
+                                     f"{self.component_store.component_map.keys()}")
                         sys.exit()
                     component_selected = True
                     continue
@@ -147,7 +149,8 @@ class ArgParser:
                     if arg in self.component_store.component_map.keys():
                         self.selected_component = arg
                     else:
-                        logger.error(f"Must select from: {self.component_store.component_map.keys()}")
+                        logger.error(f"Must select from: "
+                                     f"{self.component_store.component_map.keys()}")
                         sys.exit()
                     component_selected = True
                     continue
@@ -161,19 +164,54 @@ class ArgParser:
             # print(f"subcommand_indices={subcommand_indices}, index={index}, arg={arg}")
         self.feed_to_argparsers(args, subcommand_indices)
 
-        # When using the sdk as a python library this config would be generated via optional kwargs
-        self.config = ImmutableConfig(
-            namespace=self.namespace,
-            selected_component=self.selected_component,
-            node_args=self.node_args,
-            repo=self.global_cli_flags[ComponentOptions.REPO],
-            branch=self.global_cli_flags[ComponentOptions.BRANCH],
-            new_flag=self.global_cli_flags[ComponentOptions.NEW],
-            gui_flag=self.global_cli_flags[ComponentOptions.GUI],
-            background_flag=self.global_cli_flags[ComponentOptions.BACKGROUND],
-            component_id=self.global_cli_flags[ComponentOptions.ID],
-            component_args=self.component_args
-        )
+    def generate_immutable_config(self):
+        parsed_args = self.subcmd_parsed_args_map[self.namespace]
+        if self.namespace == NameSpace.INSTALL:
+            self.config = ImmutableConfig(
+                namespace=self.namespace,
+                selected_component=self.selected_component,
+                repo=parsed_args.repo,
+                branch=parsed_args.branch,
+                background_flag=parsed_args.background,
+                component_id=parsed_args.id,
+            )
+        elif self.namespace == NameSpace.START:
+            self.config = ImmutableConfig(
+                namespace=self.namespace,
+                selected_component=self.selected_component,
+                repo=parsed_args.repo,
+                branch=parsed_args.branch,
+                new_flag=parsed_args.new,
+                gui_flag=parsed_args.gui,
+                background_flag=parsed_args.background,
+                component_id=parsed_args.id,
+                component_args=self.component_args
+            )
+        elif self.namespace == NameSpace.RESET:
+            self.config = ImmutableConfig(
+                namespace=self.namespace,
+                selected_component=self.selected_component,
+                repo=parsed_args.repo,
+                branch=parsed_args.branch,
+                component_id=parsed_args.id,
+                component_args=self.component_args
+            )
+        elif self.namespace == NameSpace.STOP:
+            self.config = ImmutableConfig(
+                namespace=self.namespace,
+                selected_component=self.selected_component,
+                component_id=parsed_args.id,
+            )
+        elif self.namespace == NameSpace.NODE:
+            self.config = ImmutableConfig(
+                namespace=self.namespace,
+                node_args=self.node_args,
+                component_id=parsed_args.id,
+            )
+        elif self.namespace in {NameSpace.STATUS, NameSpace.TOP_LEVEL}:
+            self.config = ImmutableConfig(
+                namespace=self.namespace
+            )
         return self.config
 
     def update_subcommands_args_map(self, args, subcommand_indices):
@@ -255,6 +293,8 @@ class ArgParser:
             "for component (e.g. 'electrumsv1')")
         reset_parser.add_argument("--repo", type=str, default="", help="git repo as either an "
             "https://github.com url or a local git repo path e.g. G:/electrumsv (optional)")
+        reset_parser.add_argument("--branch", type=str, default="", help="git repo branch ("
+            "optional)")
 
         # add <component_types> from plugins
         subparsers = reset_parser.add_subparsers(help="subcommand", required=False)
