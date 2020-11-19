@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Optional, Dict
 
@@ -51,10 +52,18 @@ class Plugin(AbstractPlugin):
             self.tools.fetch_electrumsv(repo, self.config.branch)
 
         self.tools.packages_electrumsv(repo, self.config.branch)
+        self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self):
         """plugin datadir, id, port are allocated dynamically"""
         self.logger.debug(f"Starting RegTest electrumsv daemon...")
+        if not self.src.exists():
+            self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
+                              f"{self.COMPONENT_NAME}' to install the plugin first")
+            sys.exit(1)
+
+        self.tools.reinstall_conflicting_dependencies()
+
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.port = self.plugin_tools.allocate_port()
         self.tools.generate_run_script()

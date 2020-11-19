@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import shutil
+import sys
 from pathlib import Path
 from typing import Optional, Dict
 
@@ -58,6 +59,11 @@ class Plugin(AbstractPlugin):
     def start(self):
         """plugin datadir, id, port are allocated dynamically"""
         self.logger.debug(f"Starting RegTest electrumx daemon...")
+        if not self.src.exists():
+            self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
+                              f"{self.COMPONENT_NAME}' to install the plugin first")
+            sys.exit(1)
+
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.port = self.plugin_tools.allocate_port()
         self.tools.generate_run_script()

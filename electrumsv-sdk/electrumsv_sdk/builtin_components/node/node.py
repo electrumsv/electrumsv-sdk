@@ -42,6 +42,7 @@ class Plugin(AbstractPlugin):
         """The node component has a pip installer at https://pypi.org/project/electrumsv-node/ and
         only official releases from pypi are supported"""
         self.tools.fetch_node()
+        self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self):
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()

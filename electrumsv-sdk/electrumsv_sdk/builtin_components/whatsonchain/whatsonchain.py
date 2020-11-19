@@ -23,7 +23,7 @@ class Plugin(AbstractPlugin):
         self.tools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
-        self.src_dir = self.plugin_tools.get_source_dir("woc-explorer")
+        self.src = self.plugin_tools.get_source_dir("woc-explorer")
         self.datadir = None  # N/A
         self.id = self.plugin_tools.get_id(self.COMPONENT_NAME)
         self.port = None  # N/A
@@ -34,7 +34,7 @@ class Plugin(AbstractPlugin):
             self.logger.error("ignoring --repo flag for whatsonchain - not applicable.")
         self.tools.fetch_whatsonchain(url="https://github.com/AustEcon/woc-explorer.git", branch='')
         self.tools.packages_whatsonchain()
-        self.logger.debug(f"Installed whatsonchain explorer")
+        self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self):
         self.logger.debug(f"Starting whatsonchain explorer...")
@@ -45,7 +45,7 @@ class Plugin(AbstractPlugin):
         script_path = self.plugin_tools.derive_shell_script_path(self.COMPONENT_NAME)
         process = self.plugin_tools.spawn_process(f"{script_path}")
         id = self.plugin_tools.get_id(self.COMPONENT_NAME)
-        self.component_info = Component(id, process.pid, self.COMPONENT_NAME, str(self.src_dir),
+        self.component_info = Component(id, process.pid, self.COMPONENT_NAME, str(self.src),
             "http://127.0.0.1:3002")
 
     def stop(self):

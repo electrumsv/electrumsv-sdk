@@ -21,6 +21,14 @@ class LocalTools:
         self.plugin = plugin
         self.config: ImmutableConfig = plugin.config
 
+    def reinstall_conflicting_dependencies(self):
+        if sys.platform == 'win32':
+            cmd1 = f"{sys.executable} -m pip install --user aiohttp==3.6.2"
+        elif sys.platform in ['linux', 'darwin']:
+            cmd1 = f"{sys.executable} -m pip install aiohttp==3.6.2"
+        process1 = subprocess.Popen(cmd1, shell=True)
+        process1.wait()
+
     def is_offline_cli_mode(self):
         if len(self.config.component_args) != 0:
             if self.config.component_args[0] in ['create_wallet', 'create_account', '--help']:

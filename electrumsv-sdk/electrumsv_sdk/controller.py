@@ -153,7 +153,9 @@ class Controller:
         if component_dict:
             rpcport = component_dict.get("metadata").get("rpcport")
         else:
-            logger.error(f"could not locate rpcport for node instance: {id}")
+            logger.error(f"could not locate rpcport for node instance: {id}, using default of "
+                         f"18332")
+            rpcport = 18332
 
         node_args = cast_str_int_args_to_int(config.node_args)
         assert electrumsv_node.is_running(rpcport), (

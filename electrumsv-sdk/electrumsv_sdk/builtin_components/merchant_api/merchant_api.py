@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from typing import Optional
 
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
@@ -37,10 +38,15 @@ class Plugin(AbstractPlugin):
         download_and_install(self.src)
         create_settings_file(self.src, self.DEFAULT_PORT, self.NODE_RPC_PORT,
             self.NODE_RPC_USERNAME, self.NODE_RPC_PASSWORD, self.NODE_ZMQ_PORT)
-        self.logger.debug(f"Installed Merchant API")
+        self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self):
         self.logger.debug(f"Starting Merchant API")
+        if not self.src.exists():
+            self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
+                              f"{self.COMPONENT_NAME}' to install the plugin first")
+            sys.exit(1)
+
         self.id = self.plugin_tools.get_id(self.COMPONENT_NAME)
         self.port = self.plugin_tools.allocate_port()
         # The primary reason we need this to be the current directory is so that the `settings.conf`

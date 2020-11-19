@@ -38,6 +38,11 @@ class LocalTools:
         process.wait()
 
     def generate_run_script(self):
+        if not self.plugin.src.exists():
+            self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
+                              f"{self.plugin.COMPONENT_NAME}' to install the plugin first")
+            sys.exit(1)
+
         os.makedirs(SHELL_SCRIPTS_DIR, exist_ok=True)
         os.chdir(SHELL_SCRIPTS_DIR)
         line1 = f"cd {self.plugin.src}"
