@@ -26,8 +26,9 @@ def make_bat_file(filename: str, list_of_shell_commands: List[str]):
         f.write("@echo off\n")
         if list_of_shell_commands:
             for line in list_of_shell_commands:
-                split_command = shlex.split(line, posix=0)
-                f.write(" ".join(split_command))
+                # split_command = shlex.split(line, posix=0)
+                # f.write(" ".join(split_command))
+                f.write(line)
                 f.write('\n')
         f.write("pause\n")
 
@@ -41,11 +42,13 @@ def make_bash_file(filename: str, list_of_shell_commands: List[str]):
         f.write("set echo off\n")
         if list_of_shell_commands:
             for line in list_of_shell_commands:
-                split_command = shlex.split(line, posix=1)
-                f.write(" ".join(split_command))
+                # split_command = shlex.split(line, posix=1)
+                # f.write(" ".join(split_command))
+                f.write(line)
                 f.write("\n")
         f.write("exit")
     os.system(f'chmod 777 {filename}')
+
 
 
 def topup_wallet():
