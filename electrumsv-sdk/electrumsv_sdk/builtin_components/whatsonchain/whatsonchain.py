@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 from typing import Optional
 
@@ -38,14 +39,26 @@ class Plugin(AbstractPlugin):
 
     def start(self):
         self.logger.debug(f"Starting whatsonchain explorer...")
-        self.tools.generate_run_script()
+
+        if not self.src.exists():
+            self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
+                              f"{self.COMPONENT_NAME}' to install the plugin first")
+            sys.exit(1)
+
         if not self.tools.check_node_for_woc():
             sys.exit(1)
 
-        script_path = self.plugin_tools.derive_shell_script_path(self.COMPONENT_NAME)
-        process = self.plugin_tools.spawn_process(f"{script_path}")
-        id = self.plugin_tools.get_id(self.COMPONENT_NAME)
-        self.component_info = Component(id, process.pid, self.COMPONENT_NAME, str(self.src),
+        os.chdir(self.src)
+        # npm without .cmd extension doesn't work with Popen shell=False
+        if sys.platform == "win32":
+            command = f"npm.cmd start"
+        elif sys.platform in {"linux", "darwin"}:
+            command = f"npm start"
+        env_vars = {"PYTHONUNBUFFERED": "1"}
+        self.id = self.plugin_tools.get_id(self.COMPONENT_NAME)
+        logfile = self.plugin_tools.get_logfile_path(self.id)
+        process = self.plugin_tools.spawn_process(command, env_vars=env_vars, logfile=logfile)
+        self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME, str(self.src),
             "http://127.0.0.1:3002")
 
     def stop(self):

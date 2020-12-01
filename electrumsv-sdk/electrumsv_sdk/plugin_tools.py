@@ -1,17 +1,17 @@
+import datetime
 import logging
 import os
 import subprocess
 import time
 from pathlib import Path
 import sys
-from typing import Dict, List, Optional, Callable, Union, Tuple
-import psutil
+from typing import Dict, Optional, Callable, Tuple
 import requests
 
 from .abstract_plugin import AbstractPlugin
-from .utils import trace_processes_for_cmd, trace_pid, make_bat_file, make_bash_file, \
-    port_is_in_use, is_default_component_id, is_remote_repo, checkout_branch
-from .constants import ComponentLaunchFailedError, SHELL_SCRIPTS_DIR, DATADIR, REMOTE_REPOS_DIR
+from .utils import port_is_in_use, is_default_component_id, is_remote_repo, checkout_branch, \
+    spawn_background, spawn_inline, spawn_new_terminal
+from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR
 from .components import ComponentStore
 from .config import ImmutableConfig
 
@@ -72,17 +72,6 @@ class PluginTools:
                 if component_dict.get("component_type") == component_name:
                     callable(component_dict)
                     self.logger.info(f"terminated: {component_dict.get('id')}")
-
-    def make_shell_script_for_component(self, list_of_shell_commands: List[str],
-            component_name: str):
-        os.makedirs(SHELL_SCRIPTS_DIR, exist_ok=True)
-        os.chdir(SHELL_SCRIPTS_DIR)
-
-        if sys.platform == "win32":
-            make_bat_file(component_name + ".bat", list_of_shell_commands)
-
-        elif sys.platform in ["linux", "darwin"]:
-            make_bash_file(component_name + ".sh", list_of_shell_commands)
 
     def get_component_datadir(self, component_name: str) -> Tuple[Path, Optional[str]]:
         """Used for multi-instance components"""
@@ -196,102 +185,22 @@ class PluginTools:
             time.sleep(sleep_time)
         return False
 
-    def derive_shell_script_path(self, component_name: str) -> str:
-        script_name = component_name
+    def spawn_process(self, command: str, env_vars: Dict=None, logfile: Path=None) -> \
+            subprocess.Popen:
+        if not env_vars:
+            env_vars = {}
 
-        if sys.platform == "win32":
-            script = SHELL_SCRIPTS_DIR.joinpath(f"{script_name}.bat")
-        elif sys.platform in ("linux", "darwin"):
-            script = SHELL_SCRIPTS_DIR.joinpath(f"{script_name}.sh")
-        else:
-            self.logger.error(f"unsupported platform: {sys.platform}")
-            raise NotImplementedError
-        return str(script)
-
-    def spawn_process(self, command: str) -> subprocess.Popen:
         assert isinstance(command, str)
         if self.config.background_flag:
-            return self.spawn_in_background(command)
+            return spawn_background(command, env_vars, logfile)
+        elif self.config.inline_flag:
+            # todo figure out how to run inline whilst still updating status monitor
+            spawn_inline(command, env_vars, logfile)
+            sys.exit(0)
+        elif self.config.new_terminal_flag:
+            return spawn_new_terminal(command, env_vars, logfile)
         else:
-            return self.spawn_in_new_console(command)
-
-    def run_command_current_shell(self, command: str):
-        return subprocess.run(command, shell=True, check=True)
-
-    def run_command_background(self, command: str) -> subprocess.Popen:
-        if sys.platform in ('linux', 'darwin'):
-            process_handle = subprocess.Popen(f"nohup {command} &", shell=True,
-                                       stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT)
-            process_handle.wait()
-            return process_handle
-        elif sys.platform == 'win32':
-            self.logger.info(
-                "Running as a background process (without a console window) is not supported "
-                "on windows, spawning in a new console window")
-            process_handle = subprocess.Popen(
-                f"{command}", creationflags=subprocess.CREATE_NEW_CONSOLE
-            )
-            return process_handle
-
-    def run_command_new_window(self, command: str) -> subprocess.Popen:
-        if sys.platform in ('linux', 'darwin'):
-            # todo gnome-terminal part will not work cross-platform for spawning new terminals
-            process_handle = subprocess.Popen(f"gnome-terminal -- {command}", shell=True,
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            process_handle.wait()
-            return process_handle
-
-        elif sys.platform == 'win32':
-            process_handle = self.run_command_background(command)
-            return process_handle
-
-    def linux_trace_pid(self, command: str, num_processes_before: int) -> psutil.Process:
-        num_processes_after = len(trace_processes_for_cmd(command))
-        if num_processes_before == num_processes_after:
-            raise ComponentLaunchFailedError()
-
-        process_handle = trace_pid(command)
-        return process_handle
-
-    def spawn_in_background(self, command: str) -> Union[subprocess.Popen, psutil.Process]:
-        """for long-running processes / servers - on linux there is a process id
-        tracing step because Popen returns a pid for a detached process (not the one we actually
-        want)"""
-        assert isinstance(command, str)
-        if sys.platform in ('linux', 'darwin'):
-            num_processes_before = len(trace_processes_for_cmd(command))
-            self.run_command_background(command)
-            time.sleep(1)  # allow brief time window for process to fail at startup
-
-            process_handle = self.linux_trace_pid(command, num_processes_before)
-            return process_handle
-
-        elif sys.platform == 'win32':
-            process_handle = self.run_command_background(command)
-            return process_handle
-
-    def spawn_in_new_console(self, command: str) -> Union[subprocess.Popen, psutil.Process]:
-        """for long-running processes / servers - on linux there is a process id tracing step
-        because Popen returns a pid for a detached process (not the one we actually want)"""
-        if sys.platform in ('linux', 'darwin'):
-            num_processes_before = len(trace_processes_for_cmd(command))
-            try:
-                self.run_command_new_window(command)
-            except ComponentLaunchFailedError:
-                self.logger.error(
-                    f"failed to launch long-running process: {command}. On linux cloud "
-                    f"servers try using the --background flag e.g. electrumsv-sdk start "
-                    f"--background node.")
-                raise
-            time.sleep(1)  # allow brief time window for process to fail at startup
-
-            process_handle = self.linux_trace_pid(command, num_processes_before)
-            return process_handle
-
-        elif sys.platform == 'win32':
-            process_handle = self.run_command_new_window(command)
-            return process_handle
+            return spawn_new_terminal(command, env_vars, logfile)
 
     def get_default_id(self, component_name: str) -> str:
         return component_name + str(1)
@@ -310,3 +219,12 @@ class PluginTools:
 
         elif new:
             self.logger.error("The --new flag is only for multi-instance conponents")
+
+    def get_logfile_path(self, id: str) -> Path:
+        """deterministic / standardised location for logging to file"""
+        dt = datetime.datetime.now()
+        logfile_name = f"{dt.day}-{dt.month}-{dt.year}-{dt.hour}-{dt.minute}-{dt.second}.log"
+        logpath = LOGS_DIR.joinpath(self.plugin.COMPONENT_NAME).joinpath(f"{id}")
+        os.makedirs(logpath, exist_ok=True)
+        logfile = logpath.joinpath(f"{logfile_name}")
+        return logfile

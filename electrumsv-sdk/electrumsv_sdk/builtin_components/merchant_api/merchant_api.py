@@ -54,7 +54,9 @@ class Plugin(AbstractPlugin):
         os.chdir(self.src)
         # Get the path to the executable file.
         run_path = get_run_path(self.src)
-        process = self.plugin_tools.spawn_process(str(run_path))
+
+        logfile = self.plugin_tools.get_logfile_path(self.id)
+        process = self.plugin_tools.spawn_process(str(run_path), env_vars=None, logfile=logfile)
         self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME,
             self.src, "???")
 

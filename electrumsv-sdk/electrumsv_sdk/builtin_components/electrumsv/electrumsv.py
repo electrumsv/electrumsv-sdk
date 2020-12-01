@@ -66,12 +66,12 @@ class Plugin(AbstractPlugin):
 
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.port = self.plugin_tools.allocate_port()
-        self.tools.generate_run_script()
         os.makedirs(self.datadir.joinpath("regtest/wallets"), exist_ok=True)
         if self.tools.is_offline_cli_mode():
             # 'reset' recurses into here...
-            script_path = self.plugin_tools.derive_shell_script_path(self.COMPONENT_NAME)
-            _process = self.plugin_tools.spawn_process(f"{script_path}")
+            command, env_vars = self.tools.generate_command()
+            logfile = self.plugin_tools.get_logfile_path(self.id)
+            _process = self.plugin_tools.spawn_process(command, env_vars, logfile)
             return  # skip the unnecessary status updates
 
         # If daemon or gui mode continue...
@@ -79,13 +79,12 @@ class Plugin(AbstractPlugin):
             # reset wallet
             self.tools.delete_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
             self.tools.create_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
-            if self.tools.wallet_db_exists():
-                self.tools.generate_run_script()  # 'reset' mutates shell script
-            else:
+            if not self.tools.wallet_db_exists():
                 self.logger.exception("wallet db creation failed unexpectedly")
 
-        script_path = self.plugin_tools.derive_shell_script_path(self.COMPONENT_NAME)
-        process = self.plugin_tools.spawn_process(f"{script_path}")
+        command, env_vars = self.tools.generate_command()
+        logfile = self.plugin_tools.get_logfile_path(self.id)
+        process = self.plugin_tools.spawn_process(command, env_vars, logfile)
 
         logging_path = self.datadir.joinpath("logs")
         metadata = {"config": str(self.datadir.joinpath("regtest/config")),
@@ -105,9 +104,10 @@ class Plugin(AbstractPlugin):
         """reset_electrumsv will be called many times for different component ids if applicable"""
         def reset_electrumsv(component_dict: Dict):
             self.logger.debug("Resetting state of RegTest electrumsv server...")
-            datadir = Path(component_dict.get('metadata').get("DATADIR"))
-            self.tools.delete_wallet(datadir=datadir, wallet_name='worker1.sqlite')
-            self.tools.create_wallet(datadir=datadir, wallet_name='worker1.sqlite')
+            self.datadir = Path(component_dict.get('metadata').get("DATADIR"))
+            self.id = component_dict.get('id')
+            self.tools.delete_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
+            self.tools.create_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
 
         self.plugin_tools.call_for_component_id_or_type(
             self.COMPONENT_NAME, callable=reset_electrumsv)

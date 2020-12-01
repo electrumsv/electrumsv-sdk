@@ -56,7 +56,8 @@ class ValidateCliArgs:
         if not self.config.namespace == NameSpace.START:
             return
 
-        allowed_flags = {'new', 'gui', 'id', 'branch', 'repo', 'background'}
+        allowed_flags = {'new', 'gui', 'id', 'branch', 'repo', 'background', 'inline',
+            'new_terminal'}
         valid_input, flags = self.validate_flags(parsed_args, allowed_flags)
         if not valid_input:
             logger.info(f"valid options include: {allowed_flags}. You selected '{flags}'")

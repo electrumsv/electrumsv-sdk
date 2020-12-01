@@ -6,7 +6,6 @@ import subprocess
 import sys
 
 
-from electrumsv_sdk.constants import SHELL_SCRIPTS_DIR
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR
 from electrumsv_sdk.config import ImmutableConfig
 from electrumsv_sdk.utils import checkout_branch
@@ -84,28 +83,6 @@ class LocalTools:
                 f"{sys.executable} -m pip install --user -r {temp_requirements}", shell=True)
             process.wait()
             os.remove(temp_requirements)
-
-    def generate_run_script(self):
-        os.makedirs(SHELL_SCRIPTS_DIR, exist_ok=True)
-        os.chdir(SHELL_SCRIPTS_DIR)
-        env_var_setter = 'set' if sys.platform == 'win32' else 'export'
-
-        lines = [
-            f"{env_var_setter} SERVICES="f"{f'tcp://:{self.plugin.port},rpc://'}",
-            f"{env_var_setter} DB_DIRECTORY={self.plugin.datadir}",
-            f"{env_var_setter} DAEMON_URL={self.plugin.DAEMON_URL}",
-            f"{env_var_setter} DB_ENGINE={self.plugin.DB_ENGINE}",
-            f"{env_var_setter} COIN={self.plugin.COIN}",
-            f"{env_var_setter} COST_SOFT_LIMIT={self.plugin.COST_SOFT_LIMIT}",
-            f"{env_var_setter} COST_HARD_LIMIT={self.plugin.COST_HARD_LIMIT}",
-            f"{env_var_setter} MAX_SEND={self.plugin.MAX_SEND}",
-            f"{env_var_setter} LOG_LEVEL={self.plugin.LOG_LEVEL}",
-            f"{env_var_setter} NET={self.plugin.NET}",
-            f"{env_var_setter} ALLOW_ROOT={self.plugin.ALLOW_ROOT}",
-            f"{sys.executable} {self.plugin.src.joinpath('electrumx_server')}"
-        ]
-        self.plugin_tools.make_shell_script_for_component(list_of_shell_commands=lines,
-            component_name=self.plugin.COMPONENT_NAME)
 
     async def is_electrumx_running(self):
         for sleep_time in (1, 2, 3):

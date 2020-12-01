@@ -1,11 +1,10 @@
 import logging
 import os
 import subprocess
-import sys
 
 from electrumsv_node import electrumsv_node
 
-from electrumsv_sdk.constants import SHELL_SCRIPTS_DIR, REMOTE_REPOS_DIR
+from electrumsv_sdk.constants import REMOTE_REPOS_DIR
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
 from electrumsv_sdk.config import ImmutableConfig
 from electrumsv_sdk.utils import checkout_branch
@@ -36,19 +35,6 @@ class LocalTools:
         process.wait()
         process = subprocess.Popen("npm run-script build", shell=True)
         process.wait()
-
-    def generate_run_script(self):
-        if not self.plugin.src.exists():
-            self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
-                              f"{self.plugin.COMPONENT_NAME}' to install the plugin first")
-            sys.exit(1)
-
-        os.makedirs(SHELL_SCRIPTS_DIR, exist_ok=True)
-        os.chdir(SHELL_SCRIPTS_DIR)
-        line1 = f"cd {self.plugin.src}"
-        line2 = f"call npm start" if sys.platform == "win32" else f"npm start"
-        self.plugin_tools.make_shell_script_for_component(list_of_shell_commands=[line1, line2],
-            component_name=self.plugin.COMPONENT_NAME)
 
     def check_node_for_woc(self):
         if not electrumsv_node.is_running():
