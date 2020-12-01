@@ -8,7 +8,6 @@ MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Directory structure
 SDK_HOME_DIR: Path = get_sdk_datadir()
 REMOTE_REPOS_DIR: Path = SDK_HOME_DIR.joinpath("remote_repos")
-SHELL_SCRIPTS_DIR: Path = SDK_HOME_DIR.joinpath("shell_scripts")
 DATADIR: Path = SDK_HOME_DIR.joinpath("component_datadirs")
 LOGS_DIR: Path = SDK_HOME_DIR.joinpath("logs")
 CONFIG_PATH: Path = SDK_HOME_DIR.joinpath("config.json")
@@ -36,6 +35,8 @@ class ComponentOptions:
     NEW = "new"
     GUI = "gui"
     BACKGROUND = "background"
+    INLINE = "inline"
+    NEW_TERMINAL = "new_terminal"
     ID = "id"
     REPO = "repo"
     BRANCH = "branch"
@@ -47,7 +48,3 @@ class ComponentState:
     RUNNING = "Running"
     STOPPED = "Stopped"
     FAILED = "Failed"
-
-
-class ComponentLaunchFailedError(Exception):
-    pass

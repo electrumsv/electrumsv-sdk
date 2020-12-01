@@ -11,13 +11,12 @@ import logging
 import sys
 import textwrap
 from argparse import RawTextHelpFormatter
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, List
 
 from .constants import NameSpace
 from .config import ImmutableConfig
 from .validate_cli_args import ValidateCliArgs
 from .components import ComponentStore
-from .constants import ComponentOptions
 
 logger = logging.getLogger("argparsing")
 
@@ -32,13 +31,6 @@ class ArgParser:
         self.selected_component: Optional[str] = None
         self.component_args = []  # e.g. store arguments to pass to the electrumsv's cli interface
         self.node_args = None
-        self.global_cli_flags: Dict[str, Any] = {}
-        self.global_cli_flags[ComponentOptions.NEW] = False
-        self.global_cli_flags[ComponentOptions.GUI] = False
-        self.global_cli_flags[ComponentOptions.BACKGROUND] = False
-        self.global_cli_flags[ComponentOptions.ID] = ""
-        self.global_cli_flags[ComponentOptions.REPO] = ""
-        self.global_cli_flags[ComponentOptions.BRANCH] = ""
 
         # data types for storing intermediate steps of argparsing
         self.parser_map: Dict[str, argparse.ArgumentParser] = {}  # namespace: ArgumentParser
@@ -184,6 +176,8 @@ class ArgParser:
                 new_flag=parsed_args.new,
                 gui_flag=parsed_args.gui,
                 background_flag=parsed_args.background,
+                inline_flag=parsed_args.inline,
+                new_terminal_flag=parsed_args.new_terminal,
                 component_id=parsed_args.id,
                 component_args=self.component_args
             )
@@ -256,6 +250,8 @@ class ArgParser:
         start_parser.add_argument("--new", action="store_true", help="")
         start_parser.add_argument("--gui", action="store_true", help="")
         start_parser.add_argument("--background", action="store_true", help="")
+        start_parser.add_argument("--inline", action="store_true", help="")
+        start_parser.add_argument("--new-terminal", action="store_true", help="")
         start_parser.add_argument("--id", type=str, default="", help="human-readable identifier "
             "for component (e.g. 'worker1_esv')")
         start_parser.add_argument("--repo", type=str, default="", help="git repo as either an "

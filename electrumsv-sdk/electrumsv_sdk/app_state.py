@@ -10,7 +10,7 @@ from electrumsv_node import electrumsv_node
 
 from .argparsing import ArgParser
 from .config import ImmutableConfig
-from .constants import SDK_HOME_DIR, REMOTE_REPOS_DIR, SHELL_SCRIPTS_DIR, DATADIR, LOGS_DIR, \
+from .constants import SDK_HOME_DIR, REMOTE_REPOS_DIR, DATADIR, LOGS_DIR, \
     USER_PLUGINS_DIR, CONFIG_PATH
 from .controller import Controller
 
@@ -28,7 +28,6 @@ class AppState:
 
     def __init__(self):
         os.makedirs(REMOTE_REPOS_DIR, exist_ok=True)
-        os.makedirs(SHELL_SCRIPTS_DIR, exist_ok=True)
         os.makedirs(DATADIR, exist_ok=True)
         os.makedirs(LOGS_DIR, exist_ok=True)
         os.makedirs(USER_PLUGINS_DIR, exist_ok=True)
@@ -54,9 +53,6 @@ class AppState:
         if REMOTE_REPOS_DIR.exists():
             shutil.rmtree(REMOTE_REPOS_DIR, onerror=remove_readonly)
             os.makedirs(REMOTE_REPOS_DIR, exist_ok=True)
-        if SHELL_SCRIPTS_DIR.exists():
-            shutil.rmtree(SHELL_SCRIPTS_DIR, onerror=remove_readonly)
-            os.makedirs(SHELL_SCRIPTS_DIR, exist_ok=True)
 
     def handle_first_ever_run(self) -> None:
         """nukes previously installed dependencies and .bat/.sh scripts for the first ever run of

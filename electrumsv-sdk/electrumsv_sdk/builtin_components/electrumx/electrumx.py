@@ -9,7 +9,8 @@ from typing import Optional, Dict
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
 from electrumsv_sdk.config import ImmutableConfig
 from electrumsv_sdk.components import Component
-from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process, is_docker
+from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process, is_docker, \
+    spawn_inline
 from electrumsv_sdk.plugin_tools import PluginTools
 
 from .local_tools import LocalTools
@@ -66,14 +67,29 @@ class Plugin(AbstractPlugin):
 
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.port = self.plugin_tools.allocate_port()
-        self.tools.generate_run_script()
-        script_path = self.plugin_tools.derive_shell_script_path(self.COMPONENT_NAME)
+
+        command = f"{sys.executable} {self.src.joinpath('electrumx_server')}"
+        env_vars = {
+            "PYTHONUNBUFFERED": "1",
+            "SERVICES": f"{f'tcp://:{self.port},rpc://'}",
+            "DB_DIRECTORY": f"{self.datadir}",
+            "DAEMON_URL": f"{self.DAEMON_URL}",
+            "DB_ENGINE": f"{self.DB_ENGINE}",
+            "COIN": f"{self.COIN}",
+            "COST_SOFT_LIMIT": f"{self.COST_SOFT_LIMIT}",
+            "COST_HARD_LIMIT": f"{self.COST_HARD_LIMIT}",
+            "MAX_SEND": f"{self.MAX_SEND}",
+            "LOG_LEVEL": f"{self.LOG_LEVEL}",
+            "NET": f"{self.NET}",
+            "ALLOW_ROOT": f"{self.ALLOW_ROOT}",
+        }
+        logfile = self.plugin_tools.get_logfile_path(self.id)
 
         # temporary docker workaround - SDK should allow launching components in current terminal
         if is_docker():
-            process = self.plugin_tools.run_command_current_shell(script_path)
+            spawn_inline(command, env_vars, logfile)
         else:
-            process = self.plugin_tools.spawn_process(f"{script_path}")
+            process = self.plugin_tools.spawn_process(command, env_vars, logfile)
 
         self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME,
             location=str(self.src), status_endpoint="http://127.0.0.1:51001",

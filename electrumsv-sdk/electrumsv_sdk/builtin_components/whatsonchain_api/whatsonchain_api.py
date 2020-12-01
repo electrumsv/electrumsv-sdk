@@ -38,9 +38,12 @@ class Plugin(AbstractPlugin):
         self.logger.debug(f"Installing {self.COMPONENT_NAME} is not applicable")
 
     def start(self) -> None:
-        id = self.plugin_tools.get_id(self.COMPONENT_NAME)
-        process = self.plugin_tools.spawn_process(f"{sys.executable} {self.SCRIPT_PATH}")
-        self.component_info = Component(id, process.pid, self.COMPONENT_NAME,
+        self.id = self.plugin_tools.get_id(self.COMPONENT_NAME)
+        command = f"{sys.executable} {self.SCRIPT_PATH}"
+        logfile = self.plugin_tools.get_logfile_path(self.id)
+        env_vars = {"PYTHONUNBUFFERED": "1"}
+        process = self.plugin_tools.spawn_process(command, env_vars=env_vars, logfile=logfile)
+        self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME,
             self.COMPONENT_PATH, self.PING_URL)
 
     def stop(self) -> None:

@@ -19,4 +19,6 @@ class ImmutableConfig(object):
     new_flag: str = False
     gui_flag: str = False
     background_flag: str = False
+    inline_flag: str = False
+    new_terminal_flag: str = False
     component_id: str = ""

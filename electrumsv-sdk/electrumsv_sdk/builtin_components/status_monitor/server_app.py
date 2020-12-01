@@ -47,12 +47,12 @@ class ApplicationState(object):
         self.loop = loop
 
         self.update_thread = threading.Thread(target=self.update_status_thread,
-            name='status_thread')
+            name='status_thread', daemon=True)
         self.update_thread.start()
 
         self.push_notification_queue = queue.Queue()
         self.update_thread = threading.Thread(target=self.push_notifications_thread,
-            name='status_thread')
+            name='status_thread', daemon=True)
         self.update_thread.start()
         self.pong_event = asyncio.Event()
 

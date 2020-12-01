@@ -117,13 +117,12 @@ class LocalTools:
 
     def feed_commands_to_esv(self, command_string):
         esv_launcher = str(self.plugin.src.joinpath("electrum-sv"))
-        esv_datadir = self.plugin.datadir
         component_args = split_command(command_string)
         if component_args:
             additional_args = " ".join(component_args)
             line = f"{sys.executable} {esv_launcher} {additional_args}"
             if "--dir" not in component_args:
-                line += " " + f"--dir {esv_datadir}"
+                line += " " + f"--dir {self.plugin.datadir}"
         return line
 
     def create_wallet(self, datadir: Path, wallet_name: str = None):
@@ -176,7 +175,7 @@ class LocalTools:
             logger.exception(e)
             raise
 
-    def generate_run_script(self):
+    def generate_command(self):
         """
         The electrumsv component type can be executed in 1 of 3 ways:
          1) custom script (if args are supplied to the right-hand-side of <component_name>)
@@ -185,6 +184,9 @@ class LocalTools:
 
         NOTE: This is about as complex as it gets!
         """
+        command = ""
+        env_vars = {"PYTHONUNBUFFERED": "1"}
+
         esv_launcher = str(self.plugin.src.joinpath("electrum-sv"))
         port = self.plugin.port
         logger.debug(f"esv_datadir = {self.plugin.datadir}")
@@ -195,36 +197,29 @@ class LocalTools:
 
         if component_args:
             additional_args = " ".join(component_args)
-            line1 = f"{sys.executable} {esv_launcher} {additional_args}"
+            command = f"{sys.executable} {esv_launcher} {additional_args}"
             if "--dir" not in component_args:
-                line1 += " " + f"--dir {self.plugin.datadir}"
-
-            lines = [line1]
+                command += " " + f"--dir {self.plugin.datadir}"
 
         # daemon script
         elif not self.config.gui_flag:
             path_to_example_dapps = self.plugin.src.joinpath("examples/applications")
-            line1 = f"set PYTHONPATH={path_to_example_dapps}"
-            if sys.platform in {'linux', 'darwin'}:
-                line1 = f"export PYTHONPATH={path_to_example_dapps}"
-
-            line2 = (
+            env_vars.update({"PYTHONPATH": f"{path_to_example_dapps}"})
+            command = (
                 f"{sys.executable} {esv_launcher} --portable --dir {self.plugin.datadir} "
                 f"--regtest daemon -dapp restapi --v=debug --file-logging --restapi "
                 f"--restapi-port={port} --server={self.plugin.ELECTRUMX_HOST}"
                 f":{self.plugin.ELECTRUMX_PORT}:t "
                 f"--restapi-user rpcuser --restapi-password= "
             )
-            lines = [line1, line2]
 
         # GUI script
         else:
-            line1 = (
+            command = (
                 f"{sys.executable} {esv_launcher} gui --regtest --restapi "
                 f"--restapi-port={port} --v=debug --file-logging "
                 f"--server={self.plugin.ELECTRUMX_HOST}:{self.plugin.ELECTRUMX_PORT}:t "
                 f"--dir {self.plugin.datadir}"
             )
-            lines = [line1]
-        self.plugin.plugin_tools.make_shell_script_for_component(list_of_shell_commands=lines,
-            component_name=COMPONENT_NAME)
+        return command, env_vars
+
