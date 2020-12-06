@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import List, Dict
 
 import tailer
-from .exceptions import UnsupportedPlatform
 from electrumsv_node import electrumsv_node
 
 logger = logging.getLogger("utils")
@@ -136,8 +135,12 @@ def spawn_inline(command: str, env_vars: Dict=None, logfile: Path=None):
         if logfile:
             with open(f'{logfile}', 'w') as logfile_handle:
                 # direct logs to file
-                process = subprocess.Popen(command, stdout=logfile_handle, stderr=logfile_handle,
-                    env=os.environ.update(env_vars))
+                if sys.platform == 'win32':
+                    process = subprocess.Popen(command, stdout=logfile_handle,
+                        stderr=logfile_handle, env=os.environ.update(env_vars))
+                elif sys.platform in {'linux', 'windows'}:
+                    process = subprocess.Popen(f"{command}", shell=True, stdout=logfile_handle,
+                        stderr=logfile_handle, env=os.environ.update(env_vars))
 
                 # tail logs from file into stdout (blocks in a thread)
                 t = threading.Thread(target=tail, args=(logfile, stop_event), daemon=True)
@@ -151,30 +154,36 @@ def spawn_inline(command: str, env_vars: Dict=None, logfile: Path=None):
                     for line in tailer.tail(open(logfile), lines=15):
                         print(line)
         else:
-            process = subprocess.Popen(command, env=os.environ.update(env_vars))
-            process.wait()
+            if sys.platform == 'win32':
+                process = subprocess.Popen(command, env=os.environ.update(env_vars))
+                process.wait()
+            elif sys.platform in {'linux', 'windows'}:
+                process = subprocess.Popen(f"{command}", shell=True,
+                    env=os.environ.update(env_vars))
+                process.wait()
     except KeyboardInterrupt:
         stop_event.set()
         sys.exit(1)
 
 
 def spawn_background(command: str, env_vars: Dict, logfile: Path=None) -> subprocess.Popen:
-    if sys.platform in ('linux', 'darwin'):
-        split_command = shlex.split(command, posix=1)
-    elif sys.platform == 'win32':
-        split_command = shlex.split(f"{command}", posix=0)
-    else:
-        raise UnsupportedPlatform(f"unsupported platform: {sys.platform}")
-
     if logfile:
         with open(f'{logfile}', 'w') as logfile_handle:
-            # direct logs to file
-            process = subprocess.Popen(split_command, stdout=logfile_handle,
-                stderr=logfile_handle, env=os.environ.update(env_vars))
+            # direct stdout and stderr to file
+            if sys.platform == "win32":
+                process = subprocess.Popen(command, stdout=logfile_handle, stderr=logfile_handle,
+                    env=os.environ.update(env_vars), creationflags=subprocess.DETACHED_PROCESS)
+            else:
+                process = subprocess.Popen(f"nohup {command} &", shell=True, stdout=logfile_handle,
+                    stderr=logfile_handle, env=os.environ.update(env_vars))
     else:
         # no logging
-        process = subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            env=os.environ.update(env_vars))
+        if sys.platform == "win32":
+            process = subprocess.Popen(command, env=os.environ.update(env_vars),
+                creationflags=subprocess.DETACHED_PROCESS)
+        else:
+            process = subprocess.Popen(f"nohup {command} &", shell=True,
+                env=os.environ.update(env_vars))
     return process
 
 
@@ -195,7 +204,7 @@ def spawn_new_terminal(command: str, env_vars: Dict, logfile: Path=None) -> subp
     if sys.platform in ('linux', 'darwin'):
         split_command = shlex.split(f"xterm -fa 'Monospace' -fs 10 -e {command}", posix=1)
         process = subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE, env=os.environ.update(env_vars))
+            stdin=subprocess.PIPE)
 
     elif sys.platform == 'win32':
         split_command = shlex.split(f"cmd /c {command}", posix=0)

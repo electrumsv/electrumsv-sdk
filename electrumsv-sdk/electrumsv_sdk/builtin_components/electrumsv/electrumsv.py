@@ -102,6 +102,8 @@ class Plugin(AbstractPlugin):
 
     def reset(self):
         """reset_electrumsv will be called many times for different component ids if applicable"""
+        self.tools.reinstall_conflicting_dependencies()
+
         def reset_electrumsv(component_dict: Dict):
             self.logger.debug("Resetting state of RegTest electrumsv server...")
             self.datadir = Path(component_dict.get('metadata').get("DATADIR"))
