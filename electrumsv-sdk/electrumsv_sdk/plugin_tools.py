@@ -222,6 +222,7 @@ class PluginTools:
 
     def get_logfile_path(self, id: str) -> Path:
         """deterministic / standardised location for logging to file"""
+        assert id is not None, "component id cannot be Null when deriving logfile path"
         dt = datetime.datetime.now()
         logfile_name = f"{dt.day}-{dt.month}-{dt.year}-{dt.hour}-{dt.minute}-{dt.second}.log"
         logpath = LOGS_DIR.joinpath(self.plugin.COMPONENT_NAME).joinpath(f"{id}")

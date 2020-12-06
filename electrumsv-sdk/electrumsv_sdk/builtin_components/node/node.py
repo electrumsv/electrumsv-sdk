@@ -63,11 +63,18 @@ class Plugin(AbstractPlugin):
         if not extra_params:
             extra_params = None
 
-        process_pid = electrumsv_node.start(data_path=str(self.datadir), rpcport=self.port,
-            p2p_port=self.p2p_port, network='regtest', extra_params=extra_params)
+        shell_command = electrumsv_node.shell_command(data_path=str(self.datadir),
+            rpcport=self.port,
+            p2p_port=self.p2p_port, network='regtest',
+            print_to_console=True, extra_params=extra_params)
+
+        command = " ".join(shell_command)
+        env_vars = None
+        logfile = self.plugin_tools.get_logfile_path(self.id)
+        process = self.plugin_tools.spawn_process(command, env_vars=None, logfile=logfile)
         logging_path = Path(self.datadir).joinpath("regtest/bitcoind.log")
 
-        self.component_info = Component(self.id, process_pid, self.COMPONENT_NAME,
+        self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME,
             str(self.datadir), f"http://rpcuser:rpcpassword@127.0.0.1:{self.port}",
             logging_path=logging_path,
             metadata={"DATADIR": str(self.datadir), "rpcport": self.port, "p2p_port": self.p2p_port}
