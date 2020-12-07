@@ -6,7 +6,7 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import tailer
 from electrumsv_node import electrumsv_node
@@ -117,11 +117,9 @@ def get_sdk_datadir():
     return sdk_home_datadir
 
 
-def tail(logfile, stop_event: threading.Event):
+def tail(logfile):
     for line in tailer.follow(open(logfile), delay=0.3):
         print(line)
-        if stop_event.is_set():
-            break
 
 
 def spawn_inline(command: str, env_vars: Dict=None, logfile: Path=None):
@@ -130,7 +128,7 @@ def spawn_inline(command: str, env_vars: Dict=None, logfile: Path=None):
     if not env_vars:
         env_vars = {}
 
-    stop_event = threading.Event()
+    t: Optional[threading.Thread] = None
     try:
         if logfile:
             with open(f'{logfile}', 'w') as logfile_handle:
@@ -143,16 +141,11 @@ def spawn_inline(command: str, env_vars: Dict=None, logfile: Path=None):
                         stderr=logfile_handle, env=os.environ.update(env_vars))
 
                 # tail logs from file into stdout (blocks in a thread)
-                t = threading.Thread(target=tail, args=(logfile, stop_event), daemon=True)
+                t = threading.Thread(target=tail, args=(logfile, ), daemon=True)
                 t.start()
 
                 process.wait()
-                stop_event.set()  # trigger thread to stop tailing log file
-
-                if process.returncode != 0:
-                    logger.error(f"process crashed: see {logfile} for full logs")
-                    for line in tailer.tail(open(logfile), lines=15):
-                        print(line)
+                t.join(0.5)  # allow time for background thread to dump logs
         else:
             if sys.platform == 'win32':
                 process = subprocess.Popen(command, env=os.environ.update(env_vars))
@@ -162,7 +155,8 @@ def spawn_inline(command: str, env_vars: Dict=None, logfile: Path=None):
                     env=os.environ.update(env_vars))
                 process.wait()
     except KeyboardInterrupt:
-        stop_event.set()
+        if t:
+            t.join(0.5)
         sys.exit(1)
 
 
