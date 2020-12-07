@@ -119,9 +119,9 @@ def get_sdk_datadir():
 
 def tail(logfile, stop_event: threading.Event):
     for line in tailer.follow(open(logfile), delay=0.3):
+        print(line)
         if stop_event.is_set():
             break
-        print(line)
 
 
 def spawn_inline(command: str, env_vars: Dict=None, logfile: Path=None):
