@@ -9,8 +9,7 @@ from typing import Optional, Dict
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
 from electrumsv_sdk.config import ImmutableConfig
 from electrumsv_sdk.components import Component
-from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process, is_docker, \
-    spawn_inline
+from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
 from .local_tools import LocalTools
@@ -86,10 +85,7 @@ class Plugin(AbstractPlugin):
         logfile = self.plugin_tools.get_logfile_path(self.id)
 
         # temporary docker workaround - SDK should allow launching components in current terminal
-        if is_docker():
-            spawn_inline(command, env_vars, logfile)
-        else:
-            process = self.plugin_tools.spawn_process(command, env_vars, logfile)
+        process = self.plugin_tools.spawn_process(command, env_vars, logfile)
 
         self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME,
             location=str(self.src), status_endpoint="http://127.0.0.1:51001",
