@@ -200,7 +200,7 @@ class ArgParser:
             self.config = ImmutableConfig(
                 namespace=self.namespace,
                 node_args=self.node_args,
-                component_id=parsed_args.id,
+                # --id, --rpchost, --rpcport are managed manually see controller.node()
             )
         elif self.namespace in {NameSpace.STATUS, NameSpace.TOP_LEVEL}:
             self.config = ImmutableConfig(
@@ -304,9 +304,16 @@ class ArgParser:
     def add_node_argparser(self, namespaces):
         node_parser = namespaces.add_parser(
             "node",
-            help="direct access to the built-in bitcoin " "daemon RPC commands",
+            help="direct access to the built-in bitcoin daemon RPC commands",
             usage="use as you would use bitcoin-cli",
         )
+        node_parser.add_argument("--rpchost", type=str, default="",
+            help="rpchost defaults to 127.0.0.1")
+        node_parser.add_argument("--rpcport", type=str, default="",
+            help="rpchost defaults to 18332")
+        node_parser.add_argument("--id", type=str, default="",
+            help="select node instance by unique identifier (cannot mix this option with rpcport / "
+                 "rpchost args)")
         # NOTE: all args are actually directed at the bitcoin RPC over http
         return node_parser
 

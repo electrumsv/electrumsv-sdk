@@ -43,7 +43,7 @@ class AppState:
         self.argparser.manual_argparsing(sys.argv)
         self.config: ImmutableConfig = self.argparser.generate_immutable_config()
         self.argparser.validate_cli_args()
-        self.controller = Controller()
+        self.controller = Controller(self)
 
     def purge_prev_installs_if_exist(self) -> None:
         def remove_readonly(func, path, excinfo):  # .git is read-only
