@@ -13,6 +13,7 @@ services:
     environment:
       - NODE_RPCALLOWIP=0.0.0.0/0
       - NODE_RPCBIND=0.0.0.0
+      - NODE_PORT=18332
 
   electrumx:
 #    image: electrumsvsdk/electrumx:latest
