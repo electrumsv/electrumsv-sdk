@@ -14,14 +14,17 @@ from .install import download_and_install, create_settings_file, get_run_path
 
 class Plugin(AbstractPlugin):
 
-    NODE_RPC_PORT = 18332
-    NODE_RPC_USERNAME = "rpcuser"
-    NODE_RPC_PASSWORD = "rpcpassword"
-    NODE_ZMQ_PORT = 28332
-
     DEFAULT_PORT = 45111
     RESERVED_PORTS = {DEFAULT_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
+
+    NODE_HOST = os.environ.get("NODE_HOST") or "127.0.0.1"
+    NODE_RPC_PORT = os.environ.get("NODE_RPC_PORT") or 18332
+    NODE_RPC_USERNAME = os.environ.get("NODE_RPC_USERNAME") or "rpcuser"
+    NODE_RPC_PASSWORD = os.environ.get("NODE_RPC_PASSWORD") or "rpcpassword"
+    NODE_ZMQ_PORT = os.environ.get("NODE_ZMQ_PORT") or 28332
+    MERCHANT_API_HOST = os.environ.get("MERCHANT_API_HOST") or "127.0.0.1"
+    MERCHANT_API_PORT = os.environ.get("MERCHANT_API_PORT") or DEFAULT_PORT
 
     def __init__(self, config: ImmutableConfig):
         self.config = config
@@ -36,8 +39,9 @@ class Plugin(AbstractPlugin):
 
     def install(self):
         download_and_install(self.src)
-        create_settings_file(self.src, self.DEFAULT_PORT, self.NODE_RPC_PORT,
-            self.NODE_RPC_USERNAME, self.NODE_RPC_PASSWORD, self.NODE_ZMQ_PORT)
+        create_settings_file(self.src, self.MERCHANT_API_HOST, self.MERCHANT_API_PORT,
+            self.NODE_HOST, self.NODE_RPC_PORT, self.NODE_RPC_USERNAME, self.NODE_RPC_PASSWORD,
+            self.NODE_ZMQ_PORT)
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self):
@@ -48,7 +52,7 @@ class Plugin(AbstractPlugin):
             sys.exit(1)
 
         self.id = self.plugin_tools.get_id(self.COMPONENT_NAME)
-        self.port = self.plugin_tools.allocate_port()
+        self.port = self.MERCHANT_API_PORT
         # The primary reason we need this to be the current directory is so that the `settings.conf`
         # file is directly accessible to the MAPI executable (it should look there first).
         os.chdir(self.src)
@@ -58,7 +62,7 @@ class Plugin(AbstractPlugin):
         logfile = self.plugin_tools.get_logfile_path(self.id)
         process = self.plugin_tools.spawn_process(str(run_path), env_vars=None, logfile=logfile)
         self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME,
-            self.src, "???")
+            self.src, status_endpoint="http://127.0.0.1:45111/mapi/feeQuote")
 
     def stop(self):
         """some components require graceful shutdown via a REST API or RPC API but most can use the
@@ -75,7 +79,7 @@ class Plugin(AbstractPlugin):
         False -> ComponentState.FAILED;
         None -> skip status monitoring updates (e.g. using app's cli interface transiently)
         """
-        # is_running = app_state.is_component_running_http(
-        #     status_endpoint=app_state.component_info.status_endpoint,
-        #     retries=4, duration=3, timeout=1.0, http_method='get')
-        return True
+        is_running = self.plugin_tools.is_component_running_http(
+            status_endpoint=self.component_info.status_endpoint,
+            retries=5, duration=2, timeout=1.0)
+        return is_running

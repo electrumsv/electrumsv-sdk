@@ -124,8 +124,8 @@ def _write_text(file_path: pathlib.Path, text: str) -> None:
         f.write(text)
 
 
-def create_settings_file(install_path: pathlib.Path, mapi_http_port: int,
-        node_http_port: int, node_rpc_username: str, node_rpc_password: str,
+def create_settings_file(install_path: pathlib.Path, merchant_api_host: str, mapi_http_port: int, \
+        node_host: str, node_http_port: int, node_rpc_username: str, node_rpc_password: str,
         node_zmq_port: int) -> None:
     """
     The Merchant API executable looks for a `settings.conf` file in the current directory
@@ -133,9 +133,9 @@ def create_settings_file(install_path: pathlib.Path, mapi_http_port: int,
     the top-level directory.
     """
     settings_text = os.linesep.join([
-        f"httpAddress=127.0.0.1:{mapi_http_port}",
+        f"httpAddress={merchant_api_host}:{mapi_http_port}",
         "bitcoin_count=1",
-        "bitcoin_1_host=127.0.0.1",
+        f"bitcoin_1_host={node_host}",
         f"bitcoin_1_port={node_http_port}",
         f"bitcoin_1_username={node_rpc_username}",
         f"bitcoin_1_password={node_rpc_password}",
