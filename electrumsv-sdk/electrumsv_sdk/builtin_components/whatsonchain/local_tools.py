@@ -36,12 +36,14 @@ class LocalTools:
         process = subprocess.Popen("npm run-script build", shell=True)
         process.wait()
 
-    def check_node_for_woc(self):
-        if not electrumsv_node.is_running():
-            self.logger.error("bitcoin node must be running")
+    def check_node_for_woc(self, rpchost: str="127.0.0.1", rpcport: int=18332,
+            rpcuser: str="rpcuser", rpcpassword: str="rpcpassword"):
+        if not electrumsv_node.is_running(rpcport, rpchost, rpcuser, rpcpassword):
+            self.logger.error(f"bitcoin node {rpchost}:{rpcport} must be running")
             return False
 
-        result = electrumsv_node.call_any("getinfo")
+        result = electrumsv_node.call_any("getinfo", rpcport=rpcport, rpchost=rpchost,
+            rpcuser=rpcuser, rpcpassword=rpcpassword)
         block_height = result.json()['result']['blocks']
         if block_height == 0:
             self.logger.error(f"Block height=0. "

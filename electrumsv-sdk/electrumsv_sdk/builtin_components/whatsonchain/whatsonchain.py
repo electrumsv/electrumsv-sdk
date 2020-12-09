@@ -13,6 +13,17 @@ from .local_tools import LocalTools
 
 
 class Plugin(AbstractPlugin):
+
+    # As per woc-explorer/config.js
+    ELECTRUMX_HOST = os.environ.get("ELECTRUMX_HOST") or "127.0.0.1"
+    ELECTRUMX_PORT = os.environ.get("ELECTRUMX_PORT") or 51001
+
+    # As per woc-explorer/app.js
+    RPC_HOST = os.environ.get("RPC_HOST") or "127.0.0.1"
+    RPC_PORT = os.environ.get("RPC_PORT") or 18332
+    RPC_USERNAME = os.environ.get("RPC_USERNAME") or "rpcuser"
+    RPC_PASSWORD = os.environ.get("RPC_PASSWORD") or "rpcpassword"
+
     DEFAULT_PORT = 3002
     RESERVED_PORTS = {DEFAULT_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
@@ -45,7 +56,8 @@ class Plugin(AbstractPlugin):
                               f"{self.COMPONENT_NAME}' to install the plugin first")
             sys.exit(1)
 
-        if not self.tools.check_node_for_woc():
+        if not self.tools.check_node_for_woc(self.RPC_HOST, self.RPC_PORT, self.RPC_USERNAME,
+                self.RPC_PASSWORD):
             sys.exit(1)
 
         os.chdir(self.src)
@@ -54,7 +66,16 @@ class Plugin(AbstractPlugin):
             command = f"npm.cmd start"
         elif sys.platform in {"linux", "darwin"}:
             command = f"npm start"
-        env_vars = {"PYTHONUNBUFFERED": "1"}
+        env_vars = {
+            "PYTHONUNBUFFERED": "1",
+            "ELECTRUMX_HOST": self.ELECTRUMX_HOST,
+            "ELECTRUMX_PORT": str(self.ELECTRUMX_PORT),
+            "RPC_HOST": self.RPC_HOST,
+            "RPC_PORT": str(self.RPC_PORT),
+            "RPC_USERNAME": self.RPC_USERNAME,
+            "RPC_PASSWORD": self.RPC_PASSWORD,
+        }
+
         self.id = self.plugin_tools.get_id(self.COMPONENT_NAME)
         logfile = self.plugin_tools.get_logfile_path(self.id)
         process = self.plugin_tools.spawn_process(command, env_vars=env_vars, logfile=logfile)
