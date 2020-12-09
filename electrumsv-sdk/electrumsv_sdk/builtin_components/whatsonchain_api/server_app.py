@@ -9,14 +9,20 @@
 #
 
 import logging
+import os
+
 import requests
 
 from aiohttp import web
 
 
-SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 12121
-PING_URL = f"http://{SERVER_HOST}:{SERVER_PORT}/"
+SERVER_HOST = os.environ.get("SERVER_HOST") or "127.0.0.1"
+SERVER_PORT = os.environ.get("SERVER_PORT") or 12121
+BITCOIN_NODE_HOST = os.environ.get("BITCOIN_NODE_HOST") or "127.0.0.1"
+BITCOIN_NODE_PORT = os.environ.get("BITCOIN_NODE_PORT") or 18332
+
+PING_HOST = '127.0.0.1' if SERVER_HOST == '0.0.0.0' else SERVER_HOST
+PING_URL = f"http://{PING_HOST}:{SERVER_PORT}/"
 
 
 async def get_tx_hex(request: web.Request) -> web.Response:
@@ -24,7 +30,7 @@ async def get_tx_hex(request: web.Request) -> web.Response:
     if not txid:
         raise web.HTTPBadRequest(reason="missing txid")
 
-    uri = f"http://127.0.0.1:18332/rest/tx/{txid}.hex"
+    uri = f"http://{BITCOIN_NODE_HOST}:{BITCOIN_NODE_PORT}/rest/tx/{txid}.hex"
     response = requests.get(uri)
     # Ensure we return what whatsonchain is expected to return for consistency. If someone wants
     # the node error text, they can check the logs for this component.
