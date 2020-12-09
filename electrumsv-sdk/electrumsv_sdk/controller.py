@@ -204,7 +204,8 @@ class Controller:
             logger.error("RPC method not indicated. Requires at least one argument")
             exit(1)
 
-        result = electrumsv_node.call_any(rpc_args[0], *rpc_args[1:])
+        result = electrumsv_node.call_any(rpc_args[0], *rpc_args[1:], rpchost=rpchost,
+            rpcport=rpcport, rpcuser="rpcuser", rpcpassword="rpcpassword")
         logger.info(result.json()["result"])
 
     def status(self):
