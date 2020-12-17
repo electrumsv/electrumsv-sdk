@@ -76,7 +76,8 @@ def get_directory_name(component__file__):
 
 def kill_by_pid(pid: id):
     if sys.platform in ("linux", "darwin"):
-        subprocess.run(f"kill -9 {pid}", shell=True)
+        process = subprocess.Popen(f"/bin/bash -c 'kill -9 {pid}'", shell=True)
+        process.wait()
     elif sys.platform == "win32":
         subprocess.run(f"taskkill.exe /PID {pid} /T /F")
 

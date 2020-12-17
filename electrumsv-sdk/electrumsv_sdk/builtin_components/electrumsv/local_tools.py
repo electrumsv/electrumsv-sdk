@@ -22,12 +22,26 @@ class LocalTools:
         self.config: ImmutableConfig = plugin.config
 
     def reinstall_conflicting_dependencies(self):
-        if sys.platform == 'win32':
-            cmd1 = f"{sys.executable} -m pip install --user aiohttp==3.6.2"
-        elif sys.platform in ['linux', 'darwin']:
-            cmd1 = f"{sys.executable} -m pip install aiohttp==3.6.2"
-        process1 = subprocess.Popen(cmd1, shell=True)
-        process1.wait()
+        cmd1 = f"{sys.executable} -m pip freeze"
+        output = subprocess.check_output(cmd1, shell=True)
+        for line in output.decode('utf-8').splitlines():
+            if 'chardet' in line:
+                if int(line.split("==")[1][0]) >= 4:
+                    cmd1 = f"{sys.executable} -m pip uninstall -y chardet"
+                    process1 = subprocess.Popen(cmd1, shell=True)
+                    process1.wait()
+                    cmd2 = f"{sys.executable} -m pip install 'chardet<4.0'"
+                    process2 = subprocess.Popen(cmd2, shell=True)
+                    process2.wait()
+            if 'requests' in line:
+                v_major, v_minor, v_last = int(line.split("==")[1].split(".")[0]), \
+                                           int(line.split("==")[1].split(".")[1]), \
+                                           int(line.split("==")[1].split(".")[2])
+                if v_major == 2 and v_minor >= 25 and v_last >= 1:
+                    process1 = subprocess.Popen(f"{sys.executable} -m pip uninstall -y requests", shell=True)
+                    process1.wait()
+                    process2 = subprocess.Popen(f"{sys.executable} -m pip install 'requests<2.25.1'", shell=True)
+                    process2.wait()
 
     def is_offline_cli_mode(self):
         if len(self.config.component_args) != 0:
@@ -97,9 +111,9 @@ class LocalTools:
             cmd2 = f"{sys.executable} -m pip install --user --upgrade -r " \
                    f"{electrumsv_binary_requirements_path}"
         elif sys.platform in ['linux', 'darwin']:
-            cmd1 = f"{sys.executable} -m pip install --user --upgrade -r " \
+            cmd1 = f"{sys.executable} -m pip install --upgrade -r " \
                    f"{electrumsv_requirements_path}"
-            cmd2 = f"{sys.executable} -m pip install --user --upgrade -r " \
+            cmd2 = f"{sys.executable} -m pip install --upgrade -r " \
                    f"{electrumsv_binary_requirements_path}"
 
         process1 = subprocess.Popen(cmd1, shell=True)
