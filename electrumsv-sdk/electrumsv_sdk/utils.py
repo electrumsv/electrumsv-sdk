@@ -169,7 +169,7 @@ def spawn_background(command: str, env_vars: Dict, logfile: Path=None) -> subpro
                 process = subprocess.Popen(command, stdout=logfile_handle, stderr=logfile_handle,
                     env=os.environ.update(env_vars), creationflags=subprocess.DETACHED_PROCESS)
             else:
-                process = subprocess.Popen(f"nohup {command} &", shell=True, stdout=logfile_handle,
+                process = subprocess.Popen(shlex.split(command, posix=1), stdout=logfile_handle,
                     stderr=logfile_handle, env=os.environ.update(env_vars))
     else:
         # no logging
@@ -177,8 +177,7 @@ def spawn_background(command: str, env_vars: Dict, logfile: Path=None) -> subpro
             process = subprocess.Popen(command, env=os.environ.update(env_vars),
                 creationflags=subprocess.DETACHED_PROCESS)
         else:
-            process = subprocess.Popen(f"nohup {command} &", shell=True,
-                env=os.environ.update(env_vars))
+            process = subprocess.Popen(shlex.split(command), env=os.environ.update(env_vars))
     return process
 
 
