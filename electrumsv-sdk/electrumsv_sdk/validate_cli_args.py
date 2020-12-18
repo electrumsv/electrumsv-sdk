@@ -4,7 +4,7 @@ import sys
 from typing import Set, Any
 
 from .constants import NameSpace
-from .config import ImmutableConfig
+from .config import Config
 from .utils import read_sdk_version
 
 logger = logging.getLogger("validate-cli-args")
@@ -13,7 +13,7 @@ logger = logging.getLogger("validate-cli-args")
 class ValidateCliArgs:
     """Called via ArgParser.validate_cli_args"""
 
-    def __init__(self, config: ImmutableConfig):
+    def __init__(self, config: Config):
         self.config = config
 
     def validate_flags(self, parsed_args: Any, allowed_flags: Set):

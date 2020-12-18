@@ -9,12 +9,11 @@ Fortunately the help menu displays as expected so does not deviate from the stan
 import argparse
 import logging
 import sys
-import textwrap
 from argparse import RawTextHelpFormatter
 from typing import Optional, Dict, List
 
 from .constants import NameSpace
-from .config import ImmutableConfig
+from .config import Config
 from .validate_cli_args import ValidateCliArgs
 from .components import ComponentStore
 
@@ -23,10 +22,9 @@ logger = logging.getLogger("argparsing")
 
 class ArgParser:
     def __init__(self):
-        self.set_help_text()
         self.component_store = ComponentStore()
 
-        # globals that are packed into ImmutableConfig after argparsing
+        # globals that are packed into Config after argparsing
         self.namespace: Optional[str] = ""  # 'start', 'stop', 'reset', 'node', or 'status'
         self.selected_component: Optional[str] = None
         self.component_args = []  # e.g. store arguments to pass to the electrumsv's cli interface
@@ -63,7 +61,7 @@ class ArgParser:
             sys.exit(1)
         return cur_cmd_name, subcommand_indices
 
-    def manual_argparsing(self, args: List[str]) -> ImmutableConfig:
+    def manual_argparsing(self, args: List[str]) -> Config:
         """manually iterate through sys.argv and feed arguments to either:
         a) parent ArgumentParser
         b) child ArgumentParsers (aka subcommands)"""
@@ -159,7 +157,7 @@ class ArgParser:
     def generate_immutable_config(self):
         parsed_args = self.subcmd_parsed_args_map[self.namespace]
         if self.namespace == NameSpace.INSTALL:
-            self.config = ImmutableConfig(
+            self.config = Config(
                 namespace=self.namespace,
                 selected_component=self.selected_component,
                 repo=parsed_args.repo,
@@ -168,7 +166,7 @@ class ArgParser:
                 component_id=parsed_args.id,
             )
         elif self.namespace == NameSpace.START:
-            self.config = ImmutableConfig(
+            self.config = Config(
                 namespace=self.namespace,
                 selected_component=self.selected_component,
                 repo=parsed_args.repo,
@@ -182,7 +180,7 @@ class ArgParser:
                 component_args=self.component_args
             )
         elif self.namespace == NameSpace.RESET:
-            self.config = ImmutableConfig(
+            self.config = Config(
                 namespace=self.namespace,
                 selected_component=self.selected_component,
                 repo=parsed_args.repo,
@@ -191,19 +189,19 @@ class ArgParser:
                 component_args=self.component_args
             )
         elif self.namespace == NameSpace.STOP:
-            self.config = ImmutableConfig(
+            self.config = Config(
                 namespace=self.namespace,
                 selected_component=self.selected_component,
                 component_id=parsed_args.id,
             )
         elif self.namespace == NameSpace.NODE:
-            self.config = ImmutableConfig(
+            self.config = Config(
                 namespace=self.namespace,
                 node_args=self.node_args,
                 # --id, --rpchost, --rpcport are managed manually see controller.node()
             )
         elif self.namespace in {NameSpace.STATUS, NameSpace.TOP_LEVEL}:
-            self.config = ImmutableConfig(
+            self.config = Config(
                 namespace=self.namespace
             )
         return self.config
@@ -356,7 +354,4 @@ class ArgParser:
         for namespace in self.parser_map.keys():
             self.parser_raw_args_map[namespace] = []
 
-    def set_help_text(self):
-        self.help_text = textwrap.dedent(
-            """"""
-        )
+

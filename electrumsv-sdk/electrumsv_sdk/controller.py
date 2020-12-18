@@ -6,7 +6,7 @@ from typing import List
 from electrumsv_node import electrumsv_node
 
 from .constants import NameSpace
-from .config import ImmutableConfig
+from .config import Config
 from .components import ComponentStore, ComponentState, Component
 from .plugin_tools import AbstractPlugin
 from .utils import cast_str_int_args_to_int
@@ -30,7 +30,7 @@ class Controller:
                 relevant_components.append(component_dict)
         return relevant_components
 
-    def install(self, config: ImmutableConfig) -> None:
+    def install(self, config: Config) -> None:
         logger.info("Installing component...")
         if config.component_id or config.selected_component:
             component_module = self.component_store.instantiate_plugin(config)
@@ -39,13 +39,13 @@ class Controller:
         # no args implies start all
         if not config.component_id and not config.selected_component:
             for component in self.component_store.component_map:
-                new_config = ImmutableConfig(
+                new_config = Config(
                     selected_component=component,
                     background_flag=config.background_flag
                 )
                 self.install(new_config)
 
-    def start(self, config: ImmutableConfig) -> None:
+    def start(self, config: Config) -> None:
         logger.info("Starting component...")
         if config.component_id or config.selected_component:
             component_module = self.component_store.instantiate_plugin(config)
@@ -55,13 +55,13 @@ class Controller:
         # no args implies start all (default component ids only - e.g. node1, electrumx1 etc.)
         if not config.component_id and not config.selected_component:
             for component in self.component_store.component_map:
-                new_config = ImmutableConfig(
+                new_config = Config(
                     selected_component=component,
                     background_flag=config.background_flag
                 )
                 self.start(new_config)
 
-    def stop(self, config: ImmutableConfig) -> None:
+    def stop(self, config: Config) -> None:
         """stop all (no args) does not only stop default component ids but all component ids of
         each type - hence the need to hunt them all down."""
         if config.component_id:
@@ -79,7 +79,7 @@ class Controller:
                 # dynamic imports of plugin
                 for component_dict in relevant_components:
                     component_name = component_dict.get("component_type")
-                    new_config = ImmutableConfig(
+                    new_config = Config(
                         selected_component=component_name,
                         background_flag=config.background_flag,
                     )
@@ -92,14 +92,14 @@ class Controller:
         # no args implies stop all - (recursive)
         if not config.component_id and not config.selected_component:
             for component in sorted(self.component_store.component_map.keys(), reverse=True):
-                new_config = ImmutableConfig(
+                new_config = Config(
                     selected_component=component,
                     background_flag=config.background_flag,
                 )
                 self.stop(new_config)
             logger.info(f"terminated: all")
 
-    def reset(self, config: ImmutableConfig) -> None:
+    def reset(self, config: Config) -> None:
         if config.component_id or config.selected_component:
             component_module = self.component_store.instantiate_plugin(config)
             component_module.reset()
@@ -107,7 +107,7 @@ class Controller:
         # no args (no --id or <component_type>) implies reset all (node, electrumx, electrumsv)
         if not config.component_id and not config.selected_component:
             for component in self.component_store.component_map.keys():
-                new_config = ImmutableConfig(
+                new_config = Config(
                     selected_component=component,
                     background_flag=config.background_flag,
                 )
@@ -146,7 +146,7 @@ class Controller:
         else:
             raise Exception("neither component --id or component_name given")
 
-    def node(self, config: ImmutableConfig) -> None:
+    def node(self, config: Config) -> None:
         """Essentially bitcoin-cli interface to RPC API that works 'out of the box' with minimal
         config.
 

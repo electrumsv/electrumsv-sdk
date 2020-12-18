@@ -13,13 +13,13 @@ from .utils import port_is_in_use, is_default_component_id, is_remote_repo, chec
     spawn_background, spawn_inline, spawn_new_terminal
 from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR
 from .components import ComponentStore
-from .config import ImmutableConfig
+from .config import Config
 
 
 class PluginTools:
     """This contains methods that are common to all/many different plugins"""
 
-    def __init__(self, plugin: AbstractPlugin, config: ImmutableConfig):
+    def __init__(self, plugin: AbstractPlugin, config: Config):
         self.plugin = plugin
         self.config = config
         self.component_store = ComponentStore()

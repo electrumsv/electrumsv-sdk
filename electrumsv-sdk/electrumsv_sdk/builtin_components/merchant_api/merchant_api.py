@@ -4,7 +4,7 @@ import sys
 from typing import Optional
 
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
-from electrumsv_sdk.config import ImmutableConfig
+from electrumsv_sdk.config import Config
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
@@ -26,7 +26,7 @@ class Plugin(AbstractPlugin):
     MERCHANT_API_HOST = os.environ.get("MERCHANT_API_HOST") or "127.0.0.1"
     MERCHANT_API_PORT = os.environ.get("MERCHANT_API_PORT") or DEFAULT_PORT
 
-    def __init__(self, config: ImmutableConfig):
+    def __init__(self, config: Config):
         self.config = config
         self.plugin_tools = PluginTools(self, self.config)
         self.logger = logging.getLogger(self.COMPONENT_NAME)

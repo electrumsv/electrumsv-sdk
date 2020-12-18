@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional, Dict
 
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
-from electrumsv_sdk.config import ImmutableConfig
+from electrumsv_sdk.config import Config
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name
 from electrumsv_sdk.plugin_tools import PluginTools
@@ -25,7 +25,7 @@ class Plugin(AbstractPlugin):
     RESERVED_PORTS = {DEFAULT_PORT, DEFAULT_P2P_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
 
-    def __init__(self, config: ImmutableConfig):
+    def __init__(self, config: Config):
         self.config = config
         self.plugin_tools = PluginTools(self, self.config)
         self.tools = LocalTools(self)

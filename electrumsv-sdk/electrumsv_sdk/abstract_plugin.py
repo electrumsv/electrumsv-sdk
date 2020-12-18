@@ -2,7 +2,7 @@ import abc
 from pathlib import Path
 from typing import Set, Optional
 
-from .config import ImmutableConfig
+from .config import Config
 
 
 class AbstractPlugin(abc.ABC):
@@ -12,7 +12,7 @@ class AbstractPlugin(abc.ABC):
     COMPONENT_NAME = None
     DEFAULT_REMOTE_REPO = "https://github.com/electrumsv/electrumsv.git"
 
-    def __init__(self, config: ImmutableConfig):
+    def __init__(self, config: Config):
         self.config = config
         self.plugin_tools = None
         self.tools = None
