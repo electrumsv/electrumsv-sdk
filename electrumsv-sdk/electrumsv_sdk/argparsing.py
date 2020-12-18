@@ -9,7 +9,6 @@ Fortunately the help menu displays as expected so does not deviate from the stan
 import argparse
 import logging
 import sys
-from argparse import RawTextHelpFormatter
 from typing import Optional, Dict, List
 
 from .constants import NameSpace
@@ -36,6 +35,7 @@ class ArgParser:
         self.subcmd_parsed_args_map = {}  # {namespace: parsed arguments}
         self.config = None
 
+        self.new_options = None  # used for dynamic, plugin-specific extensions to cli
         self.setup_argparser()
 
     def validate_cli_args(self):
@@ -152,6 +152,10 @@ class ArgParser:
                 pass
 
             # print(f"subcommand_indices={subcommand_indices}, index={index}, arg={arg}")
+
+        if self.namespace == NameSpace.START:
+            if self.selected_component:
+                self.new_options = self.extend_cli(self.selected_component)
         self.feed_to_argparsers(args, subcommand_indices)
 
     def generate_immutable_config(self):
@@ -179,6 +183,10 @@ class ArgParser:
                 component_id=parsed_args.id,
                 component_args=self.component_args
             )
+            if self.new_options:
+                for varname in self.new_options:
+                    value = getattr(self.subcmd_parsed_args_map[NameSpace.START], varname)
+                    setattr(self.config, varname, value)
         elif self.namespace == NameSpace.RESET:
             self.config = Config(
                 namespace=self.namespace,
@@ -328,9 +336,7 @@ class ArgParser:
         )
 
     def setup_argparser(self):
-        top_level_parser = argparse.ArgumentParser(
-            description=self.help_text, formatter_class=RawTextHelpFormatter
-        )
+        top_level_parser = argparse.ArgumentParser()
         self.add_global_flags(top_level_parser)
 
         namespaces = top_level_parser.add_subparsers(help="namespaces", required=False)
@@ -354,4 +360,14 @@ class ArgParser:
         for namespace in self.parser_map.keys():
             self.parser_raw_args_map[namespace] = []
 
-
+    def extend_cli(self, selected_component: str):
+        component_module = self.component_store.import_plugin_module(selected_component)
+        try:
+            start_parser = self.parser_map[NameSpace.START]
+            start_parser, new_options = getattr(
+                component_module, selected_component).extend_cli(start_parser)
+            self.parser_map[NameSpace.START] = start_parser
+            return new_options
+        except AttributeError:
+            # no 'extend_cli' method present for this plugin
+            return

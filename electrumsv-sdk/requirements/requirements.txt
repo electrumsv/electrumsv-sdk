@@ -9,3 +9,4 @@ peewee>=3.13.3
 wheel
 aiohttp<=3.7.3
 tailer
+stringcase
