@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command
-from electrumsv_sdk.config import ImmutableConfig
+from electrumsv_sdk.config import Config
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR
 
 
@@ -19,7 +19,7 @@ class LocalTools:
 
     def __init__(self, plugin):
         self.plugin = plugin
-        self.config: ImmutableConfig = plugin.config
+        self.config: Config = plugin.config
 
     def reinstall_conflicting_dependencies(self):
         cmd1 = f"{sys.executable} -m pip freeze"

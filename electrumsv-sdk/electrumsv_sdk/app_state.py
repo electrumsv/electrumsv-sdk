@@ -9,7 +9,7 @@ import sys
 from electrumsv_node import electrumsv_node
 
 from .argparsing import ArgParser
-from .config import ImmutableConfig
+from .config import Config
 from .constants import SDK_HOME_DIR, REMOTE_REPOS_DIR, DATADIR, LOGS_DIR, \
     USER_PLUGINS_DIR, CONFIG_PATH
 from .controller import Controller
@@ -41,7 +41,7 @@ class AppState:
 
         self.argparser = ArgParser()
         self.argparser.manual_argparsing(sys.argv)
-        self.config: ImmutableConfig = self.argparser.generate_immutable_config()
+        self.config: Config = self.argparser.generate_immutable_config()
         self.argparser.validate_cli_args()
         self.controller = Controller(self)
 

@@ -7,7 +7,7 @@ import sys
 
 
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR
-from electrumsv_sdk.config import ImmutableConfig
+from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import checkout_branch
 
 
@@ -17,7 +17,7 @@ class LocalTools:
     def __init__(self, plugin):
         self.plugin = plugin
         self.plugin_tools = self.plugin.plugin_tools
-        self.config: ImmutableConfig = plugin.config
+        self.config: Config = plugin.config
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
     def fetch_electrumx(self, url, branch):

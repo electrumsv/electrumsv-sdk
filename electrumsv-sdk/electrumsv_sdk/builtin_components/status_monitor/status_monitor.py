@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
-from electrumsv_sdk.config import ImmutableConfig
+from electrumsv_sdk.config import Config
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
@@ -23,7 +23,7 @@ class Plugin(AbstractPlugin):
     COMPONENT_PATH = Path(os.path.dirname(os.path.abspath(__file__)))
     SCRIPT_PATH = COMPONENT_PATH / "server_app.py"
 
-    def __init__(self, config: ImmutableConfig):
+    def __init__(self, config: Config):
         self.config = config
         self.plugin_tools = PluginTools(self, self.config)
         self.logger = logging.getLogger(self.COMPONENT_NAME)

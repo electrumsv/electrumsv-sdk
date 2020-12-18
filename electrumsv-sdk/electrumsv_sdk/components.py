@@ -37,7 +37,7 @@ from types import ModuleType
 from typing import Optional, Union, Dict
 from filelock import FileLock
 
-from .config import ImmutableConfig
+from .config import Config
 from .abstract_plugin import AbstractPlugin
 from .constants import SDK_HOME_DIR, LOCAL_PLUGINS_DIR, USER_PLUGINS_DIR, BUILTIN_COMPONENTS_DIR, \
     LOCAL_PLUGINS_DIRNAME, ComponentState, BUILTIN_PLUGINS_DIRNAME, USER_PLUGINS_DIRNAME
@@ -207,7 +207,7 @@ class ComponentStore:
 
         return component_module
 
-    def instantiate_plugin(self, config: ImmutableConfig) -> Optional[AbstractPlugin]:
+    def instantiate_plugin(self, config: Config) -> Optional[AbstractPlugin]:
         """
         Each plugin must have a 'Plugin' class that is instantiated and has the main entrypoints:
         (install, start, stop, reset, status_check) as instance methods.

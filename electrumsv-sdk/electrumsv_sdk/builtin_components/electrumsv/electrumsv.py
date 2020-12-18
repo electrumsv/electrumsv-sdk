@@ -8,7 +8,7 @@ from electrumsv_sdk.abstract_plugin import AbstractPlugin
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import is_remote_repo, kill_process, get_directory_name
 from electrumsv_sdk.plugin_tools import PluginTools
-from electrumsv_sdk.config import ImmutableConfig
+from electrumsv_sdk.config import Config
 
 from .local_tools import LocalTools
 
@@ -31,7 +31,7 @@ class Plugin(AbstractPlugin):
     COMPONENT_NAME = get_directory_name(__file__)
     DEFAULT_REMOTE_REPO = "https://github.com/electrumsv/electrumsv.git"
 
-    def __init__(self, config: ImmutableConfig):
+    def __init__(self, config: Config):
         self.config = config
         self.plugin_tools = PluginTools(self, self.config)
         self.tools = LocalTools(self)

@@ -3,8 +3,8 @@ from typing import List, Optional
 import attr
 
 
-@attr.s(auto_attribs=True, frozen=True)
-class ImmutableConfig(object):
+@attr.s(auto_attribs=True, frozen=False)
+class Config(object):
     """
     There is a 1:1 relationship between this config and each activation of the SDK cli tool.
     Will also be instantiated inside of wrappers to the install, start, stop, reset entrypoints
