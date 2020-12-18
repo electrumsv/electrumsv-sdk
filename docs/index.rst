@@ -56,6 +56,13 @@ For subcommand-specific help::
     > electrumsv-sdk node --help    # accesses a running node's RPC API
     > electrumsv-sdk status --help  # cli access to an overview of component status
 
+Install Command
+===============
+To install a component (which usually means installing package dependencies for python or node.js applications or compiling/publishing an ASP.NET application)::
+
+> electrumsv-sdk install <component name>
+
+
 Start Command
 ===============
 The start command is the most feature-rich and launches servers as background processes.
@@ -65,8 +72,8 @@ General usage::
 
    > electrumsv-sdk start --id=<unique_id> <component_name>
 
-all ``--`` prefixed flags like ``--id``, ``--new``, ``--repo`` are optional but if used, must preceed
-the ``component_name``.
+all ``--`` prefixed flags like ``--id``, ``--new``, ``--repo``, ``--inline``, ``--background``,
+``--new-terminal`` are optional but if used, must preceed the ``component_name``.
 
 Examples
 ~~~~~~~~~~
@@ -75,6 +82,9 @@ run node + electrumx + electrumsv::
    > electrumsv-sdk start node
    > electrumsv-sdk start electrumx
    > electrumsv-sdk start electrumsv
+
+By default, this will launch the servers with the --new-terminal flag (spawning a new console window
+showing stdout/logging output).
 
 run new instances::
 
@@ -91,14 +101,50 @@ specify --repo as a local path or remote git url for each component type::
 specify --branch as either "master" or "features/my-feature-branch"
 
 NOTE1: The sdk tool only handles a single ``component_type`` at a time (i.e. for the ``start``, ``stop``, ``reset`` commands).
-NOTE2: The "optional arguments" above actually come **before** specifying the ``component_type`` e.g::
+NOTE2: The "optional arguments" above come **before** specifying the ``component_type`` e.g::
 
    > electrumsv-sdk start --new --id=myspecialnode node
 
 This reserves the capability for arguments to the right hand side of the ``component_type`` to be fed to the component's underlying
-commandline interface (if one exists) - this is currently only supported for the electrumsv builtin component.
+commandline interface (if one exists) - this is currently only supported for the electrumsv
+builtin component::
 
    > electrumsv-sdk start --branch=master electrumsv
+
+Run inline
+~~~~~~~~~~
+To run the server in the current shell (and block until exit or Ctrl + C interrupt)::
+
+   > electrumsv-sdk start --inline <component name>
+
+To run the server in the background::
+
+   > electrumsv-sdk start --background <component name>
+
+To run the server in a new terminal window (this is the default if no modifier flag is specified)::
+
+   > electrumsv-sdk start --new-terminal <component name>
+
+logging
+~~~~~~~
+Logging output is captured for all components regardless of being run with the --inline, --background or --new-terminal modifier flags.
+File logging does not need to be configured for this to work as it works by redirecting stdout to file. The location of all file logging is:
+
+On windows::
+   
+   > C:\Users\<username>\AppData\Local\ElectrumSV-SDK\logs
+
+On linux::
+
+   > $HOME/.electrumsv-sdk/logs
+
+The structure of the logging directory is as follows::
+
+   > ./logs
+      /<component_name>
+         /component_id
+            /<timestamp>.log
+            /<timestamp>.log
 
 Stop Command
 ===============
@@ -136,22 +182,26 @@ Examples
 Behaviour for each component
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-+----------------+---------------------------------------+
-| Component Type | Reset Result                          |
-+================+=======================================+
-| node           | deletes datadir contents              |
-+----------------+---------------------------------------+
-| electrumx      | deletes datadir contents              |
-+----------------+---------------------------------------+
-| electrumsv     | deletes wallet for the datadir and    |
-|                | re-creates a new one (worker1.sqlite) |
-|                | with a standard BIP32 'account'       |
-|                | (randomly generated seed)             |
-+----------------+---------------------------------------+
-| whatsonchain   | not applicable                        |
-+----------------+---------------------------------------+
-| status_monitor | not applicable                        |
-+----------------+---------------------------------------+
++------------------+---------------------------------------+
+| Component Type   | Reset Result                          |
++==================+=======================================+
+| node             | deletes datadir contents              |
++------------------+---------------------------------------+
+| electrumx        | deletes datadir contents              |
++------------------+---------------------------------------+
+| electrumsv       | deletes wallet for the datadir and    |
+|                  | re-creates a new one (worker1.sqlite) |
+|                  | with a standard BIP32 'account'       |
+|                  | (randomly generated seed)             |
++------------------+---------------------------------------+
+| merchant_api     | not applicable                        |
++------------------+---------------------------------------+
+| whatsonchain     | not applicable                        |
++------------------+---------------------------------------+
+| whatsonchain_api | not applicable                        |
++------------------+---------------------------------------+
+| status_monitor   | not applicable                        |
++------------------+---------------------------------------+
 
 NOTE: The SDK only creates and deletes **a single wallet database (worker1.sqlite)
 per datadir and there is only one datadir per instance of electrumsv.**
@@ -192,19 +242,23 @@ Or on Linux::
 Default Component IDs and Datadirs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-+----------------+-----------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
-| Component Type | Default ID      | Port  | Datadir Windows                                                         | Datadir Linux                                                   |
-+================+=================+=======+=========================================================================+=================================================================+
-| node           | node1           | 18332 | ~AppData/Local/ElectrumSV-SDK/component_datadirs/node/node1             | ~home/.electrumsv-sdk/component_datadirs/node/node1             |
-+----------------+-----------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
-| electrumx      | electrumx1      | 51001 | ~AppData/Local/ElectrumSV-SDK/component_datadirs/electrumx/electrumx1   | ~home/.electrumsv-sdk/component_datadirs/electrumx/electrumx1   |
-+----------------+-----------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
-| electrumsv     | electrumsv1     | 9999  | ~AppData/Local/ElectrumSV-SDK/component_datadirs/electrumsv/electrumsv1 | ~home/.electrumsv-sdk/component_datadirs/electrumsv/electrumsv1 |
-+----------------+-----------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
-| whatsonchain   | whatsonchain1   | 3002  | Not applicable (no datadir needed for this application)                 | Not applicable (no datadir needed for this application)         |
-+----------------+-----------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
-| status_monitor | status_monitor1 | 5000  | ~AppData/Local/ElectrumSV-SDK/component_state.json                      | ~home/.electrumsv-sdk/component_state.json                      |
-+----------------+-----------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
++------------------+-------------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
+| Component Type   | Default ID        | Port  | Datadir Windows                                                         | DatadirLinux                                                    |
++==================+===================+=======+=========================================================================+=================================================================+
+| node             | node1             | 18332 | ~AppData/Local/ElectrumSV-SDK/component_datadirs/node/node1             | ~home/.electrumsv-sdk/component_datadirs/node/node1             |
++------------------+-------------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
+| electrumx        | electrumx1        | 51001 | ~AppData/Local/ElectrumSV-SDK/component_datadirs/electrumx/electrumx1   | ~home/.electrumsv-sdk/component_datadirs/electrumx/electrumx1   |
++------------------+-------------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
+| electrumsv       | electrumsv1       | 9999  | ~AppData/Local/ElectrumSV-SDK/component_datadirs/electrumsv/electrumsv1 | ~home/.electrumsv-sdk/component_datadirs/electrumsv/electrumsv1 |
++------------------+-------------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
+| whatsonchain     | whatsonchain1     | 3002  | Not applicable (no datadir needed for this application)                 | Not applicable (no datadir needed for this application)         |
++------------------+-------------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
+| whatsonchain_api | whatsonchain_api1 | 12121 | Not applicable (no datadir needed for this application)                 | Not applicable (no datadir needed for this application)         |
++------------------+-------------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
+| merchant_api     | merchant_api1     | 45111 | Not applicable (no datadir needed for this application)                 | Not applicable (no datadir needed for this application)         |
++------------------+-------------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
+| status_monitor   | status_monitor1   | 5000  | ~AppData/Local/ElectrumSV-SDK/component_state.json                      | ~home/.electrumsv-sdk/component_state.json                      |
++------------------+-------------------+-------+-------------------------------------------------------------------------+-----------------------------------------------------------------+
 
 Plugin Design Model
 ==========================
@@ -228,8 +282,11 @@ instances of bitcoin node(s) +/- manipulating the state of the RegTest environme
 provided out-of-the-box (which may or may not include using the electrumsv wallet GUI or daemon/REST API)
 
 
-Other design rationale
-==========================
+Docker & Other design rationale
+================================
+Docker images of each component are available from dockerhub: https://hub.docker.com/u/electrumsvsdk
+and can be configured via environment variables in the docker-compose (further documentation coming).
+
 Docker is a great tool when it comes to taking away the pains of running bare metal & cross-platform
 and dealing with variability in cross-platform environments.
 
@@ -237,19 +294,19 @@ However, the SDK does in fact build each component from scratch, bare metal & cr
 result is the only way to go if your production environment will also be bare metal & cross-platform.
 It also lends itself to a better development experience once the plugin is made. As one example,
 I like having the ability to set a breakpoint in my application code and have the spawned terminal window
-halt at the breakpoint and enter the python debugger. I am not aware of a way to do this inside of
-a docker container.
+halt at the breakpoint and enter the python debugger. I am not aware of any way to do this inside of
+a docker container without resorting to cumbersome workarounds and manual setup in a docker terminal.
 
 The python language itself is arguably the most readable and expressive scripting language that exists
-and so when it comes to customizing the logic of which ports to use and spawning multiple
-instances of various components that need to connect to one another... at a certain point it is
-just easier to write it in a dedicated scripting language (like python)!
+and so when it comes to customization of installation and startup logic (as well as graceful shutdown logic 
+and resetting to a clean slate for testing etc.) as well as orchestration of many or multi-instance components... 
+at a certain point it is just easier to write it in a dedicated scripting language (like python)!
 
-Of course the SDK commands can all run just fine from within a docker container if you
-prefer. Or you can customize the plugin to launch a docker image with ``docker-compose up``.
+Of course the SDK commands can all run fine from within a docker container if you prefer (in fact the dockerhub
+images are produced by calling the SDK with the --inline start command modifier).
+
 Basically you have all options available to you once the plugin is configured.
 
-(A cookie-cutter plugin for running any arbitratry docker image with ``docker-compose`` will be included soon)
 
 Whatsonchain blockexplorer (localhost)
 =========================================
@@ -261,7 +318,6 @@ Please go to `Whatsonchain setup guide`_.
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
 
 
 Indices and tables
