@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional, Dict
 
@@ -11,6 +12,20 @@ from electrumsv_sdk.plugin_tools import PluginTools
 from electrumsv_sdk.config import Config
 
 from .local_tools import LocalTools
+from .constants import NETWORKS
+
+
+def extend_cli(start_parser: ArgumentParser):
+    """if this method is present it allows extension of the start argparser only.
+    This occurs dynamically and adds the new cli options as attributes of the Config object"""
+    start_parser.add_argument("--regtest", action="store_true", help="")  # default
+    start_parser.add_argument("--testnet", action="store_true", help="")
+    start_parser.add_argument("--scaling-testnet", action="store_true", help="")
+    start_parser.add_argument("--mainnet", action="store_true", help="")
+
+    # variable names to be pulled from the start_parser
+    new_options = ['regtest', 'testnet', 'scaling_testnet', 'mainnet']
+    return start_parser, new_options
 
 
 class Plugin(AbstractPlugin):
@@ -43,6 +58,8 @@ class Plugin(AbstractPlugin):
         self.port = None  # dynamically allocated
         self.component_info: Optional[Component] = None
 
+        self.network = NETWORKS.REGTEST
+
     def install(self):
         """required state: source_dir  - which are derivable from 'repo' and 'branch' flags"""
         repo = self.config.repo
@@ -64,6 +81,7 @@ class Plugin(AbstractPlugin):
 
         self.tools.reinstall_conflicting_dependencies()
 
+        self.network = self.tools.get_network()
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.port = self.plugin_tools.allocate_port()
         os.makedirs(self.datadir.joinpath("regtest/wallets"), exist_ok=True)
@@ -101,7 +119,10 @@ class Plugin(AbstractPlugin):
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance(s) (if any)")
 
     def reset(self):
-        """reset_electrumsv will be called many times for different component ids if applicable"""
+        """
+        reset_electrumsv will be called many times for different component ids if applicable.
+        - the reset entrypoint is only relevant for RegTest
+        """
         self.tools.reinstall_conflicting_dependencies()
 
         def reset_electrumsv(component_dict: Dict):

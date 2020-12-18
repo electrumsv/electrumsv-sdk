@@ -1,7 +1,6 @@
 import logging
 import platform
 import sys
-from typing import Set, Any
 
 from .constants import NameSpace
 from .config import Config
@@ -15,14 +14,6 @@ class ValidateCliArgs:
 
     def __init__(self, config: Config):
         self.config = config
-
-    def validate_flags(self, parsed_args: Any, allowed_flags: Set):
-        flags_selected = [flag for flag, value in parsed_args.__dict__.items()
-                          if value not in {"", None, False}]
-        if all(flag in allowed_flags for flag in
-               parsed_args.__dict__):
-            return True, flags_selected
-        return False, flags_selected
 
     # ----- MAIN ARGUMENT HANDLERS ----- #
     def handle_top_level_args(self, parsed_args):
@@ -38,12 +29,6 @@ class ValidateCliArgs:
         if not self.config.namespace == NameSpace.INSTALL:
             return
 
-        allowed_flags = {'id', 'branch', 'repo', 'background'}
-        valid_input, flags = self.validate_flags(parsed_args, allowed_flags)
-        if not valid_input:
-            logger.info(f"valid options include: {allowed_flags}. You selected '{flags}'")
-            return
-
         # logging
         if parsed_args.id != "":
             logger.debug(f"id flag={parsed_args.id}")
@@ -54,13 +39,6 @@ class ValidateCliArgs:
 
     def handle_start_args(self, parsed_args):
         if not self.config.namespace == NameSpace.START:
-            return
-
-        allowed_flags = {'new', 'gui', 'id', 'branch', 'repo', 'background', 'inline',
-            'new_terminal'}
-        valid_input, flags = self.validate_flags(parsed_args, allowed_flags)
-        if not valid_input:
-            logger.info(f"valid options include: {allowed_flags}. You selected '{flags}'")
             return
 
         def has_startup_flags():

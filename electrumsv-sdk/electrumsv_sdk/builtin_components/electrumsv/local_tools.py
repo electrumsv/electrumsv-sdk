@@ -4,11 +4,13 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+import stringcase
 
 from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR
 
+from .constants import NETWORKS, NETWORKS_LIST
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -20,6 +22,24 @@ class LocalTools:
     def __init__(self, plugin):
         self.plugin = plugin
         self.config: Config = plugin.config
+
+    def get_network(self):
+        # make sure that only one network is set on cli
+        count_networks_selected = len([getattr(self.config, network) for network in NETWORKS_LIST
+                if getattr(self.config, network) is True])
+        if count_networks_selected > 1:
+            logger.error("you must only select a single network")
+            sys.exit(1)
+
+        if count_networks_selected == 0:
+            self.plugin.network = NETWORKS.REGTEST
+        if count_networks_selected == 1:
+            for network in NETWORKS_LIST:
+                if getattr(self.config, network):
+                    self.plugin.network = network
+
+        logger.info(f"Network selected: {self.plugin.network}")
+        return self.plugin.network
 
     def reinstall_conflicting_dependencies(self):
         cmd1 = f"{sys.executable} -m pip freeze"
@@ -52,10 +72,10 @@ class LocalTools:
         return False
 
     def wallet_db_exists(self):
-        if os.path.exists(self.plugin.datadir.joinpath("regtest/wallets/worker1.sqlite")):
+        if os.path.exists(self.get_wallet_path_for_network(self.plugin.datadir)):
             return True
         time.sleep(3)  # takes a short time for .sqlite file to become visible
-        if os.path.exists(self.plugin.datadir.joinpath("regtest/wallets/worker1.sqlite")):
+        if os.path.exists(self.get_wallet_path_for_network(self.plugin.datadir)):
             return True
         return False
 
@@ -141,16 +161,30 @@ class LocalTools:
                 line += " " + f"--dir {self.plugin.datadir}"
         return line
 
+    def get_wallet_path_for_network(self, datadir: Path, wallet_name: str=None):
+        wallet_name = self.normalize_wallet_name(wallet_name)
+        if self.plugin.network == NETWORKS.REGTEST:
+            return datadir.joinpath(f"regtest/wallets/{wallet_name}")
+        elif self.plugin.network == NETWORKS.TESTNET:
+            return datadir.joinpath(f"testnet/wallets/{wallet_name}")
+        elif self.plugin.network == NETWORKS.SCALINGTESTNET:
+            return datadir.joinpath(f"scalingtestnet/wallets/{wallet_name}")
+        elif self.plugin.network == NETWORKS.MAINNET:
+            logger.error(f"mainnet is not supported at this time")
+            sys.exit(1)
+
     def create_wallet(self, datadir: Path, wallet_name: str = None):
         try:
             logger.debug("Creating wallet...")
             wallet_name = self.normalize_wallet_name(wallet_name)
-            wallet_path = datadir.joinpath(f"regtest/wallets/{wallet_name}")
+            wallet_path = self.get_wallet_path_for_network(datadir, wallet_name)
+            os.makedirs(os.path.dirname(wallet_path), exist_ok=True)
             password = "test"
 
             # New wallet
+            network_string = stringcase.spinalcase(self.plugin.network)  # need kebab-case
             command_string = f"create_wallet --wallet {wallet_path} --walletpassword" \
-                             f" {password} --portable --no-password-check"
+                             f" {password} --portable --no-password-check --{network_string}"
             line = self.feed_commands_to_esv(command_string)
             process = subprocess.Popen(line, shell=True)
             process.wait()
@@ -200,6 +234,7 @@ class LocalTools:
 
         NOTE: This is about as complex as it gets!
         """
+        network_string = stringcase.spinalcase(self.plugin.network)  # need kebab-case
         command = ""
         env_vars = {"PYTHONUNBUFFERED": "1"}
 
@@ -221,21 +256,23 @@ class LocalTools:
         elif not self.config.gui_flag:
             path_to_example_dapps = self.plugin.src.joinpath("examples/applications")
             env_vars.update({"PYTHONPATH": f"{path_to_example_dapps}"})
+
             command = (
                 f"{sys.executable} {esv_launcher} --portable --dir {self.plugin.datadir} "
-                f"--regtest daemon -dapp restapi --v=debug --file-logging --restapi "
-                f"--restapi-port={port} --server={self.plugin.ELECTRUMX_HOST}"
-                f":{self.plugin.ELECTRUMX_PORT}:t "
-                f"--restapi-user rpcuser --restapi-password= "
+                f"--{network_string} daemon -dapp restapi --v=debug "
+                f"--file-logging "
+                f"--restapi --restapi-port={port} --restapi-user rpcuser --restapi-password= "
             )
+            if self.plugin.network == NETWORKS.REGTEST:
+                command += f"--server={self.plugin.ELECTRUMX_HOST}:{self.plugin.ELECTRUMX_PORT}:t "
 
         # GUI script
         else:
             command = (
-                f"{sys.executable} {esv_launcher} gui --regtest --restapi "
-                f"--restapi-port={port} --v=debug --file-logging "
-                f"--server={self.plugin.ELECTRUMX_HOST}:{self.plugin.ELECTRUMX_PORT}:t "
-                f"--dir {self.plugin.datadir}"
+                f"{sys.executable} {esv_launcher} gui --{network_string} --restapi "
+                f"--restapi-port={port} --v=debug --file-logging --dir {self.plugin.datadir} "
             )
+            if self.plugin.network == NETWORKS.REGTEST:
+                command += f"--server={self.plugin.ELECTRUMX_HOST}:{self.plugin.ELECTRUMX_PORT}:t "
         return command, env_vars
 
