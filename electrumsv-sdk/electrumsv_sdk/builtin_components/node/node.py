@@ -16,12 +16,17 @@ from .local_tools import LocalTools
 
 class Plugin(AbstractPlugin):
 
-    NODE_PORT = os.environ.get("NODE_PORT")  # if None -> set by usual deterministic allocation
+    # if None -> set by deterministic port allocation
+    NODE_PORT = os.environ.get("NODE_PORT")
+    NODE_P2P_PORT = os.environ.get("NODE_P2P_PORT")
+    NODE_ZMQ_PORT = os.environ.get("NODE_ZMQ_PORT")
+
     NODE_RPCALLOWIP = os.environ.get("NODE_RPCALLOWIP")  # else 127.0.0.1
     NODE_RPCBIND = os.environ.get("NODE_RPCBIND")
 
     DEFAULT_PORT = 18332
     DEFAULT_P2P_PORT = 18444
+    DEFAULT_ZMQ_PORT = 28332
     RESERVED_PORTS = {DEFAULT_PORT, DEFAULT_P2P_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
 
@@ -36,6 +41,7 @@ class Plugin(AbstractPlugin):
         self.id = None  # dynamically allocated
         self.port = None  # dynamically allocated
         self.p2p_port = None  # dynamically allocated
+        self.zmq_port = None  # dynamically allocated
         self.component_info: Optional[Component] = None
 
     def install(self):
@@ -45,15 +51,24 @@ class Plugin(AbstractPlugin):
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self):
+        # env vars take precedence for port and dbdir
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         if self.NODE_PORT:
             self.port = self.NODE_PORT
         else:
             self.port = self.plugin_tools.allocate_port()
-        self.p2p_port = self.plugin_tools.get_component_port(self.DEFAULT_P2P_PORT,
-            self.COMPONENT_NAME, self.id)
 
-        # env vars take precedence for port and dbdir
+        if self.NODE_P2P_PORT:
+            self.p2p_port = self.NODE_P2P_PORT
+        else:
+            self.p2p_port = self.plugin_tools.get_component_port(self.DEFAULT_P2P_PORT,
+                self.COMPONENT_NAME, self.id)
+
+        if self.NODE_ZMQ_PORT:
+            self.zmq_port = self.NODE_ZMQ_PORT
+        else:
+            self.zmq_port = self.plugin_tools.get_component_port(self.DEFAULT_ZMQ_PORT,
+                self.COMPONENT_NAME, self.id)
 
         extra_params = []
         if self.NODE_RPCALLOWIP:
@@ -65,7 +80,7 @@ class Plugin(AbstractPlugin):
 
         shell_command = electrumsv_node.shell_command(data_path=str(self.datadir),
             rpcport=self.port,
-            p2p_port=self.p2p_port, network='regtest',
+            p2p_port=self.p2p_port, zmq_port=self.zmq_port, network='regtest',
             print_to_console=True, extra_params=extra_params)
 
         command = " ".join(shell_command)
