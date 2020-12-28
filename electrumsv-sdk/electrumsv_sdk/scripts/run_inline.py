@@ -9,8 +9,7 @@ from pathlib import Path
 from electrumsv_sdk.utils import spawn_inline
 
 
-def unwrap_arg(arg: str):
-    """removes the wrapping single quote from the argument"""
+def unwrap_and_unescape_text(arg: str):
     return arg.strip("\'")
 
 
@@ -25,15 +24,15 @@ def main():
         help="absolute logfile path")
     parsed_args = top_level_parser.parse_args()
 
-    command = unwrap_arg(parsed_args.command)
+    command = unwrap_and_unescape_text(parsed_args.command)
 
     if parsed_args.env_vars:
-        env_vars = json.loads(unwrap_arg(parsed_args.env_vars))
+        env_vars = json.loads(unwrap_and_unescape_text(parsed_args.env_vars))
     else:
         env_vars = None
 
     if parsed_args.logfile:
-        logfile = Path(unwrap_arg(parsed_args.logfile))
+        logfile = Path(unwrap_and_unescape_text(parsed_args.logfile))
     else:
         logfile = None
 

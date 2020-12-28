@@ -125,9 +125,10 @@ def tail(logfile):
 
 def spawn_inline(command: str, env_vars: Dict=None, logfile: Path=None):
     """only for running servers with logging requirements - not for simple commands"""
-
+    env = os.environ.copy()
     if not env_vars:
         env_vars = {}
+    env.update(env_vars)
 
     t: Optional[threading.Thread] = None
     try:
@@ -136,10 +137,10 @@ def spawn_inline(command: str, env_vars: Dict=None, logfile: Path=None):
                 # direct logs to file
                 if sys.platform == 'win32':
                     process = subprocess.Popen(command, stdout=logfile_handle,
-                        stderr=logfile_handle, env=os.environ.update(env_vars))
-                elif sys.platform in {'linux', 'windows'}:
+                        stderr=logfile_handle, env=env)
+                elif sys.platform in {'linux', 'darwin'}:
                     process = subprocess.Popen(f"{command}", shell=True, stdout=logfile_handle,
-                        stderr=logfile_handle, env=os.environ.update(env_vars))
+                        stderr=logfile_handle, env=env)
 
                 # tail logs from file into stdout (blocks in a thread)
                 t = threading.Thread(target=tail, args=(logfile, ), daemon=True)
@@ -149,11 +150,10 @@ def spawn_inline(command: str, env_vars: Dict=None, logfile: Path=None):
                 t.join(0.5)  # allow time for background thread to dump logs
         else:
             if sys.platform == 'win32':
-                process = subprocess.Popen(command, env=os.environ.update(env_vars))
+                process = subprocess.Popen(command, env=env)
                 process.wait()
-            elif sys.platform in {'linux', 'windows'}:
-                process = subprocess.Popen(f"{command}", shell=True,
-                    env=os.environ.update(env_vars))
+            elif sys.platform in {'linux', 'darwin'}:
+                process = subprocess.Popen(f"{command}", shell=True, env=env)
                 process.wait()
     except KeyboardInterrupt:
         if t:
@@ -181,22 +181,29 @@ def spawn_background(command: str, env_vars: Dict, logfile: Path=None) -> subpro
     return process
 
 
-def wrap_with_single_quote(string: str):
-    return "'" + string + "'"
+def wrap_and_escape_text(string: str):
+    assert isinstance(string, str), "string type required"
+    return "\'" + string.replace('"', '\\"') + "\'"
 
 
 def spawn_new_terminal(command: str, env_vars: Dict, logfile: Path=None) -> subprocess.Popen:
     run_inline_script = Path(MODULE_DIR).joinpath("scripts/run_inline.py")
     command = f"{sys.executable} {run_inline_script} " \
-              f"--command {wrap_with_single_quote(command)}"
+              f"--command {wrap_and_escape_text(command)}"
 
-    command += f" --env_vars {wrap_with_single_quote(json.dumps(env_vars))}" \
+    command += f" --env_vars {wrap_and_escape_text(json.dumps(env_vars))}"
 
     if logfile:
-        command += f" --logfile {wrap_with_single_quote(str(logfile))}"
+        command += f" --logfile {wrap_and_escape_text(str(logfile))}"
 
-    if sys.platform in ('linux', 'darwin'):
+    if sys.platform in 'linux':
         split_command = shlex.split(f"xterm -fa 'Monospace' -fs 10 -e {command}", posix=1)
+        process = subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE)
+
+    elif sys.platform == 'darwin':
+        split_command = ['osascript', '-e',
+            f"tell application \"Terminal\" to do script \"{command}\""]
         process = subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE)
 

@@ -1,5 +1,6 @@
 import pprint
 import logging
+import signal
 import sys
 from typing import List
 
@@ -12,6 +13,11 @@ from .plugin_tools import AbstractPlugin
 from .utils import cast_str_int_args_to_int
 
 logger = logging.getLogger("runners")
+
+
+if sys.platform in ('linux', 'darwin'):
+    # https://stackoverflow.com/questions/3234569/python-popen-waitpid-returns-errno-10-no-child-processes
+    signal.signal(signal.SIGCHLD, signal.SIG_DFL)
 
 
 class Controller:
