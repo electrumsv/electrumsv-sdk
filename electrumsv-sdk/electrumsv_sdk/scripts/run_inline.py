@@ -4,14 +4,17 @@ the ability to capture both stdout & logging output to file at the same time
 """
 import argparse
 import json
+import logging
 from pathlib import Path
 
 from electrumsv_sdk.utils import spawn_inline
 
 
-def unwrap_arg(arg: str):
-    """removes the wrapping single quote from the argument"""
-    return arg.strip("\'")
+logger = logging.getLogger("run-inline-script")
+
+
+def unwrap_and_unescape_text(arg: str):
+    return arg.strip("\'").replace('\\"', '"')
 
 
 def main():
@@ -24,16 +27,15 @@ def main():
     top_level_parser.add_argument("--logfile", type=str, default="",
         help="absolute logfile path")
     parsed_args = top_level_parser.parse_args()
-
-    command = unwrap_arg(parsed_args.command)
+    command = unwrap_and_unescape_text(parsed_args.command)
 
     if parsed_args.env_vars:
-        env_vars = json.loads(unwrap_arg(parsed_args.env_vars))
+        env_vars = json.loads(unwrap_and_unescape_text(parsed_args.env_vars))
     else:
         env_vars = None
 
     if parsed_args.logfile:
-        logfile = Path(unwrap_arg(parsed_args.logfile))
+        logfile = Path(unwrap_and_unescape_text(parsed_args.logfile))
     else:
         logfile = None
 
@@ -41,5 +43,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-
+    try:
+        main()
+    except Exception:
+        logger.exception("an unexpected exception occurred")
+        input("press any key to close...")

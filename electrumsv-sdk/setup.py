@@ -34,8 +34,9 @@ def _locate_requirements():
     requirement_files = ["requirements.txt"]
     if sys.platform == 'win32':
         requirement_files.append("requirements-win32.txt")
-    elif sys.platform in ('linux', 'darwin'):
+    elif sys.platform == 'linux':
         requirement_files.append("requirements-linux.txt")
+
 
     requirements = []
     for file_name in requirement_files:

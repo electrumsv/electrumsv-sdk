@@ -30,7 +30,8 @@ class LocalTools:
         if not self.plugin.src.exists():
             self.logger.debug(f"Installing electrumx (url={url})")
             os.chdir(REMOTE_REPOS_DIR)
-            subprocess.run(f"git clone {url}", shell=True, check=True)
+            process = subprocess.Popen(["git", "clone", f"{url}"])
+            process.wait()
 
         elif self.plugin.src.exists():
             os.chdir(self.plugin.src)
@@ -44,7 +45,10 @@ class LocalTools:
             )
             if result.stdout.strip() == url:
                 self.logger.debug(f"ElectrumSV is already installed (url={url})")
-                subprocess.run(f"git pull", shell=True, check=True)
+                process = subprocess.Popen(["git", "config", "pull.ff", "only"])
+                process.wait()
+                process = subprocess.Popen(["git", "pull"])
+                process.wait()
                 checkout_branch(branch)
             if result.stdout.strip() != url:
                 existing_fork = self.plugin.src
@@ -59,11 +63,16 @@ class LocalTools:
     def packages_electrumx(self, url, branch):
         """plyvel wheels are not available on windows so it is swapped out for plyvel-win32 to
         make it work"""
+
         os.chdir(self.plugin.src)
         checkout_branch(branch)
         requirements_path = self.plugin.src.joinpath('requirements.txt')
 
         if sys.platform in ['linux', 'darwin']:
+            if sys.platform == 'darwin':
+                # so that plyvel dependency can build wheel
+                process = subprocess.Popen(["brew", "install", "leveldb"])
+                process.wait()
             process = subprocess.Popen(
                 f"{sys.executable} -m pip install -r {requirements_path}", shell=True)
             process.wait()
