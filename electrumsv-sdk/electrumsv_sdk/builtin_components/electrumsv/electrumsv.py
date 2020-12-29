@@ -84,13 +84,17 @@ class Plugin(AbstractPlugin):
         self.network = self.tools.get_network()
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.port = self.plugin_tools.allocate_port()
+        logfile = self.plugin_tools.get_logfile_path(self.id)
+        metadata = {"config": str(self.datadir.joinpath("regtest/config")),
+            "DATADIR": str(self.datadir)}
+        status_endpoint = f"http://127.0.0.1:{self.port}"
         os.makedirs(self.datadir.joinpath("regtest/wallets"), exist_ok=True)
         if self.tools.is_offline_cli_mode():
             # 'reset' recurses into here...
             command, env_vars = self.tools.generate_command()
-            logfile = self.plugin_tools.get_logfile_path(self.id)
-            _process = self.plugin_tools.spawn_process(command, env_vars, logfile)
-            return  # skip the unnecessary status updates
+            self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
+                component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
+                status_endpoint=status_endpoint, metadata=metadata)
 
         # If daemon or gui mode continue...
         elif not self.tools.wallet_db_exists():
@@ -101,16 +105,9 @@ class Plugin(AbstractPlugin):
                 self.logger.exception("wallet db creation failed unexpectedly")
 
         command, env_vars = self.tools.generate_command()
-        logfile = self.plugin_tools.get_logfile_path(self.id)
-        process = self.plugin_tools.spawn_process(command, env_vars, logfile)
-
-        logging_path = self.datadir.joinpath("logs")
-        metadata = {"config": str(self.datadir.joinpath("regtest/config")),
-                    "DATADIR": str(self.datadir)}
-
-        self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME,
-            str(self.src), f"http://127.0.0.1:{self.port}", metadata=metadata,
-            logging_path=logging_path)
+        self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
+            component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
+            status_endpoint=status_endpoint, metadata=metadata)
 
     def stop(self):
         """some components require graceful shutdown via a REST API or RPC API but most can use the
@@ -135,18 +132,3 @@ class Plugin(AbstractPlugin):
         self.plugin_tools.call_for_component_id_or_type(
             self.COMPONENT_NAME, callable=reset_electrumsv)
         self.logger.debug("Reset of RegTest electrumsv wallet completed successfully")
-
-    def status_check(self) -> Optional[bool]:
-        """
-        True -> ComponentState.RUNNING;
-        False -> ComponentState.FAILED;
-        None -> skip status monitoring updates (e.g. using app's cli interface transiently)
-        """
-        # Offline CLI interface
-        if self.tools.is_offline_cli_mode():
-            return  # returning None indicates that the process was intentionally run transiently
-
-        is_running = self.plugin_tools.is_component_running_http(
-            status_endpoint=self.component_info.status_endpoint,
-            retries=5, duration=2, timeout=1.0)
-        return is_running

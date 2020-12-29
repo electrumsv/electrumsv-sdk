@@ -56,7 +56,7 @@ class Component:
     def __init__(
         self,
         id: str,
-        pid: int,
+        pid: Optional[int],
         component_type: str,
         location: Union[str, Path],
         status_endpoint: str,
@@ -99,6 +99,9 @@ class Component:
 
 
 class ComponentStore:
+    """multiprocess safe read/write access to component_state.json
+    (which is basically acting as a stand-in for a database - which would be major overkill)"""
+
     def __init__(self):
         self.file_name = "component_state.json"
         self.lock_path = SDK_HOME_DIR / "component_state.json.lock"
@@ -141,6 +144,7 @@ class ComponentStore:
 
         with open(self.component_state_path, "w") as f:
             f.write(json.dumps(component_state, indent=4))
+            f.flush()
         logger.debug(f"updated status: {new_component_info}")
 
     def component_status_data_by_id(self, component_id: str) -> Dict:

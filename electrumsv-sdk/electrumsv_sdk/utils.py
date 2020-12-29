@@ -2,14 +2,18 @@ import json
 import logging
 import os
 import shlex
+import signal
 import subprocess
 import sys
 import threading
 from pathlib import Path
 from typing import List, Dict, Optional
 
+import psutil
 import tailer
 from electrumsv_node import electrumsv_node
+from .components import Component, ComponentStore
+from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE
 
 logger = logging.getLogger("utils")
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -76,10 +80,21 @@ def get_directory_name(component__file__):
 
 def kill_by_pid(pid: id):
     if sys.platform in ("linux", "darwin"):
+        try:
+            os.kill(pid, signal.SIGINT)
+        except (SystemError, OSError):
+            pass
+
         process = subprocess.Popen(f"/bin/bash -c 'kill -9 {pid}'", shell=True)
         process.wait()
     elif sys.platform == "win32":
-        subprocess.run(f"taskkill.exe /PID {pid} /T /F")
+        try:
+            os.kill(pid, signal.CTRL_C_EVENT)
+        except (SystemError, OSError):
+            pass
+
+        if psutil.pid_exists(pid):
+            subprocess.run(f"taskkill.exe /PID {pid} /T /F")
 
 
 def kill_process(component_dict: Dict):
@@ -123,8 +138,37 @@ def tail(logfile):
         print(line)
 
 
-def spawn_inline(command: str, env_vars: Dict=None, logfile: Path=None):
+def update_status_monitor(pid: int, component_state: str, id: str=None, component_name: str=None,
+        src: Path=None, logfile: Path=None, status_endpoint: str=None, metadata: Dict=None) -> None:
+
+    component_info = Component(id, pid, component_name, str(src),
+        status_endpoint=status_endpoint, component_state=component_state,
+        metadata=metadata, logging_path=logfile)
+
+    # can re-instantiate ComponentStore in the child process (it is multiprocess safe)
+    component_store = ComponentStore()
+    component_store.update_status_file(component_info)
+
+
+def spawn_inline(command: str, env_vars: Dict=None, id: str=None, component_name:
+        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
+            metadata: Dict=None) -> None:
     """only for running servers with logging requirements - not for simple commands"""
+    def update_state(process, component_state: str):
+        update_status_monitor(pid=process.pid, component_state=component_state, id=id,
+            component_name=component_name, src=src, logfile=logfile,
+            status_endpoint=status_endpoint, metadata=metadata)
+
+    def on_start(process):
+        update_state(process, ComponentState.RUNNING)
+
+    def on_exit(process):
+        # on windows signal.CTRL_C_EVENT gives back SUCCESS_EXITCODE (0)
+        if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE}:
+            update_state(process, ComponentState.STOPPED)
+        elif process.returncode != SUCCESS_EXITCODE:
+            update_state(process, ComponentState.FAILED)
+
     env = os.environ.copy()
     if not env_vars:
         env_vars = {}
@@ -146,39 +190,94 @@ def spawn_inline(command: str, env_vars: Dict=None, logfile: Path=None):
                 t = threading.Thread(target=tail, args=(logfile, ), daemon=True)
                 t.start()
 
+                on_start(process)
                 process.wait()
+                on_exit(process)
+
                 t.join(0.5)  # allow time for background thread to dump logs
         else:
             if sys.platform == 'win32':
                 process = subprocess.Popen(command, env=env)
-                process.wait()
             elif sys.platform in {'linux', 'darwin'}:
                 process = subprocess.Popen(f"{command}", shell=True, env=env)
-                process.wait()
+
+            on_start(process)
+            process.wait()
+            on_exit(process)
+
     except KeyboardInterrupt:
         if t:
             t.join(0.5)
         sys.exit(1)
 
 
-def spawn_background(command: str, env_vars: Dict, logfile: Path=None) -> subprocess.Popen:
+def spawn_background_supervised(command: str, env_vars: Dict, id: str=None, component_name:
+        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
+            metadata: Dict=None) -> None:
+    """spawns a child process that can wait for the process to exit and check the returncode"""
+    run_background_script = Path(MODULE_DIR).joinpath("scripts/run_background.py")
+    component_info = Component(id, None, component_name, str(src),
+        status_endpoint=status_endpoint, component_state=None,
+        metadata=metadata, logging_path=logfile)
+    component_json = json.dumps(component_info.to_dict())
+    os.environ["SCRIPT_COMPONENT_INFO"] = wrap_and_escape_text(component_json)
+    os.environ["SCRIPT_COMMAND"] = wrap_and_escape_text(command)
+
+    env = os.environ.copy()
+    if env_vars:
+        env.update(env_vars)
+
+    if sys.platform == "win32":
+        cmd = shlex.split(f"{sys.executable} {run_background_script}", posix=False)
+        subprocess.Popen(cmd, env=env, creationflags=subprocess.DETACHED_PROCESS)
+    else:
+        cmd = shlex.split(f"{sys.executable} {run_background_script}", posix=True)
+        subprocess.Popen(cmd, env=env)
+
+
+def spawn_background(command: str, env_vars: Dict, id: str=None, component_name:
+        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
+            metadata: Dict=None) -> None:
+
+    env = os.environ.copy()
+    if env_vars:
+        env.update(env_vars)
+
+    def update_state(process, component_state: str):
+        update_status_monitor(pid=process.pid, component_state=component_state, id=id,
+            component_name=component_name, src=src, logfile=logfile,
+            status_endpoint=status_endpoint, metadata=metadata)
+
+    def on_start(process):
+        update_state(process, ComponentState.RUNNING)
+
+    def on_exit(process):
+        # on windows signal.CTRL_C_EVENT gives back SUCCESS_EXITCODE (0)
+        if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE}:
+            update_state(process, ComponentState.STOPPED)
+        elif process.returncode != SUCCESS_EXITCODE:
+            update_state(process, ComponentState.FAILED)
+
     if logfile:
         with open(f'{logfile}', 'w') as logfile_handle:
             # direct stdout and stderr to file
             if sys.platform == "win32":
                 process = subprocess.Popen(command, stdout=logfile_handle, stderr=logfile_handle,
-                    env=os.environ.update(env_vars), creationflags=subprocess.DETACHED_PROCESS)
+                    env=env, creationflags=subprocess.DETACHED_PROCESS)
             else:
                 process = subprocess.Popen(shlex.split(command, posix=1), stdout=logfile_handle,
-                    stderr=logfile_handle, env=os.environ.update(env_vars))
+                    stderr=logfile_handle, env=env)
     else:
         # no logging
         if sys.platform == "win32":
-            process = subprocess.Popen(command, env=os.environ.update(env_vars),
+            process = subprocess.Popen(command, env=env,
                 creationflags=subprocess.DETACHED_PROCESS)
         else:
-            process = subprocess.Popen(shlex.split(command), env=os.environ.update(env_vars))
-    return process
+            process = subprocess.Popen(shlex.split(command), env=env)
+
+    on_start(process)
+    process.wait()
+    on_exit(process)
 
 
 def wrap_and_escape_text(string: str):
@@ -186,30 +285,33 @@ def wrap_and_escape_text(string: str):
     return "\'" + string.replace('"', '\\"') + "\'"
 
 
-def spawn_new_terminal(command: str, env_vars: Dict, logfile: Path=None) -> subprocess.Popen:
+def spawn_new_terminal(command: str, env_vars: Dict, id: str=None, component_name:
+        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
+            metadata: Dict=None) -> None:
+
+    component_info = Component(id=id, pid=None, component_type=component_name, location=str(src),
+        status_endpoint=status_endpoint, component_state=None, metadata=metadata,
+        logging_path=logfile)
+    component_json = json.dumps(component_info.to_dict())
+
     run_inline_script = Path(MODULE_DIR).joinpath("scripts/run_inline.py")
     command = f"{sys.executable} {run_inline_script} " \
               f"--command {wrap_and_escape_text(command)}"
 
     command += f" --env_vars {wrap_and_escape_text(json.dumps(env_vars))}"
-
-    if logfile:
-        command += f" --logfile {wrap_and_escape_text(str(logfile))}"
+    command += f" --component_info {wrap_and_escape_text(component_json)}"
 
     if sys.platform in 'linux':
         split_command = shlex.split(f"xterm -fa 'Monospace' -fs 10 -e {command}", posix=1)
-        process = subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE)
 
     elif sys.platform == 'darwin':
         split_command = ['osascript', '-e',
             f"tell application \"Terminal\" to do script \"{command}\""]
-        process = subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE)
 
     elif sys.platform == 'win32':
         split_command = shlex.split(f"cmd /c {command}", posix=0)
-        process = subprocess.Popen(
-            split_command, creationflags=subprocess.CREATE_NEW_CONSOLE
-        )
-    return process
+        subprocess.Popen(split_command, creationflags=subprocess.CREATE_NEW_CONSOLE)

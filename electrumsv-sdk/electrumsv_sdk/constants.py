@@ -1,9 +1,18 @@
 import os
+import sys
 from pathlib import Path
 
-from .utils import get_sdk_datadir
-
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+# copied from utils to avoid circular import
+def get_sdk_datadir():
+    sdk_home_datadir = None
+    if sys.platform == "win32":
+        sdk_home_datadir = Path(os.environ.get("LOCALAPPDATA")) / "ElectrumSV-SDK"
+    if sdk_home_datadir is None:
+        sdk_home_datadir = Path.home() / ".electrumsv-sdk"
+    return sdk_home_datadir
 
 # Directory structure
 SDK_HOME_DIR: Path = get_sdk_datadir()
@@ -48,3 +57,7 @@ class ComponentState:
     RUNNING = "Running"
     STOPPED = "Stopped"
     FAILED = "Failed"
+
+SUCCESS_EXITCODE = 0
+SIGINT_EXITCODE = 130  # (2 + 128)
+SIGKILL_EXITCODE = 137  # (9 + 128)

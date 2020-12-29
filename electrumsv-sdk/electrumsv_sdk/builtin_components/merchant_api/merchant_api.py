@@ -59,10 +59,13 @@ class Plugin(AbstractPlugin):
         # Get the path to the executable file.
         run_path = get_run_path(self.src)
 
+        command = str(run_path)
         logfile = self.plugin_tools.get_logfile_path(self.id)
-        process = self.plugin_tools.spawn_process(str(run_path), env_vars=None, logfile=logfile)
-        self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME,
-            self.src, status_endpoint="http://127.0.0.1:45111/mapi/feeQuote")
+        status_endpoint = "http://127.0.0.1:45111/mapi/feeQuote"
+        self.plugin_tools.spawn_process(command, env_vars=None, id=self.id,
+            component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
+            status_endpoint=status_endpoint
+        )
 
     def stop(self):
         """some components require graceful shutdown via a REST API or RPC API but most can use the
@@ -72,14 +75,3 @@ class Plugin(AbstractPlugin):
 
     def reset(self):
         self.logger.info("resetting Merchant API is not applicable")
-
-    def status_check(self) -> Optional[bool]:
-        """
-        True -> ComponentState.RUNNING;
-        False -> ComponentState.FAILED;
-        None -> skip status monitoring updates (e.g. using app's cli interface transiently)
-        """
-        is_running = self.plugin_tools.is_component_running_http(
-            status_endpoint=self.component_info.status_endpoint,
-            retries=5, duration=2, timeout=1.0)
-        return is_running

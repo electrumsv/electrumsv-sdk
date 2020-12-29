@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 import shutil
@@ -83,13 +82,10 @@ class Plugin(AbstractPlugin):
             "ALLOW_ROOT": f"{self.ALLOW_ROOT}",
         }
         logfile = self.plugin_tools.get_logfile_path(self.id)
-
-        # temporary docker workaround - SDK should allow launching components in current terminal
-        process = self.plugin_tools.spawn_process(command, env_vars, logfile)
-
-        self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME,
-            location=str(self.src), status_endpoint="http://127.0.0.1:51001",
-            metadata={"DATADIR": str(self.datadir)}, logging_path=None)
+        self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
+            component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
+            status_endpoint=f"http://127.0.0.1:{self.port}", metadata={"DATADIR": str(self.datadir)}
+        )
 
     def stop(self):
         """some components require graceful shutdown via a REST API or RPC API but most can use the
@@ -111,12 +107,3 @@ class Plugin(AbstractPlugin):
         self.plugin_tools.call_for_component_id_or_type(
             self.COMPONENT_NAME, callable=reset_electrumx)
         self.logger.debug("Reset of RegTest electrumx completed successfully")
-
-    def status_check(self) -> Optional[bool]:
-        """
-        True -> ComponentState.RUNNING;
-        False -> ComponentState.FAILED;
-        None -> skip status monitoring updates (e.g. using app's cli interface transiently)
-        """
-        is_running = asyncio.run(self.tools.is_electrumx_running())
-        return is_running
