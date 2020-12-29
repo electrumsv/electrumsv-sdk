@@ -75,12 +75,13 @@ class Plugin(AbstractPlugin):
             "RPC_USERNAME": self.RPC_USERNAME,
             "RPC_PASSWORD": self.RPC_PASSWORD,
         }
-
         self.id = self.plugin_tools.get_id(self.COMPONENT_NAME)
         logfile = self.plugin_tools.get_logfile_path(self.id)
-        process = self.plugin_tools.spawn_process(command, env_vars=env_vars, logfile=logfile)
-        self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME, str(self.src),
-            "http://127.0.0.1:3002")
+        status_endpoint="http://127.0.0.1:3002"
+        self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
+            component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
+            status_endpoint=status_endpoint
+        )
 
     def stop(self):
         """some components require graceful shutdown via a REST API or RPC API but most can use the
@@ -90,14 +91,3 @@ class Plugin(AbstractPlugin):
 
     def reset(self):
         self.logger.info("resetting the whatsonchain is not applicable")
-
-    def status_check(self) -> Optional[bool]:
-        """
-        True -> ComponentState.RUNNING;
-        False -> ComponentState.FAILED;
-        None -> skip status monitoring updates (e.g. using app's cli interface transiently)
-        """
-        is_running = self.plugin_tools.is_component_running_http(
-            status_endpoint=self.component_info.status_endpoint,
-            retries=4, duration=3, timeout=1.0, http_method='get')
-        return is_running

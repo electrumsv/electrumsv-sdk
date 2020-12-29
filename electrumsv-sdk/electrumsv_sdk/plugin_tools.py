@@ -1,18 +1,18 @@
 import datetime
 import logging
 import os
-import subprocess
 import time
 from pathlib import Path
 import sys
 from typing import Dict, Optional, Callable, Tuple
 import requests
 
+
 from .abstract_plugin import AbstractPlugin
-from .utils import port_is_in_use, is_default_component_id, is_remote_repo, checkout_branch, \
-    spawn_background, spawn_inline, spawn_new_terminal
 from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR
 from .components import ComponentStore
+from .utils import port_is_in_use, is_default_component_id, is_remote_repo, checkout_branch, \
+    spawn_inline, spawn_new_terminal, spawn_background_supervised
 from .config import Config
 
 
@@ -185,22 +185,26 @@ class PluginTools:
             time.sleep(sleep_time)
         return False
 
-    def spawn_process(self, command: str, env_vars: Dict=None, logfile: Path=None) -> \
-            subprocess.Popen:
+    def spawn_process(self, command: str, env_vars: Dict=None, id: str=None, component_name:
+        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
+            metadata: Dict=None) -> None:
         if not env_vars:
             env_vars = {}
 
         assert isinstance(command, str)
         if self.config.background_flag:
-            return spawn_background(command, env_vars, logfile)
+            spawn_background_supervised(command, env_vars, id, component_name, src, logfile,
+                status_endpoint, metadata)
         elif self.config.inline_flag:
-            # todo figure out how to run inline whilst still updating status monitor
-            spawn_inline(command, env_vars, logfile)
+            spawn_inline(command, env_vars, id, component_name, src, logfile,
+                status_endpoint, metadata)
             sys.exit(0)
         elif self.config.new_terminal_flag:
-            return spawn_new_terminal(command, env_vars, logfile)
-        else:
-            return spawn_new_terminal(command, env_vars, logfile)
+            spawn_new_terminal(command, env_vars, id, component_name, src, logfile,
+                status_endpoint, metadata)
+        else:  # default
+            spawn_new_terminal(command, env_vars, id, component_name, src, logfile,
+                status_endpoint, metadata)
 
     def get_default_id(self, component_name: str) -> str:
         return component_name + str(1)

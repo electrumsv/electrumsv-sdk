@@ -8,8 +8,7 @@ from electrumsv_node import electrumsv_node
 
 from .constants import NameSpace
 from .config import Config
-from .components import ComponentStore, ComponentState, Component
-from .plugin_tools import AbstractPlugin
+from .components import ComponentStore
 from .utils import cast_str_int_args_to_int
 
 logger = logging.getLogger("runners")
@@ -56,7 +55,6 @@ class Controller:
         if config.component_id or config.selected_component:
             component_module = self.component_store.instantiate_plugin(config)
             component_module.start()
-            self.status_check(component_module)
 
         # no args implies start all (default component ids only - e.g. node1, electrumx1 etc.)
         if not config.component_id and not config.selected_component:
@@ -71,13 +69,8 @@ class Controller:
         """stop all (no args) does not only stop default component ids but all component ids of
         each type - hence the need to hunt them all down."""
         if config.component_id:
-            component_dict = \
-                self.component_store.component_status_data_by_id(config.component_id)
             component_module = self.component_store.instantiate_plugin(config)
             component_module.stop()
-            component_obj = Component.from_dict(component_dict)
-            component_obj.component_state = ComponentState.STOPPED
-            self.component_store.update_status_file(component_obj)
 
         elif config.selected_component:
             relevant_components = self.get_relevant_components(config.selected_component)
@@ -91,9 +84,6 @@ class Controller:
                     )
                     component_module = self.component_store.instantiate_plugin(new_config)
                     component_module.stop()
-                    component_obj = Component.from_dict(component_dict)
-                    component_obj.component_state = ComponentState.STOPPED
-                    self.component_store.update_status_file(component_obj)
 
         # no args implies stop all - (recursive)
         if not config.component_id and not config.selected_component:
@@ -119,38 +109,6 @@ class Controller:
                 )
                 self.reset(new_config)
             logger.info(f"reset: all")
-
-    def status_check(self, component_module: AbstractPlugin):
-        """The 'status_check()' entrypoint of the plugin must always run after the start()
-        command.
-
-        'status_check()' should return None, True or False (usually in response to polling for an
-        http 200 OK response or 4XX/5XX error. However alternative litmus tests are customizable
-        via the plugin.
-
-        None type indicates that it was only run transiently (e.g. ElectrumSV's offline CLI mode)
-
-        The status_monitor subsequently is updated with the status."""
-        component_id = component_module.config.component_id
-        component_name = component_module.COMPONENT_NAME
-
-        # if --id flag or <component_type> are set and the
-        if component_id != "" or component_name:
-            is_running = component_module.status_check()
-
-            if is_running is None:
-                return
-
-            if is_running is False:
-                component_module.component_info.component_state = ComponentState.FAILED
-                logger.error(f"{component_name} failed to start")
-
-            elif is_running is True:
-                component_module.component_info.component_state = ComponentState.RUNNING
-                logger.debug(f"{component_name} online")
-            self.component_store.update_status_file(component_module.component_info)
-        else:
-            raise Exception("neither component --id or component_name given")
 
     def node(self, config: Config) -> None:
         """Essentially bitcoin-cli interface to RPC API that works 'out of the box' with minimal

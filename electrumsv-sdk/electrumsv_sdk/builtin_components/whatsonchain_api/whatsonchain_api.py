@@ -42,9 +42,10 @@ class Plugin(AbstractPlugin):
         command = f"{sys.executable} {self.SCRIPT_PATH}"
         logfile = self.plugin_tools.get_logfile_path(self.id)
         env_vars = {"PYTHONUNBUFFERED": "1"}
-        process = self.plugin_tools.spawn_process(command, env_vars=env_vars, logfile=logfile)
-        self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME,
-            self.COMPONENT_PATH, self.PING_URL)
+        self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
+            component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
+            status_endpoint=self.PING_URL
+        )
 
     def stop(self) -> None:
         self.logger.debug("Attempting to kill the process if it is even running")
@@ -52,14 +53,3 @@ class Plugin(AbstractPlugin):
 
     def reset(self) -> None:
         pass
-
-    def status_check(self) -> Optional[bool]:
-        """
-        True -> ComponentState.RUNNING;
-        False -> ComponentState.FAILED;
-        None -> skip status monitoring updates (e.g. using app's cli interface transiently)
-        """
-        is_running = self.plugin_tools.is_component_running_http(
-            status_endpoint=self.component_info.status_endpoint,
-            retries=5, duration=2, timeout=1.0)
-        return is_running

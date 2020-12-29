@@ -84,17 +84,12 @@ class Plugin(AbstractPlugin):
             print_to_console=True, extra_params=extra_params)
 
         command = " ".join(shell_command)
-        env_vars = None
         logfile = self.plugin_tools.get_logfile_path(self.id)
-        process = self.plugin_tools.spawn_process(command, env_vars=None, logfile=logfile)
-        logging_path = Path(self.datadir).joinpath("regtest/bitcoind.log")
-
-        self.component_info = Component(self.id, process.pid, self.COMPONENT_NAME,
-            str(self.datadir), f"http://rpcuser:rpcpassword@127.0.0.1:{self.port}",
-            logging_path=logging_path,
+        self.plugin_tools.spawn_process(command, env_vars=None, id=self.id,
+            component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
+            status_endpoint=f"http://rpcuser:rpcpassword@127.0.0.1:{self.port}",
             metadata={"DATADIR": str(self.datadir), "rpcport": self.port, "p2p_port": self.p2p_port}
         )
-        self.node_status_check_result = True
 
     def stop(self):
         """The bitcoin node requires graceful shutdown via the RPC API - a good example of why this
@@ -120,11 +115,3 @@ class Plugin(AbstractPlugin):
 
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=reset_node)
         self.logger.debug("Reset of RegTest bitcoin daemon completed successfully.")
-
-    def status_check(self) -> Optional[bool]:
-        """
-        True -> ComponentState.RUNNING;
-        False -> ComponentState.FAILED;
-        None -> skip status monitoring updates (e.g. using app's cli interface transiently)
-        """
-        return self.node_status_check_result
