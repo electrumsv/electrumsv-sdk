@@ -19,11 +19,6 @@ jobs:
     - script: |
           sudo apt-get update
           sudo apt-get install libusb-1.0-0-dev libudev-dev
-          git clone https://github.com/electrumsv/electrumsv.git
-          cd electrumsv
-          python3 -m pip install -r contrib/deterministic-build/requirements.txt
-          python3 -m pip install -r contrib/deterministic-build/requirements-hw.txt
-          python3 -m pip install -r contrib/deterministic-build/requirements-binaries.txt
           python3 -m pip install pysqlite3-binary
       displayName: 'prepare for electrumsv'
       workingDirectory: electrumsv-sdk/
@@ -90,11 +85,6 @@ jobs:
         versionSpec: 3.7
     - script: |
           brew upgrade sqlite3
-          git clone https://github.com/electrumsv/electrumsv.git
-          cd electrumsv
-          python3 -m pip install -r contrib/deterministic-build/requirements.txt
-          python3 -m pip install -r contrib/deterministic-build/requirements-hw.txt
-          python3 -m pip install -r contrib/deterministic-build/requirements-binaries.txt
       displayName: 'prepare for electrumsv'
       workingDirectory: electrumsv-sdk/
     - script: |

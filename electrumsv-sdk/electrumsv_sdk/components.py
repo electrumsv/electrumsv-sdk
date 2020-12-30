@@ -59,7 +59,7 @@ class Component:
         pid: Optional[int],
         component_type: str,
         location: Union[str, Path],
-        status_endpoint: str,
+        status_endpoint: Optional[str],
         component_state:
             Union[ComponentState.RUNNING, ComponentState.STOPPED, ComponentState.FAILED] = None,
         metadata: Optional[dict] = None,
