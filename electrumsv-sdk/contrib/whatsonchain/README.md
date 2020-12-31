@@ -18,25 +18,17 @@ open a terminal window and type:
  
     > npm config set python /path/to/executable/python
 
-# Step 3 (install the whatsonchain explorer package)
+# Step 3 (use the sdk to install and run)
 Clone this repository and install package: 
 
-    > git clone https://github.com/AustEcon/woc-explorer.git
-    > cd woc-explorer
-    > npm install
-    > npm build
-
-NOTE: I would like to continue using the main repository
-at https://github.com/waqas64/woc-explorer at a later date. But this is
-a short-term way to have everything pre-configured for our RegTest needs
-(removes the step of editing configuration files is all).
-
-Now you can start the explorer with:
-
-    > npm start
+    > electrumsv-sdk install whatsonchain
+    > electrumsv-sdk start node
+    > electrumsv-sdk start electrumx
+    > electrumsv-sdk start whatsonchain
     
 Webpage is viewable at http://127.0.0.1:3002/
 
-**You need to be running the node and ideally electrumx to have anything to look at.**
+**You need to be running the node and ideally electrumx to have anything to look at.
+Hence why the node and electrumx are also started here.**
 
 The docker build for this explorer doesn't work for me at the moment. YMMV.

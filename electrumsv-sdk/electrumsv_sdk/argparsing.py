@@ -253,11 +253,14 @@ class ArgParser:
 
     def add_start_argparser(self, namespaces):
         start_parser = namespaces.add_parser("start", help="specify which servers to run")
-        start_parser.add_argument("--new", action="store_true", help="")
-        start_parser.add_argument("--gui", action="store_true", help="")
-        start_parser.add_argument("--background", action="store_true", help="")
-        start_parser.add_argument("--inline", action="store_true", help="")
-        start_parser.add_argument("--new-terminal", action="store_true", help="")
+        start_parser.add_argument("--new", action="store_true",
+            help="run a new instance with unique 'id'")
+        start_parser.add_argument("--gui", action="store_true",
+            help="run in gui mode (electrumsv only)")
+        start_parser.add_argument("--background", action="store_true", help="spawn in background")
+        start_parser.add_argument("--inline", action="store_true", help="spawn in current shell")
+        start_parser.add_argument("--new-terminal", action="store_true",
+            help="spawn in a new terminal window")
         start_parser.add_argument("--id", type=str, default="", help="human-readable identifier "
             "for component (e.g. 'worker1_esv')")
         start_parser.add_argument("--repo", type=str, default="", help="git repo as either an "
