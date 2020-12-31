@@ -78,23 +78,57 @@ def get_directory_name(component__file__):
     return component_name
 
 
-def kill_by_pid(pid: id):
+def get_parent_and_child_pids(parent_pid):
+    try:
+        pids = []
+        parent = psutil.Process(parent_pid)
+        pids.append(parent.pid)
+        for child in parent.children(recursive=True):
+            pids.append(child.pid)
+        return pids
+    except psutil.NoSuchProcess:
+        pass
+
+
+def sigint(pid):
+    """attempt graceful shutdown via sigint"""
     if sys.platform in ("linux", "darwin"):
         try:
             os.kill(pid, signal.SIGINT)
         except (SystemError, OSError):
             pass
 
-        process = subprocess.Popen(f"/bin/bash -c 'kill -9 {pid}'", shell=True)
-        process.wait()
     elif sys.platform == "win32":
         try:
             os.kill(pid, signal.CTRL_C_EVENT)
         except (SystemError, OSError):
             pass
 
+
+def sigkill(parent_pid):
+    """kill process if sigint failed"""
+    pids = get_parent_and_child_pids(parent_pid)
+    if pids:
+        for pid in pids:
+            if sys.platform in ('linux', 'darwin'):
+                process = subprocess.Popen(f"/bin/bash -c 'kill -9 {pid}'", shell=True)
+                process.wait()
+            elif sys.platform == 'win32':
+                if psutil.pid_exists(pid):
+                    subprocess.run(f"taskkill.exe /PID {pid} /T /F")
+
+
+def kill_by_pid(pid: id):
+    """kills parent and all children"""
+    # todo - it may make sense to add an optional timeout for waiting on a graceful shutdown
+    #  via sigint before escalating to sigkill/sigterm - this would be specified for each plugin
+    pids = get_parent_and_child_pids(parent_pid=pid)
+    if pids:
+        for pid in pids:
+            sigint(pid)
+
         if psutil.pid_exists(pid):
-            subprocess.run(f"taskkill.exe /PID {pid} /T /F")
+            sigkill(parent_pid=pid)
 
 
 def kill_process(component_dict: Dict):
