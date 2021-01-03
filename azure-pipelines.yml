@@ -42,31 +42,36 @@ jobs:
         sudo apt-get update
         sudo apt install npm nodejs node-gyp nodejs-dev
         sudo apt-get install libssl1.0-dev
-      displayName: 'prepare for whatsonchain'
+      displayName: 'prepare node.js'
       workingDirectory: electrumsv-sdk/
     - script: |
-        electrumsv-sdk install --background node
-        electrumsv-sdk install --background electrumx
-        electrumsv-sdk install --background electrumsv
-        electrumsv-sdk install --background whatsonchain
+        electrumsv-sdk install node
+        electrumsv-sdk install electrumx
+        electrumsv-sdk install electrumsv
+        electrumsv-sdk install whatsonchain
+      displayName: 'install all components'
+      workingDirectory: electrumsv-sdk/
+    - script: |
+        electrumsv-sdk start --background status_monitor
         electrumsv-sdk start --background --new node
         electrumsv-sdk start --background --new electrumx
         electrumsv-sdk start --background --new electrumsv
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
-      displayName: 'install & start node, electrumx, electrumsv, whatsonchain'
+      displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
     - script: |
         electrumsv-sdk stop node
         electrumsv-sdk stop electrumx
         electrumsv-sdk stop electrumsv
         electrumsv-sdk stop whatsonchain
-      displayName: 'stop node, electrumx, electrumsv, whatsonchain'
+        electrumsv-sdk stop status_monitor
+      displayName: 'stop all components'
       workingDirectory: electrumsv-sdk/
     - script: |
         sleep 5
         electrumsv-sdk reset
-      displayName: 'reset'
+      displayName: 'reset all components'
       workingDirectory: electrumsv-sdk/
     - script: |
         sleep 5
@@ -95,31 +100,36 @@ jobs:
       workingDirectory: electrumsv-sdk/
     - script: |
         brew install node
-      displayName: 'prepare for whatsonchain'
+      displayName: 'prepare node.js'
       workingDirectory: electrumsv-sdk/
     - script: |
-        electrumsv-sdk install --background node
-        electrumsv-sdk install --background electrumx
-        electrumsv-sdk install --background electrumsv
-        electrumsv-sdk install --background whatsonchain
+        electrumsv-sdk install node
+        electrumsv-sdk install electrumx
+        electrumsv-sdk install electrumsv
+        electrumsv-sdk install whatsonchain
+      displayName: 'install all components'
+      workingDirectory: electrumsv-sdk/
+    - script: |
+        electrumsv-sdk start --background status_monitor
         electrumsv-sdk start --background --new node
         electrumsv-sdk start --background --new electrumx
         electrumsv-sdk start --background --new electrumsv
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
-      displayName: 'install & start node, electrumx, electrumsv, whatsonchain'
+      displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
     - script: |
         electrumsv-sdk stop node
         electrumsv-sdk stop electrumx
         electrumsv-sdk stop electrumsv
         electrumsv-sdk stop whatsonchain
-      displayName: 'stop node, electrumx, electrumsv, whatsonchain'
+        electrumsv-sdk stop status_monitor
+      displayName: 'stop all components'
       workingDirectory: electrumsv-sdk/
     - script: |
         sleep 5
         electrumsv-sdk reset
-      displayName: 'reset'
+      displayName: 'reset all components'
       workingDirectory: electrumsv-sdk/
     - script: |
         sleep 5
@@ -137,6 +147,7 @@ jobs:
         versionSpec: 3.7
         addToPath: true
         architecture: 'x64'
+    # need to add python Scripts/ dir to PATH to find 'electrumsv-sdk' command
     - pwsh: |
         $scripts_dir = py -3.7 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
         $env:PATH += $scripts_dir
@@ -144,28 +155,36 @@ jobs:
         py -3.7 -m pip install wheel
         py -3.7 -m pip install -e .
         py -3.7 -m pip install pytest pytest-cov
-        electrumsv-sdk install --background node
-        electrumsv-sdk install --background electrumx
-        electrumsv-sdk install --background electrumsv
-        electrumsv-sdk install --background whatsonchain
+      displayName: 'install sdk'
+      workingDirectory: electrumsv-sdk/
+    - script: |
+        electrumsv-sdk install node
+        electrumsv-sdk install electrumx
+        electrumsv-sdk install electrumsv
+        electrumsv-sdk install whatsonchain
+      displayName: 'install all components'
+      workingDirectory: electrumsv-sdk/
+    - script: |
+        electrumsv-sdk start --background status_monitor
         electrumsv-sdk start --background --new node
         electrumsv-sdk start --background --new electrumx
         electrumsv-sdk start --background --new electrumsv
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
-      displayName: 'start node, electrumx, electrumsv, whatsonchain'
+      displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
     - script: |
         electrumsv-sdk stop node
         electrumsv-sdk stop electrumx
         electrumsv-sdk stop electrumsv
         electrumsv-sdk stop whatsonchain
-      displayName: 'stop node, electrumx, electrumsv, whatsonchain'
+        electrumsv-sdk stop status_monitor
+      displayName: 'stop all components'
       workingDirectory: electrumsv-sdk/
     - script: |
         sleep 5
         electrumsv-sdk reset
-      displayName: 'reset'
+      displayName: 'reset all components'
       workingDirectory: electrumsv-sdk/
     - script: |
         sleep 5

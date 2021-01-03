@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import pathlib
@@ -87,7 +86,7 @@ def copy_config(install_path):
     src = pathlib.Path(MODULE_DIR) / "config/"
     config_path = _get_build_dir(install_path) / "config"
     os.makedirs(config_path, exist_ok=True)
-    shutil.copytree(src, dst=config_path, dirs_exist_ok=True)
+    shutil.copytree(src, dst=config_path)
 
 
 def _pfx_and_cer_present():
