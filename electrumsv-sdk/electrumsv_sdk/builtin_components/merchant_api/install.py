@@ -1,81 +1,27 @@
-import hashlib
 import json
 import logging
 import os
 import pathlib
-import platform
-import requests
+import shutil
+import subprocess
 import sys
+
+import requests
 import tarfile
-from typing import Dict
 from urllib.parse import urlparse
 
 from electrumsv_sdk.utils import get_directory_name
 
+VERSION = "1.2.0"
+RELEASE_URI = f"https://github.com/bitcoin-sv/merchantapi-reference/archive/v{VERSION}.tar.gz"
+MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
+PFX_PATH = pathlib.Path(MODULE_DIR) / "config/localhost.pfx"
+
+WIN32_SSL_CERT_SHELL_SCRIPT_PATH = pathlib.Path(MODULE_DIR) / "ssl_cert_scripts/dev_cert_gen.ps1"
+UNIX_SSL_CERT_SHELL_SCRIPT_PATH = pathlib.Path(MODULE_DIR) / "ssl_cert_scripts/dev_cert_gen.sh"
+
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
-
-
-# The uri is copied from the Github repository release assets list.
-# The checksums are manually copied from the Github release checksums file.
-# The executable name is manually observed in the build file.
-PREBUILT_ENTRIES = {
-    ("Darwin", True): {
-        "uri": "https://github.com/bitcoin-sv/merchantapi-reference/releases/download/v1.1.0/"
-               "mapi_1.1.0_Darwin_x86_64.tar.gz",
-        "sha256": "0003e702c7cd10a56cf1f8e89cc01d0492e8102d9ffd753d263058848aba85cd",
-        "exe": "mapi-v1.1.0"
-    },
-    ("Linux", True): {
-        "uri": "https://github.com/bitcoin-sv/merchantapi-reference/releases/download/v1.1.0/"
-               "mapi_1.1.0_Linux_x86_64.tar.gz",
-        "sha256": "52af50b4899278038f2475b229b98340eb5ac1f9e5630b885820624ec9cdb0c8",
-        "exe": "mapi-v1.1.0"
-    },
-    ("Windows", False): {
-        "uri": "https://github.com/bitcoin-sv/merchantapi-reference/releases/download/v1.1.0/"
-               "mapi_1.1.0_Windows_i386.tar.gz",
-        "sha256": "650d6e6916ff8afbc3be4a1a366bf4c49f215ad01eee98e5488b4c035419923b",
-        "exe": "mapi-v1.1.0.exe"
-    },
-    ("Windows", True): {
-        "uri": "https://github.com/bitcoin-sv/merchantapi-reference/releases/download/v1.1.0/"
-               "mapi_1.1.0_Windows_x86_64.tar.gz",
-        "sha256": "3e36fc57a301fe6c399be82446f455d95aa7873b14d987a0193c886908d6923b",
-        "exe": "mapi-v1.1.0.exe"
-    },
-}
-
-FEES_JSON = [
-    {
-        "feeType": "standard",
-        "miningFee": {
-            "satoshis": 1,
-            "bytes": 1
-        },
-        "relayFee": {
-            "satoshis": 1,
-            "bytes": 10
-        }
-    },
-    {
-        "feeType": "data",
-        "miningFee": {
-            "satoshis": 2,
-            "bytes": 1000
-        },
-        "relayFee": {
-            "satoshis": 1,
-            "bytes": 10000
-        }
-    }
-]
-
-def _get_entry() -> Dict:
-    system_name = platform.system()
-    is_64bit = sys.maxsize > 2**32
-    entry_key = system_name, is_64bit
-    return PREBUILT_ENTRIES[entry_key]
 
 
 def download_and_install(install_path: pathlib.Path) -> None:
@@ -88,29 +34,18 @@ def download_and_install(install_path: pathlib.Path) -> None:
     if not install_path.exists():
         install_path.mkdir()
 
-    entry = _get_entry()
-    u = urlparse(entry["uri"])
+    u = urlparse(RELEASE_URI)
     filename = os.path.basename(u.path)
     download_path = install_path / filename
 
     if not download_path.exists():
         # Download the build.
-        r = requests.get(entry["uri"])
+        r = requests.get(RELEASE_URI)
         with open(download_path, "wb") as f:
             f.write(r.content)
 
-        # Ensure the hash matches.
-        hasher = hashlib.sha256()
-        with open(download_path, 'rb') as f:
-            while True:
-                data = f.read(65536)
-                if not data:
-                    break
-                hasher.update(data)
-        assert hasher.hexdigest() == entry["sha256"], f"File {filename} checksum does not match"
-
     # Extract the build.
-    output_path = install_path / "build"
+    output_path = install_path / f"mAPIv{VERSION}"
     if not output_path.exists():
         with tarfile.open(download_path, 'r') as z:
             z.extractall(output_path)
@@ -124,43 +59,73 @@ def _write_text(file_path: pathlib.Path, text: str) -> None:
         f.write(text)
 
 
-def create_settings_file(install_path: pathlib.Path, merchant_api_host: str, mapi_http_port: int, \
-        node_host: str, node_http_port: int, node_rpc_username: str, node_rpc_password: str,
-        node_zmq_port: int) -> None:
-    """
-    The Merchant API executable looks for a `settings.conf` file in the current directory
-    and then goes up to the parent directory and looks there, and repeats that until it hits
-    the top-level directory.
-    """
-    settings_text = os.linesep.join([
-        f"httpAddress={merchant_api_host}:{mapi_http_port}",
-        "bitcoin_count=1",
-        f"bitcoin_1_host={node_host}",
-        f"bitcoin_1_port={node_http_port}",
-        f"bitcoin_1_username={node_rpc_username}",
-        f"bitcoin_1_password={node_rpc_password}",
-        f"bitcoin_1_zmqport={node_zmq_port}",
-        f"quoteExpiryMinutes=10",
-    ])
-    _write_text(install_path / "settings.conf", settings_text)
-
-    fees_json_text = json.dumps(FEES_JSON)
-    _write_text(install_path / "fees.json", fees_json_text)
+def _get_build_dir(install_path: pathlib.Path):
+    build_dir = install_path / f"mAPIv{VERSION}/merchantapi-reference-{VERSION}/src/Deploy/Build"
+    return build_dir
 
 
-def get_run_path(install_path: pathlib.Path) -> pathlib.Path:
-    """
-    Work out where the executable is located for the given platform/architecture.
-    """
-    entry = _get_entry()
-    return install_path / "build" / entry["exe"]
+def _get_build_script_path(install_path: pathlib.Path):
+    deploy_dir = install_path / f"mAPIv{VERSION}/merchantapi-reference-{VERSION}/src/Deploy"
+    if sys.platform == 'win32':
+        return deploy_dir / "build.bat"
+    elif sys.platform in {'linux', 'darwin'}:
+        return deploy_dir / "build.sh"
+
+
+def _get_docker_compose_path(install_path: pathlib.Path):
+    docker_compose_path = install_path / f"mAPIv" \
+        f"{VERSION}/merchantapi-reference-{VERSION}/src/Deploy/Build/docker-compose.yaml"
+    return docker_compose_path
+
+
+def copy_env(install_path):
+    src = pathlib.Path(MODULE_DIR) / ".env"
+    shutil.copy(src, dst=_get_build_dir(install_path))
+
+
+def copy_config(install_path):
+    src = pathlib.Path(MODULE_DIR) / "config/"
+    config_path = _get_build_dir(install_path) / "config"
+    os.makedirs(config_path, exist_ok=True)
+    shutil.copytree(src, dst=config_path, dirs_exist_ok=True)
+
+
+def _pfx_and_cer_present():
+    if os.path.exists(PFX_PATH):
+        return True
+    else:
+        return False
+
+
+def build_dockerfile(install_path):
+    # modify configuration files
+    copy_env(install_path)
+    if _pfx_and_cer_present():
+        copy_config(install_path)
+    else:
+        logger.error(f"Self-signed certificate 'localhost.pfx' file does not exist - please see "
+                     f"documentation")
+        sys.exit(1)
+
+    build_script_path = _get_build_script_path(install_path)
+    if sys.platform == 'win32':
+        # there is a bug in the build script at present so replace with working copy
+        src = pathlib.Path(MODULE_DIR) / "build.bat"
+        shutil.copy(src=src, dst=build_script_path)
+
+    if sys.platform == 'win32':
+        line = f"{build_script_path}"
+    elif sys.platform in {'linux', 'darwin'}:
+        line = f"/bin/bash -c \'{build_script_path}\'"
+
+    # need to be in the same working directory as the shell script for it to work
+    os.chdir(os.path.dirname(build_script_path))
+    process = subprocess.Popen(line, shell=True)
+    process.wait()
 
 
 if __name__ == "__main__":
     # This will download and extract the correct build to the local `zzz` directory for testing.
     download_path = pathlib.Path("zzz")
     download_and_install(download_path)
-
-    run_path = get_run_path(download_path)
-    assert run_path.exists(), "executable not found"
-    assert run_path.is_file(), "executable is not a file"
+    build_dockerfile(download_path)

@@ -9,7 +9,7 @@ from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
-from .install import download_and_install, create_settings_file, get_run_path
+from .install import download_and_install, build_dockerfile, _get_docker_compose_path
 
 
 class Plugin(AbstractPlugin):
@@ -39,9 +39,10 @@ class Plugin(AbstractPlugin):
 
     def install(self):
         download_and_install(self.src)
-        create_settings_file(self.src, self.MERCHANT_API_HOST, self.MERCHANT_API_PORT,
-            self.NODE_HOST, self.NODE_RPC_PORT, self.NODE_RPC_USERNAME, self.NODE_RPC_PASSWORD,
-            self.NODE_ZMQ_PORT)
+        build_dockerfile(self.src)
+        # create_settings_file(self.src, self.MERCHANT_API_HOST, self.MERCHANT_API_PORT,
+        #     self.NODE_HOST, self.NODE_RPC_PORT, self.NODE_RPC_USERNAME, self.NODE_RPC_PASSWORD,
+        #     self.NODE_ZMQ_PORT)
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self):
@@ -56,10 +57,11 @@ class Plugin(AbstractPlugin):
         # The primary reason we need this to be the current directory is so that the `settings.conf`
         # file is directly accessible to the MAPI executable (it should look there first).
         os.chdir(self.src)
-        # Get the path to the executable file.
-        run_path = get_run_path(self.src)
+        # Get the path to the docker_compose.yaml file.
+        docker_compose_path = _get_docker_compose_path(self.src)
 
-        command = str(run_path)
+        os.chdir(os.path.dirname(docker_compose_path))
+        command = f"docker-compose up"
         logfile = self.plugin_tools.get_logfile_path(self.id)
         status_endpoint = "http://127.0.0.1:45111/mapi/feeQuote"
         self.plugin_tools.spawn_process(command, env_vars=None, id=self.id,
