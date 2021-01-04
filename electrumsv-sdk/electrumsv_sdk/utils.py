@@ -9,6 +9,7 @@ import threading
 from pathlib import Path
 from typing import List, Dict, Optional
 
+import colorama
 import psutil
 import tailer
 from electrumsv_node import electrumsv_node
@@ -169,6 +170,11 @@ def get_sdk_datadir():
 
 def tail(logfile):
     for line in tailer.follow(open(logfile), delay=0.3):
+        "https://www.devdungeon.com/content/colorize-terminal-output-python"
+        # If using Windows, init() will cause anything sent to stdout or stderr
+        # will have ANSI color codes converted to the Windows versions. Hooray!
+        # If you are already using an ANSI compliant shell, it won't do anything
+        colorama.init()
         print(line)
 
 
