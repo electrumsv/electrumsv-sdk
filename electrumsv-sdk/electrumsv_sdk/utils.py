@@ -169,12 +169,12 @@ def get_sdk_datadir():
 
 
 def tail(logfile):
+    colorama.init()
     for line in tailer.follow(open(logfile), delay=0.3):
         # "https://www.devdungeon.com/content/colorize-terminal-output-python"
         # If using Windows, init() will cause anything sent to stdout or stderr
         # will have ANSI color codes converted to the Windows versions. Hooray!
         # If you are already using an ANSI compliant shell, it won't do anything
-        colorama.init()
         print(line)
 
 
@@ -222,6 +222,7 @@ def spawn_inline(command: str, env_vars: Dict=None, id: str=None, component_name
                 if sys.platform == 'win32':
                     process = subprocess.Popen(command, stdout=logfile_handle,
                         stderr=logfile_handle, env=env)
+
                 elif sys.platform in {'linux', 'darwin'}:
                     process = subprocess.Popen(f"{command}", shell=True, stdout=logfile_handle,
                         stderr=logfile_handle, env=env)

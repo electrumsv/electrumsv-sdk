@@ -31,4 +31,5 @@ COPY --from=publish /app/publish .
 WORKDIR /
 COPY ["Deploy/run.ps1", "."]
 
-ENTRYPOINT ["powershell", "-Command", "./run.ps1"]
+ENTRYPOINT ["pwsh", "-Command", "./run.ps1"]
+#CMD ping -t localhost > NUL
