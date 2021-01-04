@@ -8,8 +8,8 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: merchant_gateway
-    volumes:
-      - mapi-volume:C:\\pgsql\\data
+#    volumes:
+#      - mapi-volume:C:\\pgsql\\data
     networks:
       - mapi-network
 
@@ -53,7 +53,7 @@ services:
     networks:
       - mapi-network
 
-volumes:
-  mapi-volume:
+#volumes:
+#  mapi-volume:
 networks:
   mapi-network:
