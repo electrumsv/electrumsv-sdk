@@ -16,18 +16,21 @@ jobs:
     - task: UsePythonVersion@0
       inputs:
         versionSpec: 3.7
+
     - script: |
           sudo apt-get update
           sudo apt-get install libusb-1.0-0-dev libudev-dev
           python3 -m pip install pysqlite3-binary
       displayName: 'prepare for electrumsv'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         python3 -m pip install wheel
         python3 -m pip install -e .
         python3 -m pip install pytest pytest-cov
       displayName: 'install sdk'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         python3 -m pip install -U pylint
         python3 -m pylint --rcfile ./.pylintrc ./electrumsv-sdk
@@ -38,18 +41,21 @@ jobs:
         fi
       continueOnError: true
       displayName: 'pylint'
+
     - script: |
         sudo apt-get update
         sudo apt install npm nodejs node-gyp nodejs-dev
         sudo apt-get install libssl1.0-dev
       displayName: 'prepare node.js'
       workingDirectory: electrumsv-sdk/
+
     # Download a secure file to the agent machine
     - task: DownloadSecureFile@1
       name: pfxCertificate
       displayName: 'Download CA certificate'
       inputs:
         secureFile: 'localhost.pfx'
+
     - script: |
         electrumsv-sdk install node
         electrumsv-sdk install electrumx
@@ -58,6 +64,7 @@ jobs:
         electrumsv-sdk install --ssl-pfx=$(pfxCertificate.secureFilePath) merchant_api
       displayName: 'install all components'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         electrumsv-sdk start --background status_monitor
         electrumsv-sdk start --background --new node
@@ -68,6 +75,7 @@ jobs:
         electrumsv-sdk start --background merchant_api
       displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         electrumsv-sdk stop node
         electrumsv-sdk stop electrumx
@@ -76,11 +84,13 @@ jobs:
         electrumsv-sdk stop status_monitor
       displayName: 'stop all components'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         sleep 5
         electrumsv-sdk reset
       displayName: 'reset all components'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         sleep 5
         electrumsv-sdk reset --id=node1
@@ -96,14 +106,9 @@ jobs:
     - task: UsePythonVersion@0
       inputs:
         versionSpec: 3.7
-    - bash: |
-        pwd
-        ls
-        cd $(Build.Repository.LocalPath)
-        pwd
-        ls
-        cd $(Build.Repository.LocalPath)/electrumsv-sdk/contrib/azure/macos
 
+    - bash: |
+        cd $(Build.Repository.LocalPath)/electrumsv-sdk/contrib/azure/macos
         chmod +x ./install-docker-unattended.sh
         ./install-docker-unattended.sh
         chmod +x ./start-docker.sh
@@ -115,6 +120,7 @@ jobs:
           brew upgrade sqlite3
       displayName: 'prepare for electrumsv'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         python3 -m pip install wheel
         python3 -m pip install -e .
@@ -142,6 +148,7 @@ jobs:
         electrumsv-sdk install --ssl-pfx=$(pfxCertificate.secureFilePath) merchant_api
       displayName: 'install all components'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         electrumsv-sdk start --background status_monitor
         electrumsv-sdk start --background --new node
@@ -152,6 +159,7 @@ jobs:
         electrumsv-sdk start --background merchant_api
       displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         electrumsv-sdk stop node
         electrumsv-sdk stop electrumx
@@ -160,11 +168,13 @@ jobs:
         electrumsv-sdk stop status_monitor
       displayName: 'stop all components'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         sleep 5
         electrumsv-sdk reset
       displayName: 'reset all components'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         sleep 5
         electrumsv-sdk reset --id=node1
@@ -181,10 +191,9 @@ jobs:
         versionSpec: 3.7
         addToPath: true
         architecture: 'x64'
+
     # need to add python Scripts/ dir to PATH to find 'electrumsv-sdk' command
     - pwsh: |
-        py -3.7 -c "import os, sys, pathlib;print(os.environ, flush=True);"
-
         $scripts_dir = py -3.7 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
         $env:PATH += $scripts_dir
         py -3.7 -m pip install --upgrade pip
@@ -210,6 +219,7 @@ jobs:
         docker volume create mapi-volume
       displayName: 'install all components'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         electrumsv-sdk start --background status_monitor
         electrumsv-sdk start --background --new node
@@ -220,6 +230,7 @@ jobs:
         electrumsv-sdk start --background merchant_api
       displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         electrumsv-sdk stop node
         electrumsv-sdk stop electrumx
@@ -228,11 +239,13 @@ jobs:
         electrumsv-sdk stop status_monitor
       displayName: 'stop all components'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         sleep 5
         electrumsv-sdk reset
       displayName: 'reset all components'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         sleep 5
         electrumsv-sdk reset --id=node1
@@ -250,6 +263,7 @@ jobs:
         python3 -m pip install wheel
         python3 setup.py build bdist_wheel --plat-name macosx_10_5_x86_64 --dist-dir ../wheelhouse
       workingDirectory: electrumsv-sdk/
+
     - task: PublishBuildArtifacts@1
       inputs:
         artifactName: 'MacOS'
@@ -262,11 +276,13 @@ jobs:
     - task: UsePythonVersion@0
       inputs:
         versionSpec: 3.7
+
     - script: |
         py -3 -m pip install --upgrade pip
         py -3 -m pip install wheel
         py -3 .\setup.py build bdist_wheel --plat-name win-amd64 --dist-dir ../wheelhouse
       workingDirectory: electrumsv-sdk/
+
     - task: PublishBuildArtifacts@1
       inputs:
         artifactName: 'Windows'
@@ -280,11 +296,13 @@ jobs:
       inputs:
         versionSpec: 3.7
         architecture: x86
+
     - script: |
         py -3 -m pip install --upgrade pip
         py -3 -m pip install wheel
         py -3 .\setup.py build bdist_wheel --plat-name win32 --dist-dir ../wheelhouse
       workingDirectory: electrumsv-sdk/
+
     - task: PublishBuildArtifacts@1
       inputs:
         artifactName: 'Windowsx86'
@@ -298,11 +316,13 @@ jobs:
     - task: UsePythonVersion@0
       inputs:
         versionSpec: 3.7
+
     - bash: |
         python3 -m pip install --upgrade pip
         python3 -m pip install wheel
         python3 setup.py build bdist_wheel --plat-name manylinux2014_x86_64 --dist-dir ../wheelhouse
       workingDirectory: electrumsv-sdk/
+
     - task: PublishBuildArtifacts@1
       inputs:
         artifactName: 'Linux'
