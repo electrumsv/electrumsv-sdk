@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from argparse import ArgumentParser
 from typing import Optional
 
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
@@ -10,6 +11,18 @@ from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
 from .install import download_and_install, build_dockerfile, _get_docker_compose_path
+
+
+def extend_install_cli(install_parser: ArgumentParser):
+    """if this method is present it allows extension of the start argparser only.
+    This occurs dynamically and adds the new cli options as attributes of the Config object
+    """
+    install_parser.add_argument("--ssl-pfx", type=str, default="",
+        help="path to localhost.pfx server side certificate")
+
+    # variable names to be pulled from the start_parser
+    new_options = ['ssl_pfx']  # access variable via Plugin.config.ssl_pfx
+    return install_parser, new_options
 
 
 class Plugin(AbstractPlugin):

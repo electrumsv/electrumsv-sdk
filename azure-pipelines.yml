@@ -50,20 +50,12 @@ jobs:
       displayName: 'Download CA certificate'
       inputs:
         secureFile: 'localhost.pfx'
-
-    - script: |
-        echo Installing $(pfxCertificate.secureFilePath) to the trusted CA directory...
-        sudo chown root:root $(pfxCertificate.secureFilePath)
-        sudo chmod a+r $(pfxCertificate.secureFilePath)
-        sudo ln -s -t /etc/ssl/certs/ $(pfxCertificate.secureFilePath)
-      workingDirectory: electrumsv-sdk/
-
     - script: |
         electrumsv-sdk install node
         electrumsv-sdk install electrumx
         electrumsv-sdk install electrumsv
         electrumsv-sdk install whatsonchain
-        electrumsv-sdk install merchant_api
+        electrumsv-sdk install --ssl-pfx=$(pfxCertificate.secureFilePath) merchant_api
       displayName: 'install all components'
       workingDirectory: electrumsv-sdk/
     - script: |
