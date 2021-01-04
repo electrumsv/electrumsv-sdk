@@ -52,7 +52,7 @@ class Plugin(AbstractPlugin):
 
     def install(self):
         download_and_install(self.src)
-        build_dockerfile(self.src)
+        build_dockerfile(self.src, self.config)
         # create_settings_file(self.src, self.MERCHANT_API_HOST, self.MERCHANT_API_PORT,
         #     self.NODE_HOST, self.NODE_RPC_PORT, self.NODE_RPC_USERNAME, self.NODE_RPC_PASSWORD,
         #     self.NODE_ZMQ_PORT)
@@ -75,6 +75,10 @@ class Plugin(AbstractPlugin):
 
         os.chdir(os.path.dirname(docker_compose_path))
         command = f"docker-compose up"
+        if self.config.background_flag:
+            self.config.background_flag = False
+            self.config.inline_flag = True
+            command += " -d"  # 'detached' - run docker in background
         logfile = self.plugin_tools.get_logfile_path(self.id)
         status_endpoint = "http://127.0.0.1:45111/mapi/feeQuote"
         self.plugin_tools.spawn_process(command, env_vars=None, id=self.id,

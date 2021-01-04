@@ -1,5 +1,7 @@
 @ECHO OFF
 
+REM adapted from merchant api src/Deploy/build.bat
+
 SET /p VERSIONPREFIX=<version_mapi.txt
 
 git remote update
@@ -13,9 +15,6 @@ SET APPVERSIONMAPI=%VERSIONPREFIX%-%COMMITID%
 ECHO *******************************
 ECHO *******************************
 ECHO Building docker image for MerchantAPI version %APPVERSIONMAPI%
-ECHO Continue if you have latest version (commit %COMMITID%) or terminate job and get latest files.
-
-PAUSE
 
 if not exist "Build" mkdir "Build"
 

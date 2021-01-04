@@ -17,3 +17,6 @@ venv/*
 
 electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/ssl_cert_scripts/localhost.cer
 electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/ssl_cert_scripts/localhost.pfx
+electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/config/localhost.cer
+electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/config/localhost.pfx
+electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/config/localhost.crt

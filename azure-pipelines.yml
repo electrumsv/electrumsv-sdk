@@ -65,6 +65,7 @@ jobs:
         electrumsv-sdk start --background --new electrumsv
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
+        electrumsv-sdk start --background merchant_api
       displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
     - script: |
@@ -95,6 +96,21 @@ jobs:
     - task: UsePythonVersion@0
       inputs:
         versionSpec: 3.7
+    - bash: |
+        pwd
+        ls
+        cd $(Build.Repository.LocalPath)
+        pwd
+        ls
+        cd $(Build.Repository.LocalPath)/electrumsv-sdk/contrib/azure/macos
+
+        chmod +x ./install-docker-unattended.sh
+        ./install-docker-unattended.sh
+        chmod +x ./start-docker.sh
+        ./start-docker.sh
+        docker --version
+      displayName: 'install docker'
+
     - script: |
           brew upgrade sqlite3
       displayName: 'prepare for electrumsv'
@@ -105,16 +121,25 @@ jobs:
         python3 -m pip install pytest pytest-cov
       displayName: 'install sdk'
       workingDirectory: electrumsv-sdk/
+
+    # Download a secure file to the agent machine
+    - task: DownloadSecureFile@1
+      name: pfxCertificate
+      displayName: 'Download CA certificate'
+      inputs:
+        secureFile: 'localhost.pfx'
+
     - script: |
         brew install node
       displayName: 'prepare node.js'
       workingDirectory: electrumsv-sdk/
+
     - script: |
         electrumsv-sdk install node
         electrumsv-sdk install electrumx
         electrumsv-sdk install electrumsv
         electrumsv-sdk install whatsonchain
-        electrumsv-sdk install merchant_api
+        electrumsv-sdk install --ssl-pfx=$(pfxCertificate.secureFilePath) merchant_api
       displayName: 'install all components'
       workingDirectory: electrumsv-sdk/
     - script: |
@@ -124,6 +149,7 @@ jobs:
         electrumsv-sdk start --background --new electrumsv
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
+        electrumsv-sdk start --background merchant_api
       displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
     - script: |
@@ -157,6 +183,8 @@ jobs:
         architecture: 'x64'
     # need to add python Scripts/ dir to PATH to find 'electrumsv-sdk' command
     - pwsh: |
+        py -3.7 -c "import os, sys, pathlib;print(os.environ, flush=True);"
+
         $scripts_dir = py -3.7 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
         $env:PATH += $scripts_dir
         py -3.7 -m pip install --upgrade pip
@@ -165,12 +193,21 @@ jobs:
         py -3.7 -m pip install pytest pytest-cov
       displayName: 'install sdk'
       workingDirectory: electrumsv-sdk/
+
+    # Download a secure file to the agent machine
+    - task: DownloadSecureFile@1
+      name: pfxCertificate
+      displayName: 'Download CA certificate'
+      inputs:
+        secureFile: 'localhost.pfx'
+
     - script: |
         electrumsv-sdk install node
         electrumsv-sdk install electrumx
         electrumsv-sdk install electrumsv
         electrumsv-sdk install whatsonchain
-        electrumsv-sdk install merchant_api
+        electrumsv-sdk install --ssl-pfx=$(pfxCertificate.secureFilePath) merchant_api
+        docker volume create mapi-volume
       displayName: 'install all components'
       workingDirectory: electrumsv-sdk/
     - script: |
@@ -180,6 +217,7 @@ jobs:
         electrumsv-sdk start --background --new electrumsv
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
+        electrumsv-sdk start --background merchant_api
       displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
     - script: |

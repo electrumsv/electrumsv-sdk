@@ -24,10 +24,13 @@ New-Item -ItemType Directory -Force -Path $tmpPath
 $pfxPassword = ConvertTo-SecureString -String "YourSecurePassword" -Force -AsPlainText
 $pfxFilePath = "..\config\localhost.pfx"
 $cerFilePath = "..\config\localhost.cer"
+$crtFilePath = "..\config\localhost.crt"
 
 # create pfx certificate
 Export-PfxCertificate -Cert $certificatePath -FilePath $pfxFilePath -Password $pfxPassword
 Export-Certificate -Cert $certificatePath -FilePath $cerFilePath
+# convert to .crt base64 text format for mAPI
+openssl x509 -inform DER -in $cerFilePath -out $crtFilePath
 
 # import the pfx certificate
 Import-PfxCertificate -FilePath $pfxFilePath Cert:\LocalMachine\My -Password $pfxPassword -Exportable
