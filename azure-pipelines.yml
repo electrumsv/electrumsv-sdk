@@ -44,6 +44,20 @@ jobs:
         sudo apt-get install libssl1.0-dev
       displayName: 'prepare node.js'
       workingDirectory: electrumsv-sdk/
+    # Download a secure file to the agent machine
+    - task: DownloadSecureFile@1
+      name: pfxCertificate
+      displayName: 'Download CA certificate'
+      inputs:
+        secureFile: 'localhost.pfx'
+
+    - script: |
+        echo Installing $(pfxCertificate.secureFilePath) to the trusted CA directory...
+        sudo chown root:root $(pfxCertificate.secureFilePath)
+        sudo chmod a+r $(pfxCertificate.secureFilePath)
+        sudo ln -s -t /etc/ssl/certs/ $(pfxCertificate.secureFilePath)
+      workingDirectory: electrumsv-sdk/
+
     - script: |
         electrumsv-sdk install node
         electrumsv-sdk install electrumx

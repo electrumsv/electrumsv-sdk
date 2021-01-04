@@ -78,13 +78,15 @@ def _get_docker_compose_path(install_path: pathlib.Path):
 
 
 def copy_env(install_path):
+    dst = _get_build_dir(install_path) / ".env"
     src = pathlib.Path(MODULE_DIR) / ".env"
-    shutil.copy(src, dst=_get_build_dir(install_path))
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    shutil.copy(src, dst)
 
 
 def copy_config(install_path):
     src = pathlib.Path(MODULE_DIR) / "config/"
-    config_path = _get_build_dir(install_path) / "config"
+    config_path = _get_build_dir(install_path) / "config/"
     os.makedirs(config_path, exist_ok=True)
     shutil.copytree(src, dst=config_path)
 
