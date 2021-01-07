@@ -10,7 +10,7 @@ from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
-from .install import download_and_install, load_env_vars, get_run_path, load_pfx_file
+from .install import download_and_install, load_env_vars, get_run_path, load_pfx_file, chmod_exe
 
 
 def extend_install_cli(install_parser: ArgumentParser):
@@ -70,6 +70,7 @@ class Plugin(AbstractPlugin):
 
         # EXE RUN MODE
         load_env_vars()
+        chmod_exe(self.src)
         command = get_run_path(self.src)
 
         logfile = self.plugin_tools.get_logfile_path(self.id)

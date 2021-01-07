@@ -3,6 +3,7 @@ import os
 import pathlib
 import platform
 import shutil
+import stat
 
 import requests
 import sys
@@ -99,6 +100,12 @@ def download_and_install(install_path: pathlib.Path) -> None:
     if not output_path.exists():
         with zipfile.ZipFile(download_path, 'r') as z:
             z.extractall(install_path)
+
+
+def chmod_exe(install_path: pathlib.Path):
+    run_path = get_run_path(install_path)
+    st = os.stat(run_path)
+    os.chmod(run_path, st.st_mode | stat.S_IEXEC)
 
 
 def load_env_vars():
