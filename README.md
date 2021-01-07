@@ -18,5 +18,5 @@ Overview
 
 The ElectrumSV SDK provides the command-line tool ``electrumsv-sdk`` to manage a local Bitcoin
 development environment. As long as your Python installation places it's scripts on your path,
-after you have installed the `ElectrumSV SDK <https://pypi.org/project/electrumsv-sdk/>`_
+after you have installed the [ElectrumSV SDK](https://pypi.org/project/electrumsv-sdk)
 Python package, it should be available for you to use.

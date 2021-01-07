@@ -4,7 +4,6 @@ electrumsv-sdk/electrumsv_sdk.egg-info/*
 electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumsv
 electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumx
 electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumx_data
-*.sh
 .vscode/*
 electrumsv-server/data
 electrumsv-sdk/electrumsv_sdk/run_scripts/proc_ids.json
@@ -15,3 +14,8 @@ electrumsv-sdk/dist/*
 docs/_build/*
 venv/*
 
+electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/ssl_cert_scripts/localhost.cer
+electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/ssl_cert_scripts/localhost.pfx
+electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/config/localhost.cer
+electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/config/localhost.pfx
+electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/config/localhost.crt
