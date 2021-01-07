@@ -15,7 +15,7 @@ from .local_tools import LocalTools
 from .constants import NETWORKS
 
 
-def extend_cli(start_parser: ArgumentParser):
+def extend_start_cli(start_parser: ArgumentParser):
     """if this method is present it allows extension of the start argparser only.
     This occurs dynamically and adds the new cli options as attributes of the Config object"""
     start_parser.add_argument("--regtest", action="store_true", help="")  # default

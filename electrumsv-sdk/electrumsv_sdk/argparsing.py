@@ -155,7 +155,10 @@ class ArgParser:
 
         if self.namespace == NameSpace.START:
             if self.selected_component:
-                self.new_options = self.extend_cli(self.selected_component)
+                self.new_start_options = self.extend_start_cli(self.selected_component)
+        if self.namespace == NameSpace.INSTALL:
+            if self.selected_component:
+                self.new_install_options = self.extend_install_cli(self.selected_component)
         self.feed_to_argparsers(args, subcommand_indices)
 
     def generate_immutable_config(self):
@@ -169,6 +172,10 @@ class ArgParser:
                 background_flag=parsed_args.background,
                 component_id=parsed_args.id,
             )
+            if self.new_install_options:
+                for varname in self.new_install_options:
+                    value = getattr(self.subcmd_parsed_args_map[NameSpace.INSTALL], varname)
+                    setattr(self.config, varname, value)
         elif self.namespace == NameSpace.START:
             self.config = Config(
                 namespace=self.namespace,
@@ -183,8 +190,8 @@ class ArgParser:
                 component_id=parsed_args.id,
                 component_args=self.component_args
             )
-            if self.new_options:
-                for varname in self.new_options:
+            if self.new_start_options:
+                for varname in self.new_start_options:
                     value = getattr(self.subcmd_parsed_args_map[NameSpace.START], varname)
                     setattr(self.config, varname, value)
         elif self.namespace == NameSpace.RESET:
@@ -363,14 +370,28 @@ class ArgParser:
         for namespace in self.parser_map.keys():
             self.parser_raw_args_map[namespace] = []
 
-    def extend_cli(self, selected_component: str):
+    def extend_start_cli(self, selected_component: str):
+        """gets attached to the Config object that is passed back into the plugin"""
         component_module = self.component_store.import_plugin_module(selected_component)
         try:
             start_parser = self.parser_map[NameSpace.START]
             start_parser, new_options = getattr(
-                component_module, selected_component).extend_cli(start_parser)
+                component_module, selected_component).extend_start_cli(start_parser)
             self.parser_map[NameSpace.START] = start_parser
             return new_options
         except AttributeError:
-            # no 'extend_cli' method present for this plugin
+            # no 'extend_start_cli' method present for this plugin
+            return
+
+    def extend_install_cli(self, selected_component: str):
+        """gets attached to the Config object that is passed back into the plugin"""
+        component_module = self.component_store.import_plugin_module(selected_component)
+        try:
+            install_parser = self.parser_map[NameSpace.INSTALL]
+            install_parser, new_options = getattr(
+                component_module, selected_component).extend_install_cli(install_parser)
+            self.parser_map[NameSpace.INSTALL] = install_parser
+            return new_options
+        except AttributeError:
+            # no 'extend_install_cli' method present for this plugin
             return

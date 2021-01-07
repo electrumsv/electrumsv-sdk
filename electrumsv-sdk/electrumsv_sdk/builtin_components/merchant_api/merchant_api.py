@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from argparse import ArgumentParser
 from typing import Optional
 
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
@@ -9,7 +10,19 @@ from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
-from .install import download_and_install, create_settings_file, get_run_path
+from .install import download_and_install, load_env_vars, get_run_path, load_pfx_file
+
+
+def extend_install_cli(install_parser: ArgumentParser):
+    """if this method is present it allows extension of the start argparser only.
+    This occurs dynamically and adds the new cli options as attributes of the Config object
+    """
+    install_parser.add_argument("--ssl-pfx", type=str,
+        help="path to localhost.pfx server side certificate")
+
+    # variable names to be pulled from the start_parser
+    new_options = ['ssl_pfx']  # access variable via Plugin.config.ssl_pfx
+    return install_parser, new_options
 
 
 class Plugin(AbstractPlugin):
@@ -39,9 +52,7 @@ class Plugin(AbstractPlugin):
 
     def install(self):
         download_and_install(self.src)
-        create_settings_file(self.src, self.MERCHANT_API_HOST, self.MERCHANT_API_PORT,
-            self.NODE_HOST, self.NODE_RPC_PORT, self.NODE_RPC_USERNAME, self.NODE_RPC_PASSWORD,
-            self.NODE_ZMQ_PORT)
+        load_pfx_file(self.src, self.config)
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self):
@@ -56,20 +67,20 @@ class Plugin(AbstractPlugin):
         # The primary reason we need this to be the current directory is so that the `settings.conf`
         # file is directly accessible to the MAPI executable (it should look there first).
         os.chdir(self.src)
-        # Get the path to the executable file.
-        run_path = get_run_path(self.src)
 
-        command = str(run_path)
+        # EXE RUN MODE
+        load_env_vars()
+        command = get_run_path(self.src)
+
         logfile = self.plugin_tools.get_logfile_path(self.id)
         status_endpoint = "http://127.0.0.1:45111/mapi/feeQuote"
-        self.plugin_tools.spawn_process(command, env_vars=None, id=self.id,
+
+        self.plugin_tools.spawn_process(str(command), env_vars=os.environ.copy(), id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
             status_endpoint=status_endpoint
         )
 
     def stop(self):
-        """some components require graceful shutdown via a REST API or RPC API but most can use the
-        generic 'app_state.kill_component()' function to track down the pid and kill the process."""
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance(s) (if any)")
 
