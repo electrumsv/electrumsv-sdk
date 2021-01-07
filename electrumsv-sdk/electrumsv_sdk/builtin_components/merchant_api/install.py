@@ -4,6 +4,7 @@ import pathlib
 import platform
 import shutil
 import stat
+import subprocess
 
 import requests
 import sys
@@ -43,24 +44,36 @@ PREBUILT_ENTRIES = {
 }
 
 
-def load_pfx_file(install_path, config):
+def trust_cert(pfx_path):
+    if platform.system() == 'Windows':
+        subprocess.run(f"dotnet dev-certs https --clean", check=True)
+        subprocess.run(f"dotnet dev-certs https --export-path {pfx_path}", check=True)
+
+
+def load_pfx_file(config):
     """copy the localhost.pfx specified via the --ssl-pfx commandline argument to the required
     location"""
-    if hasattr(config, "ssl_pfx"):
+    pfx_location = pathlib.Path(MODULE_DIR) / "config/localhost.pfx"
+
+    user_pfx_input = hasattr(config, "ssl_pfx") and config.ssl_pfx is not None
+    if user_pfx_input:
         if os.path.isfile(config.ssl_pfx):
             src = config.ssl_pfx
-            dst = pathlib.Path(MODULE_DIR) / "config/localhost.pfx"
-            logger.debug(f"copying .pfx file to {dst}")
-            os.makedirs(os.path.dirname(dst), exist_ok=True)
-            shutil.copy(src, dst)
+            logger.debug(f"Copying .pfx file to {pfx_location}")
+            os.makedirs(os.path.dirname(pfx_location), exist_ok=True)
+            shutil.copy(src, pfx_location)
         else:
-            logger.error(f"could not locate file at localhost.pfx file - did you mistype the path?")
+            logger.error(f"Could not locate localhost.pfx file - did you mistype the path?")
             sys.exit(1)
-    else:
+    elif not os.path.isfile(pfx_location):
         logger.error(f"Self-signed 'localhost.pfx' server certificate for merchant API has not "
-                     f"been loaded - please generate one and load it via 'electrumsv-sdk install "
-                     f"--ssl-pfx=<path/to/localhost.pfx> merchant_api")
+                     f"been loaded - please generate one and load it via "
+                     f"'electrumsv-sdk install --ssl-pfx=<path/to/localhost.pfx> merchant_api")
         sys.exit(1)
+
+    if os.path.isfile(pfx_location):
+        logger.debug("Found localhost.pfx")
+        trust_cert(pfx_location)
 
 
 def _get_entry() -> Dict:
@@ -109,8 +122,15 @@ def chmod_exe(install_path: pathlib.Path):
 
 
 def load_env_vars():
-    from dotenv import load_dotenv
+    env_vars = {"PYTHONUNBUFFERED": "1"}
+    os.environ.update(env_vars)
+    from dotenv import load_dotenv, set_key
     env_path = pathlib.Path(MODULE_DIR) / 'exe-config/.env'
+
+    pfx_location = pathlib.Path(MODULE_DIR) / "config/localhost.pfx"
+    assert os.path.isfile(pfx_location), f"{pfx_location} file not found"
+    set_key(str(env_path), "ASPNETCORE_Kestrel__Certificates__Default__Path", str(pfx_location))
+
     load_dotenv(dotenv_path=env_path)
 
 

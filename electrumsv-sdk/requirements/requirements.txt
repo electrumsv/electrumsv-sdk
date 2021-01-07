@@ -12,3 +12,4 @@ tailer
 stringcase
 colorama
 python-dotenv
+asyncpg
