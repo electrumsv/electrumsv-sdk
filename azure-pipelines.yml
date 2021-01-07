@@ -48,8 +48,8 @@ jobs:
     - script: |
         set -e
         sudo apt-get update
-        sudo apt install npm nodejs node-gyp nodejs-dev
         sudo apt-get install libssl1.0-dev
+        sudo apt install npm nodejs node-gyp nodejs-dev
       displayName: 'prepare node.js'
       workingDirectory: electrumsv-sdk/
 
@@ -79,6 +79,7 @@ jobs:
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
         electrumsv-sdk start --background merchant_api
+        electrumsv-sdk status
       displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
 
@@ -89,6 +90,7 @@ jobs:
         electrumsv-sdk stop electrumsv
         electrumsv-sdk stop whatsonchain
         electrumsv-sdk stop status_monitor
+        electrumsv-sdk status
       displayName: 'stop all components'
       workingDirectory: electrumsv-sdk/
 
@@ -96,6 +98,7 @@ jobs:
         set -e
         sleep 5
         electrumsv-sdk reset
+        electrumsv-sdk status
       displayName: 'reset all components'
       workingDirectory: electrumsv-sdk/
 
@@ -105,6 +108,7 @@ jobs:
         electrumsv-sdk reset --id=node1
         electrumsv-sdk reset --id=electrumx1
         electrumsv-sdk reset --id=electrumsv1
+        electrumsv-sdk status
       displayName: 'reset by id'
       workingDirectory: electrumsv-sdk/
 
@@ -161,6 +165,7 @@ jobs:
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
         electrumsv-sdk start --background merchant_api
+        electrumsv-sdk status
       displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
 
@@ -171,6 +176,7 @@ jobs:
         electrumsv-sdk stop electrumsv
         electrumsv-sdk stop whatsonchain
         electrumsv-sdk stop status_monitor
+        electrumsv-sdk status
       displayName: 'stop all components'
       workingDirectory: electrumsv-sdk/
 
@@ -178,6 +184,7 @@ jobs:
         set -e
         sleep 5
         electrumsv-sdk reset
+        electrumsv-sdk status
       displayName: 'reset all components'
       workingDirectory: electrumsv-sdk/
 
@@ -187,6 +194,7 @@ jobs:
         electrumsv-sdk reset --id=node1
         electrumsv-sdk reset --id=electrumx1
         electrumsv-sdk reset --id=electrumsv1
+        electrumsv-sdk status
       displayName: 'reset by id'
       workingDirectory: electrumsv-sdk/
 
@@ -234,6 +242,7 @@ jobs:
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
         electrumsv-sdk start --background merchant_api
+        electrumsv-sdk status
       displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
 
@@ -243,12 +252,14 @@ jobs:
         electrumsv-sdk stop electrumsv
         electrumsv-sdk stop whatsonchain
         electrumsv-sdk stop status_monitor
+        electrumsv-sdk status
       displayName: 'stop all components'
       workingDirectory: electrumsv-sdk/
 
     - script: |
         sleep 5
         electrumsv-sdk reset
+        electrumsv-sdk status
       displayName: 'reset all components'
       workingDirectory: electrumsv-sdk/
 
@@ -257,6 +268,7 @@ jobs:
         electrumsv-sdk reset --id=node1
         electrumsv-sdk reset --id=electrumx1
         electrumsv-sdk reset --id=electrumsv1
+        electrumsv-sdk status
       displayName: 'reset by id'
       workingDirectory: electrumsv-sdk/
 
