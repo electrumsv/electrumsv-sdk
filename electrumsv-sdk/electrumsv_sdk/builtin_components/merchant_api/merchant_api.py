@@ -11,6 +11,7 @@ from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
 from .install import download_and_install, load_env_vars, get_run_path, load_pfx_file, chmod_exe
+from .check_db_config import check_postgres_db
 
 
 def extend_install_cli(install_parser: ArgumentParser):
@@ -52,7 +53,8 @@ class Plugin(AbstractPlugin):
 
     def install(self):
         download_and_install(self.src)
-        load_pfx_file(self.src, self.config)
+        check_postgres_db()
+        load_pfx_file(self.config)
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self):

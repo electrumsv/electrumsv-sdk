@@ -8,10 +8,35 @@ trigger:
   paths:
     exclude: [ 'README.md' ]
 
+
+resources:
+  containers:
+  - container: pg12
+    image: postgres:12
+    ports:
+      - 5432:5432
+    env:
+      POSTGRES_USER: mapimaster
+      POSTGRES_PASSWORD: mapimasterpass
+      POSTGRES_DB: postgres
+
+  - container: pg12-win32
+    image: stellirin/postgres-windows:12
+    ports:
+      - 5432:5432
+    env:
+      POSTGRES_USER: mapimaster
+      POSTGRES_PASSWORD: mapimasterpass
+      POSTGRES_DB: postgres
+
 jobs:
 - job: TestLinux
   pool:
     vmImage: 'ubuntu-latest'
+
+  services:
+    postgres: pg12
+
   steps:
     - task: UsePythonVersion@0
       inputs:
@@ -52,6 +77,7 @@ jobs:
         sudo apt install npm nodejs node-gyp nodejs-dev
       displayName: 'prepare node.js'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
 
     # Download a secure file to the agent machine
     - task: DownloadSecureFile@1
@@ -82,6 +108,7 @@ jobs:
         electrumsv-sdk status
       displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
 
     - script: |
         set -e
@@ -90,9 +117,11 @@ jobs:
         electrumsv-sdk stop electrumsv
         electrumsv-sdk stop whatsonchain
         electrumsv-sdk stop status_monitor
+        electrumsv-sdk stop merchant_api
         electrumsv-sdk status
       displayName: 'stop all components'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
 
     - script: |
         set -e
@@ -101,6 +130,7 @@ jobs:
         electrumsv-sdk status
       displayName: 'reset all components'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
 
     - script: |
         set -e
@@ -111,17 +141,41 @@ jobs:
         electrumsv-sdk status
       displayName: 'reset by id'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '/home/vsts/.electrumsv-sdk/logs/'
+        artifactName: 'LinuxLogs'
+      displayName: 'Publish logs'
 
 - job: TestMacOS
+
   pool:
     vmImage: 'macOS-latest'
+
   steps:
+    - bash: |
+        cd $(Build.Repository.LocalPath)/electrumsv-sdk/contrib/azure/macos
+        chmod +x ./install-docker-unattended.sh
+        ./install-docker-unattended.sh
+        chmod +x ./start-docker.sh
+        ./start-docker.sh
+        docker --version
+      displayName: 'install docker'
+
+    # Docker is not supported out-of-the-box on MacOS Azure
+    - bash: |
+        docker pull postgres:12
+        docker run -d --name osx-postgres -e POSTGRES_USER=mapimaster -e POSTGRES_PASSWORD=mapimasterpass -p 127.0.0.1:5432:5432/tcp postgres
+      displayName: 'run postgres as a service (for mAPI)'
+
     - task: UsePythonVersion@0
       inputs:
         versionSpec: 3.7
 
     - script: |
-          brew upgrade sqlite3
+        brew upgrade sqlite3
       displayName: 'prepare for electrumsv'
       workingDirectory: electrumsv-sdk/
 
@@ -168,6 +222,7 @@ jobs:
         electrumsv-sdk status
       displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
 
     - script: |
         set -e
@@ -176,9 +231,11 @@ jobs:
         electrumsv-sdk stop electrumsv
         electrumsv-sdk stop whatsonchain
         electrumsv-sdk stop status_monitor
+        electrumsv-sdk stop merchant_api
         electrumsv-sdk status
       displayName: 'stop all components'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
 
     - script: |
         set -e
@@ -187,6 +244,7 @@ jobs:
         electrumsv-sdk status
       displayName: 'reset all components'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
 
     - script: |
         set -e
@@ -197,9 +255,22 @@ jobs:
         electrumsv-sdk status
       displayName: 'reset by id'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '/Users/runner/.electrumsv-sdk/logs/'
+        artifactName: 'MacOSXLogs'
+      displayName: 'Publish logs'
 
 - job: TestWindows
-  pool: {vmImage: 'windows-latest'}
+
+  pool:
+    vmImage: 'windows-latest'
+
+  services:
+    postgres: pg12-win32
+
   steps:
     - task: UsePythonVersion@0
       inputs:
@@ -245,6 +316,7 @@ jobs:
         electrumsv-sdk status
       displayName: 'start all components'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
 
     - script: |
         electrumsv-sdk stop node
@@ -252,9 +324,11 @@ jobs:
         electrumsv-sdk stop electrumsv
         electrumsv-sdk stop whatsonchain
         electrumsv-sdk stop status_monitor
+        electrumsv-sdk stop merchant_api
         electrumsv-sdk status
       displayName: 'stop all components'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
 
     - script: |
         sleep 5
@@ -262,6 +336,7 @@ jobs:
         electrumsv-sdk status
       displayName: 'reset all components'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
 
     - script: |
         sleep 5
@@ -271,6 +346,13 @@ jobs:
         electrumsv-sdk status
       displayName: 'reset by id'
       workingDirectory: electrumsv-sdk/
+      continueOnError: true
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'C:\Users\VssAdministrator\AppData\Local\ElectrumSV-SDK\logs'
+        artifactName: 'WindowsLogs'
+      displayName: 'Publish logs'
 
 
 - job: BuildMacOS

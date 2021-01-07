@@ -6,7 +6,7 @@ from typing import Optional, Dict
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.components import Component
-from electrumsv_sdk.utils import get_directory_name
+from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
 from electrumsv_node import electrumsv_node
@@ -94,14 +94,7 @@ class Plugin(AbstractPlugin):
     def stop(self):
         """The bitcoin node requires graceful shutdown via the RPC API - a good example of why this
         entrypoint is provided for user customizations (rather than always killing the process)."""
-        def stop_node(component_dict: Dict):
-            rpcport = component_dict.get("metadata").get("rpcport")
-            if not rpcport:
-                raise Exception("rpcport data not found")
-            electrumsv_node.stop(rpcport=rpcport)
-            self.logger.info(f"terminated: {component_dict.get('id')}")
-
-        self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=stop_node)
+        self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance(s) (if any)")
 
     def reset(self):

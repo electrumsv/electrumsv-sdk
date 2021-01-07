@@ -14,8 +14,7 @@ electrumsv-sdk/dist/*
 docs/_build/*
 venv/*
 
-electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/ssl_cert_scripts/localhost.cer
-electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/ssl_cert_scripts/localhost.pfx
-electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/config/localhost.cer
-electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/config/localhost.pfx
-electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/config/localhost.crt
+*localhost.cer
+*localhost.pfx
+*localhost.crt
+electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/exe-config/.env
