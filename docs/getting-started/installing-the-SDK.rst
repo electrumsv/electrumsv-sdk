@@ -1,5 +1,5 @@
-Instructions
-============
+Installing the SDK
+====================
 To install from pypi_ run::
 
     > pip install --upgrade electrumsv-sdk

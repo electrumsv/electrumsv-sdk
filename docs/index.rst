@@ -34,7 +34,6 @@ There is full support for Windows, Linux and MacOSX
    :caption: Getting Started
 
    /getting-started/installing-the-SDK
-   /getting-started/help
 
 
 .. toctree::
@@ -42,6 +41,7 @@ There is full support for Windows, Linux and MacOSX
    :hidden:
    :caption: Commands
 
+   /commands/help
    /commands/install
    /commands/start
    /commands/stop
