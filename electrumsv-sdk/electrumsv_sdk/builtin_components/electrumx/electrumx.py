@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import shutil
@@ -8,7 +9,7 @@ from typing import Optional, Dict
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.components import Component
-from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process
+from electrumsv_sdk.utils import is_remote_repo, get_directory_name
 from electrumsv_sdk.plugin_tools import PluginTools
 
 from .local_tools import LocalTools
@@ -84,13 +85,23 @@ class Plugin(AbstractPlugin):
         logfile = self.plugin_tools.get_logfile_path(self.id)
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
-            status_endpoint=f"http://127.0.0.1:{self.port}", metadata={"DATADIR": str(self.datadir)}
+            status_endpoint=f"http://127.0.0.1:{self.port}",
+            metadata={"DATADIR": str(self.datadir), "rpcport": 8000}
         )
 
     def stop(self):
         """some components require graceful shutdown via a REST API or RPC API but most can use the
         generic 'app_state.kill_component()' function to track down the pid and kill the process."""
-        self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
+        def stop_electrumx(component_dict: Dict):
+            rpcport = component_dict.get("metadata").get("rpcport")
+            if not rpcport:
+                raise Exception("rpcport data not found")
+            was_successful = asyncio.run(self.tools.stop_electrumx())
+            if not was_successful:
+                self.logger.error("Unable to connect to ElectrumX - is it already stopped?")
+
+        self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME,
+            callable=stop_electrumx)
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance(s) (if any)")
 
     def reset(self):

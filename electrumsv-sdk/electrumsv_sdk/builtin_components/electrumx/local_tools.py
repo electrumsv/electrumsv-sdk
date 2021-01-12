@@ -1,11 +1,10 @@
 import aiorpcx
-import asyncio
 import logging
 import os
 import subprocess
 import sys
 
-
+from aiorpcx import timeout_after
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import checkout_branch
@@ -93,17 +92,14 @@ class LocalTools:
             process.wait()
             os.remove(temp_requirements)
 
-    async def is_electrumx_running(self):
-        for sleep_time in (1, 2, 3):
-            try:
-                self.logger.debug("Polling electrumx...")
-                async with aiorpcx.connect_rs(host="127.0.0.1", port=self.plugin.port)\
+    async def stop_electrumx(self, rpcport: int=8000):
+        try:
+            async with timeout_after(5):
+                async with aiorpcx.connect_rs(host="127.0.0.1", port=rpcport)\
                         as session:
-                    result = await session.send_request("server.version")
-                    if result[1] == "1.4":
+                    result = await session.send_request("stop")
+                    if result:
                         return True
-            except Exception as e:
-                pass
-
-            await asyncio.sleep(sleep_time)
-        return False
+        except Exception as e:
+            self.logger.error(f"Could not connect to ElectrumX: {e}")
+            return False
