@@ -17,6 +17,9 @@ from .local_tools import LocalTools
 
 class Plugin(AbstractPlugin):
 
+    BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")  # 'BITCOIN_NETWORK' is the SDK global
+    BITCOIN_NETWORK = os.getenv("NET", BITCOIN_NETWORK)  # ElectrumX documentation uses "NET"
+
     ELECTRUMX_PORT = os.environ.get(
         "ELECTRUMX_PORT")  # if None -> set by usual deterministic allocation
     DAEMON_URL = os.environ.get("DAEMON_URL") or "http://rpcuser:rpcpassword@127.0.0.1:18332"
@@ -26,7 +29,6 @@ class Plugin(AbstractPlugin):
     COST_HARD_LIMIT = os.environ.get("COST_HARD_LIMIT") or 0
     MAX_SEND = os.environ.get("MAX_SEND") or 10000000
     LOG_LEVEL = os.environ.get("LOG_LEVEL") or "debug"
-    NET = os.environ.get("NET") or "regtest"
     ALLOW_ROOT = os.environ.get("ALLOW_ROOT") or 1
 
     DEFAULT_PORT = 51001
@@ -79,7 +81,7 @@ class Plugin(AbstractPlugin):
             "COST_HARD_LIMIT": f"{self.COST_HARD_LIMIT}",
             "MAX_SEND": f"{self.MAX_SEND}",
             "LOG_LEVEL": f"{self.LOG_LEVEL}",
-            "NET": f"{self.NET}",
+            "NET": f"{self.BITCOIN_NETWORK}",
             "ALLOW_ROOT": f"{self.ALLOW_ROOT}",
         }
         logfile = self.plugin_tools.get_logfile_path(self.id)

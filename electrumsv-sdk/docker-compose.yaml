@@ -41,8 +41,7 @@ services:
       - BITCOIN_NODE_PORT=18332
       - BITCOIN_NODE_RPCUSER=rpcuser
       - BITCOIN_NODE_RPCPASSWORD=rpcpassword
-      - ELECTRUMX_HOST=${DOCKER_GATEWAY_HOST:-host.docker.internal}
-      - ELECTRUMX_PORT=51001
+      - ELECTRUMX_CONNECTION_STRING=${DOCKER_GATEWAY_HOST:-host.docker.internal}:51001:t
     depends_on:
       - node
       - electrumx

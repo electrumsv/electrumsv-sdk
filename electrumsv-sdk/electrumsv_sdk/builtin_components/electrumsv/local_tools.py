@@ -23,23 +23,27 @@ class LocalTools:
         self.plugin = plugin
         self.config: Config = plugin.config
 
-    def get_network(self):
+    def set_network(self):
         # make sure that only one network is set on cli
-        count_networks_selected = len([getattr(self.config, network) for network in NETWORKS_LIST
-                if getattr(self.config, network) is True])
+        count_networks_selected = len([getattr(self.config, network) for network in NETWORKS_LIST if
+            getattr(self.config, network) is True])
         if count_networks_selected > 1:
             logger.error("you must only select a single network")
             sys.exit(1)
 
         if count_networks_selected == 0:
-            self.plugin.network = NETWORKS.REGTEST
+            self.plugin.network = self.plugin.network
         if count_networks_selected == 1:
             for network in NETWORKS_LIST:
                 if getattr(self.config, network):
                     self.plugin.network = network
 
         logger.info(f"Network selected: {self.plugin.network}")
-        return self.plugin.network
+        if self.plugin.network in {"scaling_testnet", "mainnet"}:
+            raise NotImplementedError("Scaling-testnet and mainnet not currently supported")
+
+    def process_cli_args(self):
+        self.set_network()
 
     def reinstall_conflicting_dependencies(self):
         cmd1 = f"{sys.executable} -m pip freeze"
@@ -234,6 +238,21 @@ class LocalTools:
 
         NOTE: This is about as complex as it gets!
         """
+        def get_default_electrumx():
+            if self.plugin.network == NETWORKS.REGTEST:
+                return "127.0.0.1:51001:t"
+            elif self.plugin.network == NETWORKS.TESTNET:
+                return "austecondevserver.app:51002:s"
+            else:
+                raise NotImplementedError("scaling-testnet and mainnet not yet supported")
+
+        def set_electrumx_server(command):
+            if not self.plugin.ELECTRUMX_CONNECTION_STRING:
+                command += f"--server={get_default_electrumx()} "
+            elif self.plugin.ELECTRUMX_CONNECTION_STRING is not None:
+                command += f"--server={self.plugin.ELECTRUMX_CONNECTION_STRING} "
+            return command
+
         network_string = stringcase.spinalcase(self.plugin.network)  # need kebab-case
         command = ""
         env_vars = {"PYTHONUNBUFFERED": "1"}
@@ -263,8 +282,7 @@ class LocalTools:
                 f"--file-logging "
                 f"--restapi --restapi-port={port} --restapi-user rpcuser --restapi-password= "
             )
-            if self.plugin.network == NETWORKS.REGTEST:
-                command += f"--server={self.plugin.ELECTRUMX_HOST}:{self.plugin.ELECTRUMX_PORT}:t "
+            command = set_electrumx_server(command)
 
         # GUI script
         else:
@@ -272,7 +290,7 @@ class LocalTools:
                 f"{sys.executable} {esv_launcher} gui --{network_string} --restapi "
                 f"--restapi-port={port} --v=debug --file-logging --dir {self.plugin.datadir} "
             )
-            if self.plugin.network == NETWORKS.REGTEST:
-                command += f"--server={self.plugin.ELECTRUMX_HOST}:{self.plugin.ELECTRUMX_PORT}:t "
+            command = set_electrumx_server(command)
+
         return command, env_vars
 

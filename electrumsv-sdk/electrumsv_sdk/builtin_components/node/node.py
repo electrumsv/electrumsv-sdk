@@ -16,7 +16,9 @@ from .local_tools import LocalTools
 
 class Plugin(AbstractPlugin):
 
-    # if None -> set by deterministic port allocation
+    BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
+
+    # if ports == None -> set by deterministic port allocation
     NODE_PORT = os.environ.get("NODE_PORT")
     NODE_P2P_PORT = os.environ.get("NODE_P2P_PORT")
     NODE_ZMQ_PORT = os.environ.get("NODE_ZMQ_PORT")
@@ -80,7 +82,7 @@ class Plugin(AbstractPlugin):
 
         shell_command = electrumsv_node.shell_command(data_path=str(self.datadir),
             rpcport=self.port,
-            p2p_port=self.p2p_port, zmq_port=self.zmq_port, network='regtest',
+            p2p_port=self.p2p_port, zmq_port=self.zmq_port, network=self.BITCOIN_NETWORK,
             print_to_console=True, extra_params=extra_params)
 
         command = " ".join(shell_command)

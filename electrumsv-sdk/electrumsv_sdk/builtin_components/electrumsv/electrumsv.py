@@ -12,7 +12,6 @@ from electrumsv_sdk.plugin_tools import PluginTools
 from electrumsv_sdk.config import Config
 
 from .local_tools import LocalTools
-from .constants import NETWORKS
 
 
 def extend_start_cli(start_parser: ArgumentParser):
@@ -31,8 +30,8 @@ def extend_start_cli(start_parser: ArgumentParser):
 class Plugin(AbstractPlugin):
 
     # ---------- Environment Variables ---------- #
-    ELECTRUMX_HOST = os.environ.get("ELECTRUMX_HOST") or "127.0.0.1"
-    ELECTRUMX_PORT = os.environ.get("ELECTRUMX_PORT") or 51001
+    BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
+    ELECTRUMX_CONNECTION_STRING = os.getenv("ELECTRUMX_CONNECTION_STRING")
 
     # For documentation purposes only (these env vars will be detected by electrumsv too)
     BITCOIN_NODE_HOST = os.environ.get("BITCOIN_NODE_HOST") or "127.0.0.1"
@@ -58,7 +57,7 @@ class Plugin(AbstractPlugin):
         self.port = None  # dynamically allocated
         self.component_info: Optional[Component] = None
 
-        self.network = NETWORKS.REGTEST
+        self.network = self.BITCOIN_NETWORK
 
     def install(self):
         """required state: source_dir  - which are derivable from 'repo' and 'branch' flags"""
@@ -81,7 +80,7 @@ class Plugin(AbstractPlugin):
 
         self.tools.reinstall_conflicting_dependencies()
 
-        self.network = self.tools.get_network()
+        self.tools.process_cli_args()
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.port = self.plugin_tools.allocate_port()
         logfile = self.plugin_tools.get_logfile_path(self.id)

@@ -35,5 +35,3 @@ class AbstractPlugin(abc.ABC):
     def reset(self):
         raise NotImplementedError
 
-    def status_check(self) -> Optional[bool]:
-        raise NotImplementedError
