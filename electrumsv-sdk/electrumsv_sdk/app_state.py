@@ -55,8 +55,6 @@ class AppState:
             os.makedirs(REMOTE_REPOS_DIR, exist_ok=True)
 
     def handle_first_ever_run(self) -> None:
-        """nukes previously installed dependencies and .bat/.sh scripts for the first ever run of
-        the electrumsv-sdk."""
         try:
             with open(CONFIG_PATH, "r") as f:
                 data = f.read()
@@ -73,11 +71,8 @@ class AppState:
             logger.debug(
                 "Running SDK for the first time. please wait for configuration to complete..."
             )
-            logger.debug("Purging previous server installations (if any)...")
-            self.purge_prev_installs_if_exist()
             with open(CONFIG_PATH, "w") as f:
                 config = {"is_first_run": False}
                 f.write(json.dumps(config, indent=4))
 
-            logger.debug("Purging completed successfully")
             electrumsv_node.reset()
