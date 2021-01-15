@@ -86,5 +86,10 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
     ],
     include_package_data=True,
+    package_data={"":
+        [
+            "electrumsv_sdk/scripts/*",
+        ],
+    },
     packages=find_packages(),
 )
