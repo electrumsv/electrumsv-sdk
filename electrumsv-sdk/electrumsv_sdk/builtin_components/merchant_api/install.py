@@ -12,7 +12,7 @@ import zipfile
 from typing import Dict
 from urllib.parse import urlparse
 
-from electrumsv_sdk.utils import get_directory_name
+from electrumsv_sdk.utils import get_directory_name, get_sdk_datadir
 
 VERSION = "0.0.1"  # electrumsv/electrumsv-mAPI version
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -45,20 +45,28 @@ PREBUILT_ENTRIES = {
 
 
 def trust_cert(pfx_path):
-    if platform.system() == 'Windows':
+    if platform.system() in {'Windows', "Darwin"}:
         subprocess.run(f"dotnet dev-certs https --clean", check=True)
         subprocess.run(f"dotnet dev-certs https --export-path {pfx_path}", check=True)
 
 
-def load_pfx_file(config):
-    """copy the localhost.pfx specified via the --ssl-pfx commandline argument to the required
-    location"""
-    pfx_location = pathlib.Path(MODULE_DIR) / "config/localhost.pfx"
+def _get_pfx_store_location():
+    SDK_HOME = get_sdk_datadir()
+    MERCHANT_API_DATADIR = SDK_HOME.joinpath("component_datadirs/merchant_api")
+    pfx_store_location = MERCHANT_API_DATADIR / "localhost.pfx"
+    os.makedirs(MERCHANT_API_DATADIR, exist_ok=True)
+    return pfx_store_location
 
-    user_pfx_input = hasattr(config, "ssl_pfx") and config.ssl_pfx is not None
+
+def load_pfx_file(config):
+    """copy the localhost.pfx specified via the --ssl commandline argument to the required
+    location"""
+    pfx_location = _get_pfx_store_location()
+
+    user_pfx_input = hasattr(config, "ssl") and config.ssl is not None
     if user_pfx_input:
-        if os.path.isfile(config.ssl_pfx):
-            src = config.ssl_pfx
+        if os.path.isfile(config.ssl):
+            src = config.ssl
             logger.debug(f"Copying .pfx file to {pfx_location}")
             os.makedirs(os.path.dirname(pfx_location), exist_ok=True)
             shutil.copy(src, pfx_location)
@@ -68,7 +76,7 @@ def load_pfx_file(config):
     elif not os.path.isfile(pfx_location):
         logger.error(f"Self-signed 'localhost.pfx' server certificate for merchant API has not "
                      f"been loaded - please generate one and load it via "
-                     f"'electrumsv-sdk install --ssl-pfx=<path/to/localhost.pfx> merchant_api")
+                     f"'electrumsv-sdk install --ssl=<path/to/localhost.pfx> merchant_api")
         sys.exit(1)
 
     if os.path.isfile(pfx_location):
@@ -127,7 +135,7 @@ def load_env_vars():
     from dotenv import load_dotenv, set_key
     env_path = pathlib.Path(MODULE_DIR) / 'exe-config/.env'
 
-    pfx_location = pathlib.Path(MODULE_DIR) / "config/localhost.pfx"
+    pfx_location = _get_pfx_store_location()
     assert os.path.isfile(pfx_location), f"{pfx_location} file not found"
     set_key(str(env_path), "ASPNETCORE_Kestrel__Certificates__Default__Path", str(pfx_location))
 

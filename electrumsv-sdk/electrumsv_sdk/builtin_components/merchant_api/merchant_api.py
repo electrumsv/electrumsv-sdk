@@ -18,11 +18,11 @@ def extend_install_cli(install_parser: ArgumentParser):
     """if this method is present it allows extension of the start argparser only.
     This occurs dynamically and adds the new cli options as attributes of the Config object
     """
-    install_parser.add_argument("--ssl-pfx", type=str,
+    install_parser.add_argument("--ssl", type=str,
         help="path to localhost.pfx server side certificate")
 
     # variable names to be pulled from the start_parser
-    new_options = ['ssl_pfx']  # access variable via Plugin.config.ssl_pfx
+    new_options = ['ssl']  # access variable via Plugin.config.ssl
     return install_parser, new_options
 
 
@@ -59,6 +59,7 @@ class Plugin(AbstractPlugin):
 
     def start(self):
         self.logger.debug(f"Starting Merchant API")
+        check_postgres_db()
         if not self.src.exists():
             self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
                               f"{self.COMPONENT_NAME}' to install the plugin first")
