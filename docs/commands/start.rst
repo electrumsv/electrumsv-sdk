@@ -29,11 +29,11 @@ run new instances with user-defined --id::
 
   > electrumsv-sdk start --new --id=mynode2 node
 
-specify --repo as a local path or remote git url for each component type::
+specify ``--repo`` as a local path or remote git url for each component type::
 
    > electrumsv-sdk start --repo=G:\electrumsv electrumsv
 
-specify --branch as either "master" or "features/my-feature-branch"
+specify ``--branch`` as either "master" or "features/my-feature-branch"
 
 NOTE1: The sdk tool only handles a single ``component_type`` at a time (i.e. for the ``start``, ``stop``, ``reset`` commands).
 NOTE2: The "optional arguments" above come **before** specifying the ``component_type`` e.g::
