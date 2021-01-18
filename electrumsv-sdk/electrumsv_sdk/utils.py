@@ -7,7 +7,7 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Sequence
 
 import colorama
 import psutil
@@ -34,7 +34,7 @@ def topup_wallet():
         logger.debug(f"Generated {nblocks}: {result.json()['result']} to {toaddress}")
 
 
-def cast_str_int_args_to_int(node_args: List[str]) -> List[str]:
+def cast_str_int_args_to_int(node_args: Sequence[str]) -> List[str]:
     int_indices = []
     for index, arg in enumerate(node_args):
         if arg.isdigit():
@@ -355,3 +355,71 @@ def spawn_new_terminal(command: str, env_vars: Dict, id: str=None, component_nam
     elif sys.platform == 'win32':
         split_command = shlex.split(f"cmd /c {command}", posix=0)
         subprocess.Popen(split_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
+
+
+def write_raw_blocks_to_file(from_height: int, to_height: int, filepath: Path, node_id: str):
+
+    raw_hex_blocks = []
+    for height in range(from_height, to_height+1):
+        result = call_any_node_rpc('getblockbyheight', str(height), str(0), node_id=node_id)
+        raw_hex_block = result['result']
+        raw_hex_blocks.append(raw_hex_block)
+
+    if not os.path.exists(filepath):
+        open(filepath, 'w').close()
+
+    with open(filepath, 'a') as f:
+        for line in raw_hex_blocks:
+            f.write(line + "\n")
+
+
+def read_raw_blocks_from_file(filepath: Path):
+    if not os.path.exists(filepath):
+        raise FileNotFoundError
+
+    with open(filepath, 'r') as f:
+        return f.readlines()
+
+
+def delete_raw_blocks_file(filepath: Path):
+    if not os.path.exists(filepath):
+        raise FileNotFoundError
+
+    os.remove(filepath)
+
+
+def submit_blocks_from_file(node_id: str, filepath: Path):
+    if not os.path.exists(filepath):
+        raise FileNotFoundError
+
+    with open(filepath, 'r') as f:
+        hex_blocks = f.readlines()
+
+    for hex_block in hex_blocks:
+        call_any_node_rpc('submitblock', hex_block.rstrip('\n'), node_id=node_id)
+
+
+def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Dict:
+    rpc_args = cast_str_int_args_to_int(list(args))
+    component_store = ComponentStore()
+    DEFAULT_RPCHOST = "127.0.0.1"
+    DEFAULT_RPCPORT = 18332
+    component_dict = component_store.component_status_data_by_id(node_id)
+    if component_dict:
+        rpchost = DEFAULT_RPCHOST
+        rpcport = component_dict.get("metadata").get("rpcport")
+    else:
+        logger.error(f"could not locate metadata for node instance: {node_id}, "
+                     f"using default of 18332")
+        rpchost = DEFAULT_RPCHOST
+        rpcport = DEFAULT_RPCPORT
+
+    assert electrumsv_node.is_running(rpcport, rpchost), (
+        "bitcoin node must be running to respond to rpc methods. "
+        "try: electrumsv-sdk start --node")
+
+    result = electrumsv_node.call_any(method, *rpc_args, rpchost=rpchost, rpcport=rpcport,
+        rpcuser="rpcuser", rpcpassword="rpcpassword")
+
+    return result.json()
+

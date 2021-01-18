@@ -4,12 +4,10 @@ import signal
 import sys
 from typing import List
 
-from electrumsv_node import electrumsv_node
-
 from .constants import NameSpace
 from .config import Config
 from .components import ComponentStore
-from .utils import cast_str_int_args_to_int
+from .utils import cast_str_int_args_to_int, call_any_node_rpc
 
 logger = logging.getLogger("runners")
 
@@ -112,65 +110,24 @@ class Controller:
 
     def node(self, config: Config) -> None:
         """Essentially bitcoin-cli interface to RPC API that works 'out of the box' with minimal
-        config.
-
-        --id flag defaults to rpchost=127.0.0.1
-        --rpchost and --rpcport are manual overrides for sending requests to a node on a remote
-        machine but cannot be mixed with the --id flag (it is disallowed)
-        """
-        DEFAULT_RPCHOST = "127.0.0.1"
-        DEFAULT_RPCPORT = 18332
+        config."""
         node_argparser = self.app_state.argparser.parser_map[NameSpace.NODE]
         cli_options = [arg for arg in config.node_args if arg.startswith("--")]
         rpc_args = [arg for arg in config.node_args if not arg.startswith("--")]
         rpc_args = cast_str_int_args_to_int(rpc_args)
 
         parsed_node_options = node_argparser.parse_args(cli_options)
-
-        cli_options_conflict = parsed_node_options.id and \
-            (parsed_node_options.rpchost or parsed_node_options.rpcport)
-        if cli_options_conflict:
-            logger.error("cannot mix --rpchost / --rpcport flags with --id flag - must use one or "
-                         "the other method of selecting a node instance")
-            sys.exit(1)
-
-        no_cli_options = not parsed_node_options.id and not \
-            (parsed_node_options.rpchost or parsed_node_options.rpcport)
-        if no_cli_options:
+        if not parsed_node_options.id:
             component_id = "node1"  # default node instance to attempt
-        elif parsed_node_options.id:
-            component_id = parsed_node_options.id
-
-        if no_cli_options or parsed_node_options.id:
-            component_dict = self.component_store.component_status_data_by_id(component_id)
-            if component_dict:
-                rpchost = DEFAULT_RPCHOST
-                rpcport = component_dict.get("metadata").get("rpcport")
-            elif not component_dict and not parsed_node_options.id:
-                logger.error(f"could not locate rpcport for node instance: {component_id}, "
-                             f"using default of 18332")
-                rpchost = DEFAULT_RPCHOST
-                rpcport = DEFAULT_RPCPORT
-            else:
-                logger.error(f"could not locate metadata for node instance: {component_id}")
-                exit(1)
-        # --rpchost or --rpcport selected
         else:
-            rpchost = parsed_node_options.rpchost or DEFAULT_RPCHOST
-            rpcport = parsed_node_options.rpcport or DEFAULT_RPCPORT
-
-        assert electrumsv_node.is_running(rpcport, rpchost), (
-            "bitcoin node must be running to respond to rpc methods. "
-            "try: electrumsv-sdk start --node"
-        )
+            component_id = parsed_node_options.id
 
         if len(rpc_args) < 1:
             logger.error("RPC method not indicated. Requires at least one argument")
             exit(1)
 
-        result = electrumsv_node.call_any(rpc_args[0], *rpc_args[1:], rpchost=rpchost,
-            rpcport=rpcport, rpcuser="rpcuser", rpcpassword="rpcpassword")
-        logger.info(result.json()["result"])
+        result = call_any_node_rpc(rpc_args[0], *rpc_args[1:], node_id=component_id)
+        logger.info(result["result"])
 
     def status(self):
         status = self.component_store.get_status()

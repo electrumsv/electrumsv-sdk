@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from electrumsv_sdk.argparsing import NameSpace
 from electrumsv_sdk.app_state import AppState  # pylint: disable=E0401
@@ -22,7 +23,7 @@ def main():
     b) the ability to string multiple subcommands + optional args together into a single cli
     command.
     """
-    app_state = AppState()
+    app_state = AppState(sys.argv)
     app_state.handle_first_ever_run()
 
     # Call relevant entrypoint

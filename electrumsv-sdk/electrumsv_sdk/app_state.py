@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import stat
 import sys
+from typing import List
 
 from electrumsv_node import electrumsv_node
 
@@ -26,7 +27,7 @@ orm_logger.setLevel(logging.WARNING)
 class AppState:
     """Global application state"""
 
-    def __init__(self):
+    def __init__(self, arguments: List[str]):
         os.makedirs(REMOTE_REPOS_DIR, exist_ok=True)
         os.makedirs(DATADIR, exist_ok=True)
         os.makedirs(LOGS_DIR, exist_ok=True)
@@ -40,8 +41,8 @@ class AppState:
         sys.path.append(f"{self.calling_context_dir}")  # for dynamic import of local plugins
 
         self.argparser = ArgParser()
-        self.argparser.manual_argparsing(sys.argv)
-        self.config: Config = self.argparser.generate_immutable_config()
+        self.argparser.manual_argparsing(arguments)  # allows library to inject args (vs sys.argv)
+        self.config: Config = self.argparser.generate_config()
         self.argparser.validate_cli_args()
         self.controller = Controller(self)
 
