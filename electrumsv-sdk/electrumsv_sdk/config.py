@@ -16,9 +16,9 @@ class Config(object):
     node_args: List[str] = []
     repo: str = ""
     branch: str = ""
-    new_flag: str = False
-    gui_flag: str = False
-    background_flag: str = False
-    inline_flag: str = False
-    new_terminal_flag: str = False
+    new_flag: bool = False
+    gui_flag: bool = False
+    background_flag: bool = False
+    inline_flag: bool = False
+    new_terminal_flag: bool = False
     component_id: str = ""

@@ -161,7 +161,7 @@ class ArgParser:
                 self.new_install_options = self.extend_install_cli(self.selected_component)
         self.feed_to_argparsers(args, subcommand_indices)
 
-    def generate_immutable_config(self):
+    def generate_config(self):
         parsed_args = self.subcmd_parsed_args_map[self.namespace]
         if self.namespace == NameSpace.INSTALL:
             self.config = Config(
@@ -213,7 +213,7 @@ class ArgParser:
             self.config = Config(
                 namespace=self.namespace,
                 node_args=self.node_args,
-                # --id, --rpchost, --rpcport are managed manually see controller.node()
+                # --id is managed manually see controller.node()
             )
         elif self.namespace in {NameSpace.STATUS, NameSpace.TOP_LEVEL}:
             self.config = Config(
@@ -323,10 +323,6 @@ class ArgParser:
             help="direct access to the built-in bitcoin daemon RPC commands",
             usage="use as you would use bitcoin-cli",
         )
-        node_parser.add_argument("--rpchost", type=str, default="",
-            help="rpchost defaults to 127.0.0.1")
-        node_parser.add_argument("--rpcport", type=str, default="",
-            help="rpchost defaults to 18332")
         node_parser.add_argument("--id", type=str, default="",
             help="select node instance by unique identifier (cannot mix this option with rpcport / "
                  "rpchost args)")

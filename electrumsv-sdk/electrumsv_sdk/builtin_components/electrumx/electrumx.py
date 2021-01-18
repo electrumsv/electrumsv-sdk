@@ -98,7 +98,7 @@ class Plugin(AbstractPlugin):
             rpcport = component_dict.get("metadata").get("rpcport")
             if not rpcport:
                 raise Exception("rpcport data not found")
-            was_successful = asyncio.run(self.tools.stop_electrumx())
+            was_successful = self.tools.run_coroutine_ipython_friendly(self.tools.stop_electrumx)
             if not was_successful:
                 self.logger.error("Unable to connect to ElectrumX - is it already stopped?")
 

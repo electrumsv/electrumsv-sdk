@@ -1,3 +1,6 @@
+import asyncio
+import threading
+
 import aiorpcx
 import logging
 import os
@@ -103,3 +106,29 @@ class LocalTools:
         except Exception as e:
             self.logger.error(f"Could not connect to ElectrumX: {e}")
             return False
+
+    def run_coroutine_ipython_friendly(self, func, *args, **kwargs):
+        """https://stackoverflow.com/questions/55409641/
+        asyncio-run-cannot-be-called-from-a-running-event-loop"""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            thread = RunThread(func, args, kwargs)
+            thread.start()
+            thread.join()
+            return thread.result
+        else:
+            return asyncio.run(func(*args, **kwargs))
+
+
+class RunThread(threading.Thread):
+    def __init__(self, func, args, kwargs):
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        super().__init__()
+
+    def run(self):
+        self.result = asyncio.run(self.func(*self.args, **self.kwargs))

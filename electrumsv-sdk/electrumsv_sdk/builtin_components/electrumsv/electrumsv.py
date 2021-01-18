@@ -83,6 +83,7 @@ class Plugin(AbstractPlugin):
         self.tools.process_cli_args()
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.port = self.plugin_tools.allocate_port()
+
         logfile = self.plugin_tools.get_logfile_path(self.id)
         metadata = {"config": str(self.datadir.joinpath("regtest/config")),
             "DATADIR": str(self.datadir)}
