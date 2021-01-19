@@ -49,7 +49,7 @@ def main():
 
     # Http 'GET' request to status_monitor (which itself is a plugin component of the SDK)
     if app_state.config.namespace == NameSpace.STATUS:
-        app_state.controller.status()
+        app_state.controller.status(app_state.config)
 
 
 if __name__ == "__main__":

@@ -57,7 +57,7 @@ class PluginTools:
         'callable' will be called multiple times.
         """
         id = self.config.component_id
-        components_state = self.component_store.get_status()
+        components_state = self.component_store.get_status(component_name)
 
         # stop component according to unique: --id
         if id:

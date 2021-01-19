@@ -110,11 +110,10 @@ def reset(component_type: str = "", component_id: str = "", repo: str = "",
 
 
 def node(method: str, *args: str, node_id: str = 'node1') -> Dict:
-    return call_any_node_rpc(method, *args, node_id)
+    return call_any_node_rpc(method, *args, node_id=node_id)
 
 
-def status(component_type: str = "") -> None:
-    # Todo - need to improve status command to allow filtering the result
+def status(component_type: str = "", component_id: str = "") -> Dict:
     component_store = ComponentStore()
-    status = component_store.get_status()
+    status = component_store.get_status(component_type, component_id)
     return status

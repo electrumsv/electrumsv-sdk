@@ -111,7 +111,8 @@ class ComponentStore:
             open(self.component_state_path, 'w').close()
         self.component_map = self.get_component_map()
 
-    def get_status(self) -> Dict:
+    def get_status(self, component_type: Optional[str]=None,
+            component_id: Optional[str]=None) -> Dict:
         filelock_logger = logging.getLogger("filelock")
         filelock_logger.setLevel(logging.WARNING)
 
@@ -123,6 +124,24 @@ class ComponentStore:
                         component_state = json.loads(data)
                     else:
                         component_state = {}
+
+                if component_type and component_id:
+                    raise ValueError("Cannot handle both 'component_type' and 'component_id'. "
+                        "Please choose one or the other.")
+
+                if component_type:
+                    filtered_result = {}
+                    for key, val in component_state.items():
+                        if val['component_type'] == component_type:
+                            filtered_result[key] = val
+                    return filtered_result
+
+                if component_id:
+                    result = component_state.get(component_id)
+                    if result:
+                        return result
+                    raise ValueError(f"Component id: {component_id} not found in store.")
+
                 return component_state
             else:
                 return {}
