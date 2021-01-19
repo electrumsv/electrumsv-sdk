@@ -149,7 +149,23 @@ class ArgParser:
                 subcommand_indices[cur_cmd_name].append(index)
 
             elif self.namespace == NameSpace.STATUS:
-                pass
+                # <status options>
+                if arg.startswith("--") and not component_selected:
+                    subcommand_indices[cur_cmd_name].append(index)
+                    continue
+
+                # <component name>
+                if not arg.startswith("-") and not component_selected:
+                    cur_cmd_name = arg
+                    subcommand_indices[cur_cmd_name] = []
+                    if arg in self.component_store.component_map.keys():
+                        self.selected_component = arg
+                    else:
+                        logger.error(f"Must select from: "
+                                     f"{self.component_store.component_map.keys()}")
+                        sys.exit()
+                    component_selected = True
+                    continue
 
             # print(f"subcommand_indices={subcommand_indices}, index={index}, arg={arg}")
 
@@ -215,9 +231,15 @@ class ArgParser:
                 node_args=self.node_args,
                 # --id is managed manually see controller.node()
             )
-        elif self.namespace in {NameSpace.STATUS, NameSpace.TOP_LEVEL}:
+        elif self.namespace == NameSpace.STATUS:
             self.config = Config(
-                namespace=self.namespace
+                namespace=self.namespace,
+                selected_component=self.selected_component,
+                component_id=parsed_args.id,
+            )
+        elif self.namespace == NameSpace.TOP_LEVEL:
+            self.config = Config(
+                namespace=self.namespace,
             )
         return self.config
 
@@ -333,6 +355,15 @@ class ArgParser:
         status_parser = namespaces.add_parser(
             "status", help="get a status update of SDK applications"
         )
+        status_parser.add_argument("--id", type=str, default="", help="human-readable identifier "
+            "for component (e.g. 'electrumsv1')")
+
+        # add <component_types> from plugins
+        subparsers = status_parser.add_subparsers(help="subcommand", required=False)
+        reset_namespace_subcommands = []
+        for component_type in self.component_store.component_map:
+            component_parser = subparsers.add_parser(component_type, help=f"reset {component_type}")
+            reset_namespace_subcommands.append(component_parser)
         return status_parser
 
     def add_global_flags(self, top_level_parser):

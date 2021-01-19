@@ -2,7 +2,7 @@ import pprint
 import logging
 import signal
 import sys
-from typing import List
+from typing import List, Optional
 
 from .constants import NameSpace
 from .config import Config
@@ -129,6 +129,6 @@ class Controller:
         result = call_any_node_rpc(rpc_args[0], *rpc_args[1:], node_id=component_id)
         logger.info(result["result"])
 
-    def status(self):
-        status = self.component_store.get_status()
+    def status(self, config: Config):
+        status = self.component_store.get_status(config.selected_component, config.component_id)
         pprint.pprint(status, indent=4)
