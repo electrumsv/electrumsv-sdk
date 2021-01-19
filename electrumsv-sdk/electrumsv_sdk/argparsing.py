@@ -35,7 +35,7 @@ class ArgParser:
         self.subcmd_parsed_args_map = {}  # {namespace: parsed arguments}
         self.config = None
 
-        self.new_options = None  # used for dynamic, plugin-specific extensions to cli
+        self.new_start_options = None  # used for dynamic, plugin-specific extensions to cli
         self.setup_argparser()
 
     def validate_cli_args(self):

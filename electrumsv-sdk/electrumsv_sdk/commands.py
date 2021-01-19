@@ -1,13 +1,15 @@
 """This defines a set of exposed public methods for using the SDK as a library"""
+import logging
+import os
 from typing import Dict, List, Optional
 
 from .components import ComponentStore
 from .app_state import AppState
 from .constants import NameSpace
 from .controller import Controller
-from .utils import call_any_node_rpc
+from .utils import call_any_node_rpc, set_deterministic_electrumsv_seed
 
-
+logger = logging.getLogger("commands")
 controller = Controller(None)  # app_state is only used for the node entrypoint
 
 
@@ -40,19 +42,19 @@ def _validate_network(network: str, component_type):
 
 
 def start(component_type: str, component_args: List[str] = [], repo: str = "",
-        branch: str = "", new_flag: bool = False, gui_flag: bool = False,
+        branch: str = "", new_instance: bool = False, gui: bool = False,
         mode: str="new-terminal", component_id: str = "", network: str="") -> None:
     """mode: can be 'background', 'new-terminal' or 'inline'
     network: can be 'regtest' or 'testnet' """
 
     arguments = ["", NameSpace.START]
     if repo:
-        arguments.append("--" + repo)
+        arguments.append(f"--repo={repo}")
     if branch:
-        arguments.append("--" + branch)
-    if new_flag:
+        arguments.append(f"--branch={branch}")
+    if new_instance:
         arguments.append("--new")
-    if gui_flag:
+    if gui:
         arguments.append("--gui")
     if mode:
         arguments.append("--" + mode)
@@ -90,13 +92,16 @@ def stop(component_type: Optional[str]=None, component_id: str = "") -> None:
 
 
 def reset(component_type: str = "", component_id: str = "", repo: str = "",
-        branch: str = "") -> None:
+        branch: str = "", deterministic_seed: bool=False) -> None:
+
+    if deterministic_seed:
+        set_deterministic_electrumsv_seed(component_id)
 
     arguments = ["", NameSpace.RESET]
     if repo:
-        arguments.append("--" + repo)
+        arguments.append(f"--repo={repo}")
     if branch:
-        arguments.append("--" + branch)
+        arguments.append(f"--branch={branch}")
     if component_id:
         arguments.append(f"--id={component_id}")
 

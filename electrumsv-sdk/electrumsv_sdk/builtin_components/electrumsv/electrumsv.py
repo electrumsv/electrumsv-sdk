@@ -34,6 +34,7 @@ class Plugin(AbstractPlugin):
     ELECTRUMX_CONNECTION_STRING = os.getenv("ELECTRUMX_CONNECTION_STRING")
 
     # For documentation purposes only (these env vars will be detected by electrumsv too)
+    ELECTRUMSV_ACCOUNT_XPRV = os.getenv("ELECTRUMSV_ACCOUNT_XPRV")
     BITCOIN_NODE_HOST = os.environ.get("BITCOIN_NODE_HOST") or "127.0.0.1"
     BITCOIN_NODE_PORT = os.environ.get("BITCOIN_NODE_PORT") or 18332
     BITCOIN_NODE_RPCUSER = os.environ.get("BITCOIN_NODE_RPCUSER") or "rpcuser"
