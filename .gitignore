@@ -18,3 +18,4 @@ venv/*
 *localhost.pfx
 *localhost.crt
 electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/exe-config/.env
+*.dat

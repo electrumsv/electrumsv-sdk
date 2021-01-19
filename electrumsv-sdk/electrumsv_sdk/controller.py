@@ -49,8 +49,8 @@ class Controller:
                 self.install(new_config)
 
     def start(self, config: Config) -> None:
-        logger.info("Starting component...")
         if config.component_id or config.selected_component:
+            logger.info(f"Starting {config.selected_component or config.component_id} ...")
             component_module = self.component_store.instantiate_plugin(config)
             component_module.start()
 

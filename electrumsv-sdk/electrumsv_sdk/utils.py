@@ -7,7 +7,7 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from typing import List, Dict, Optional, Sequence
+from typing import List, Dict, Optional, Sequence, Union
 
 import colorama
 import psutil
@@ -37,7 +37,10 @@ def topup_wallet():
 def cast_str_int_args_to_int(node_args: Sequence[str]) -> List[str]:
     int_indices = []
     for index, arg in enumerate(node_args):
-        if arg.isdigit():
+
+        if isinstance(arg, str) and arg.isdigit():
+            int_indices.append(index)
+        elif isinstance(arg, int):
             int_indices.append(index)
 
     for i in int_indices:
@@ -357,7 +360,16 @@ def spawn_new_terminal(command: str, env_vars: Dict, id: str=None, component_nam
         subprocess.Popen(split_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 
-def write_raw_blocks_to_file(from_height: int, to_height: int, filepath: Path, node_id: str):
+def write_raw_blocks_to_file(filepath: Union[Path, str], node_id: str, from_height: Optional[
+    int]=None,
+        to_height: Optional[int]=None):
+
+    if not to_height:
+        result = call_any_node_rpc('getinfo', node_id=node_id)
+        to_height = result['result']['blocks']
+
+    if not from_height:
+        from_height = 0
 
     raw_hex_blocks = []
     for height in range(from_height, to_height+1):
@@ -381,14 +393,14 @@ def read_raw_blocks_from_file(filepath: Path):
         return f.readlines()
 
 
-def delete_raw_blocks_file(filepath: Path):
+def delete_raw_blocks_file(filepath: Union[Path, str]):
     if not os.path.exists(filepath):
         raise FileNotFoundError
 
     os.remove(filepath)
 
 
-def submit_blocks_from_file(node_id: str, filepath: Path):
+def submit_blocks_from_file(node_id: str, filepath: Union[Path, str]):
     if not os.path.exists(filepath):
         raise FileNotFoundError
 
@@ -399,7 +411,7 @@ def submit_blocks_from_file(node_id: str, filepath: Path):
         call_any_node_rpc('submitblock', hex_block.rstrip('\n'), node_id=node_id)
 
 
-def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Dict:
+def call_any_node_rpc(method: str, *args: Union[str, int], node_id: str='node1') -> Dict:
     rpc_args = cast_str_int_args_to_int(list(args))
     component_store = ComponentStore()
     DEFAULT_RPCHOST = "127.0.0.1"
@@ -423,3 +435,18 @@ def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Dict:
 
     return result.json()
 
+
+def set_deterministic_electrumsv_seed(component_type: str, component_id: Optional[str]=None):
+    stored_component_type = None
+    if component_id:
+        component_store = ComponentStore()
+        component_state = component_store.get_status(component_id=component_id)
+        stored_component_type = component_state.get('component_id').get('component_type')
+    if stored_component_type and not stored_component_type == "electrumsv" \
+            and not component_type == 'electrumsv':
+        raise ValueError("deterministic seed option is only for electrumsv component_type")
+
+    # Allows for deterministic testing
+    os.environ['ELECTRUMSV_ACCOUNT_XPRV'] = "tprv8ZgxMBicQKsPd4wsdaJ11eH84eq4hHLX1K6Mx" \
+                                            "8EQQhJzq8jr25WH1m8hgGkCqnksJDCZPZbDoMbQ6Q" \
+                                            "troyCyn5ZckCmsLeiHDb1MAxhNUHN"
