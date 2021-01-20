@@ -55,7 +55,7 @@ jobs:
         python3 -m pip install wheel
         python3 -m pip install -e .
         python3 -m pip install pytest pytest-cov
-      displayName: 'install sdk'
+      displayName: 'install electrumsv-sdk'
       workingDirectory: electrumsv-sdk/
 
     - script: |
@@ -150,25 +150,32 @@ jobs:
       displayName: 'Publish logs'
 
 - job: TestMacOS
+  timeoutInMinutes: 15
 
   pool:
     vmImage: 'macOS-latest'
 
   steps:
+    # https://stackoverflow.com/questions/27700596/homebrew-postgres-broken
     - bash: |
-        cd $(Build.Repository.LocalPath)/electrumsv-sdk/contrib/azure/macos
-        chmod +x ./install-docker-unattended.sh
-        ./install-docker-unattended.sh
-        chmod +x ./start-docker.sh
-        ./start-docker.sh
-        docker --version
-      displayName: 'install docker'
+        brew install postgresql
 
-    # Docker is not supported out-of-the-box on MacOS Azure
-    - bash: |
-        docker pull postgres:12
-        docker run -d --name osx-postgres -e POSTGRES_USER=mapimaster -e POSTGRES_PASSWORD=mapimasterpass -p 127.0.0.1:5432:5432/tcp postgres
-      displayName: 'run postgres as a service (for mAPI)'
+        rm -rf /usr/local/var/postgres
+        mkdir /usr/local/var/postgres
+        chmod 0700 /usr/local/var/postgres
+
+        initdb --username=postgres /usr/local/var/postgres
+        echo 'export PATH="/usr/local/opt/postgresql/bin:$PATH"' >> /Users/runner/.bash_profile
+        export PKG_CONFIG_PATH="/usr/local/opt/postgresql/lib/pkgconfig"
+
+        pg_ctl -D /usr/local/var/postgres start
+        psql -U postgres --list
+        psql -U postgres -c "\du"
+
+        cd $(Build.Repository.LocalPath)/electrumsv-sdk/contrib/azure/macos
+        python3 -m pip install asyncpg
+        python3 ./mapi_db_config.py
+      displayName: 'install postgres'
 
     - task: UsePythonVersion@0
       inputs:
@@ -184,7 +191,7 @@ jobs:
         python3 -m pip install wheel
         python3 -m pip install -e .
         python3 -m pip install pytest pytest-cov
-      displayName: 'install sdk'
+      displayName: 'install electrumsv-sdk'
       workingDirectory: electrumsv-sdk/
 
     # Download a secure file to the agent machine
@@ -286,7 +293,7 @@ jobs:
         py -3.7 -m pip install wheel
         py -3.7 -m pip install -e .
         py -3.7 -m pip install pytest pytest-cov
-      displayName: 'install sdk'
+      displayName: 'install electrumsv-sdk'
       workingDirectory: electrumsv-sdk/
 
     # Download a secure file to the agent machine
@@ -340,7 +347,7 @@ jobs:
 
     - script: |
         sleep 5
-        electrumsv-sdk reset --id=node1  node
+        electrumsv-sdk reset --id=node1 node
         electrumsv-sdk reset --id=electrumx1 electrumx
         electrumsv-sdk reset --id=electrumsv1 --deterministic-seed electrumsv
         electrumsv-sdk status

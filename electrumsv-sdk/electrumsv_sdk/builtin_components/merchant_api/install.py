@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 import platform
+import shlex
 import shutil
 import stat
 import subprocess
@@ -45,9 +46,23 @@ PREBUILT_ENTRIES = {
 
 
 def trust_cert(pfx_path):
-    if platform.system() in {'Windows', "Darwin"}:
-        subprocess.run(f"dotnet dev-certs https --clean", check=True)
-        subprocess.run(f"dotnet dev-certs https --export-path {pfx_path}", check=True)
+    if platform.system() in {'Windows'}:
+        command1 = f"dotnet dev-certs https --clean"
+        process = subprocess.Popen(shlex.split(command1, posix=0))
+        process.wait()
+
+        command2 = f"dotnet dev-certs https --export-path {pfx_path}"
+        process = subprocess.Popen(shlex.split(command2, posix=0))
+        process.wait()
+
+    elif platform.system() in {'Darwin'}:
+        command1 = f"dotnet dev-certs https --clean"
+        process = subprocess.Popen(shlex.split(command1, posix=1))
+        process.wait()
+
+        command2 = f"dotnet dev-certs https --export-path {pfx_path}"
+        process = subprocess.Popen(shlex.split(command2, posix=1))
+        process.wait()
 
 
 def _get_pfx_store_location():

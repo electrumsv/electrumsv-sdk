@@ -6,7 +6,7 @@ from .components import ComponentStore
 from .app_state import AppState
 from .constants import NameSpace
 from .controller import Controller
-from .utils import call_any_node_rpc, set_deterministic_electrumsv_seed
+from .utils import call_any_node_rpc
 
 logger = logging.getLogger("commands")
 controller = Controller(None)  # app_state is only used for the node entrypoint
