@@ -101,7 +101,7 @@ jobs:
         electrumsv-sdk start --background status_monitor
         electrumsv-sdk start --background --new node
         electrumsv-sdk start --background --new electrumx
-        electrumsv-sdk start --background --new electrumsv
+        electrumsv-sdk start --background --new --deterministic-seed electrumsv
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
         electrumsv-sdk start --background merchant_api
@@ -135,9 +135,9 @@ jobs:
     - script: |
         set -e
         sleep 5
-        electrumsv-sdk reset --id=node1
-        electrumsv-sdk reset --id=electrumx1
-        electrumsv-sdk reset --id=electrumsv1
+        electrumsv-sdk reset --id=node1 node
+        electrumsv-sdk reset --id=electrumx1 electrumx
+        electrumsv-sdk reset --id=electrumsv1 --deterministic-seed electrumsv
         electrumsv-sdk status
       displayName: 'reset by id'
       workingDirectory: electrumsv-sdk/
@@ -215,7 +215,7 @@ jobs:
         electrumsv-sdk start --background status_monitor
         electrumsv-sdk start --background --new node
         electrumsv-sdk start --background --new electrumx
-        electrumsv-sdk start --background --new electrumsv
+        electrumsv-sdk start --background --new --deterministic-seed electrumsv
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
         electrumsv-sdk start --background merchant_api
@@ -249,9 +249,9 @@ jobs:
     - script: |
         set -e
         sleep 5
-        electrumsv-sdk reset --id=node1
-        electrumsv-sdk reset --id=electrumx1
-        electrumsv-sdk reset --id=electrumsv1
+        electrumsv-sdk reset --id=node1 node
+        electrumsv-sdk reset --id=electrumx1 electrumx
+        electrumsv-sdk reset --id=electrumsv1 --deterministic-seed electrumsv
         electrumsv-sdk status
       displayName: 'reset by id'
       workingDirectory: electrumsv-sdk/
@@ -309,7 +309,7 @@ jobs:
         electrumsv-sdk start --background status_monitor
         electrumsv-sdk start --background --new node
         electrumsv-sdk start --background --new electrumx
-        electrumsv-sdk start --background --new electrumsv
+        electrumsv-sdk start --background --new --deterministic-seed electrumsv
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
         electrumsv-sdk start --background merchant_api
@@ -340,9 +340,9 @@ jobs:
 
     - script: |
         sleep 5
-        electrumsv-sdk reset --id=node1
-        electrumsv-sdk reset --id=electrumx1
-        electrumsv-sdk reset --id=electrumsv1
+        electrumsv-sdk reset --id=node1  node
+        electrumsv-sdk reset --id=electrumx1 electrumx
+        electrumsv-sdk reset --id=electrumsv1 --deterministic-seed electrumsv
         electrumsv-sdk status
       displayName: 'reset by id'
       workingDirectory: electrumsv-sdk/

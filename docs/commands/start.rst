@@ -59,3 +59,4 @@ To run the server in the background::
 To run the server in a new terminal window (this is the default if no modifier flag is specified)::
 
    > electrumsv-sdk start --new-terminal <component name>
+

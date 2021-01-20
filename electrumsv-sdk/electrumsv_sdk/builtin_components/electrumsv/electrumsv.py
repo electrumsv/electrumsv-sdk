@@ -120,7 +120,7 @@ class Plugin(AbstractPlugin):
         elif not self.tools.wallet_db_exists():
             if self.config.deterministic_seed:
                 set_deterministic_electrumsv_seed(self.config.selected_component,
-                    self.id)
+                    self.config.component_id)
             # reset wallet
             self.tools.delete_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
             self.tools.create_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
@@ -147,9 +147,13 @@ class Plugin(AbstractPlugin):
 
         def reset_electrumsv(component_dict: Dict):
             self.logger.debug("Resetting state of RegTest electrumsv server...")
-            if self.config.deterministic_seed:
-                set_deterministic_electrumsv_seed(self.config.selected_component,
-                    self.id)
+
+            # reset is sometimes used with no args and so the --deterministic-seed extension
+            # doesn't take effect
+            if hasattr(self.config, 'deterministic_seed'):
+                if self.config.deterministic_seed:
+                    set_deterministic_electrumsv_seed(self.config.selected_component,
+                        self.id)
             self.datadir = Path(component_dict.get('metadata').get("DATADIR"))
             self.id = component_dict.get('id')
             self.tools.delete_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')

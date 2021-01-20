@@ -3,18 +3,16 @@ Reset Command
 
 General Usage::
 
-   > electrumsv-sdk reset --id=<unique_id>
-   OR
-   > electrumsv-sdk reset <component_name>
+   > electrumsv-sdk reset --id=<unique_id> <component_name>
 
 
 Examples
 ~~~~~~~~~~~
 ::
 
-   > electrumsv-sdk reset               # no args -> resets all registered components
-   > electrumsv-sdk reset node          # resets all running ``node`` instances
-   > electrumsv-sdk reset --id=node1    # resets only the component with unique identifier == ``node1``
+   > electrumsv-sdk reset                    # no args -> resets all registered components
+   > electrumsv-sdk reset node               # resets all running ``node`` instances
+   > electrumsv-sdk reset --id=node1 node    # resets only the component with unique identifier == ``node1``
 
 Behaviour for each component
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,3 +41,4 @@ Behaviour for each component
 NOTE: The SDK only creates and deletes **a single wallet database (worker1.sqlite)
 per datadir and there is only one datadir per instance of electrumsv.**
 Please see "Component ID & Datadirs" for context.
+
