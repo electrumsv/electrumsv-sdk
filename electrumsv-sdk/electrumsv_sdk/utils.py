@@ -437,15 +437,18 @@ def call_any_node_rpc(method: str, *args: Union[str, int], node_id: str='node1')
 
 
 def set_deterministic_electrumsv_seed(component_type: str, component_id: Optional[str]=None):
-    stored_component_type = None
-    if component_id:
-        component_store = ComponentStore()
-        component_state = component_store.get_status(component_id=component_id)
-        stored_component_type = component_state.get('component_id').get('component_type')
-    if stored_component_type and not stored_component_type == "electrumsv" \
-            and not component_type == 'electrumsv':
-        raise ValueError("deterministic seed option is only for electrumsv component_type")
+    def raise_for_not_electrumsv_type():
+        stored_component_type = None
+        if component_id:
+            component_store = ComponentStore()
+            component_state = component_store.get_status(component_id=component_id)
+            stored_component_type = component_state.get('component_id').get('component_type')
 
+        if stored_component_type and not stored_component_type == "electrumsv" \
+                and not component_type == 'electrumsv':
+            raise ValueError("deterministic seed option is only for electrumsv component_type")
+
+    raise_for_not_electrumsv_type()
     # Allows for deterministic testing
     os.environ['ELECTRUMSV_ACCOUNT_XPRV'] = "tprv8ZgxMBicQKsPd4wsdaJ11eH84eq4hHLX1K6Mx" \
                                             "8EQQhJzq8jr25WH1m8hgGkCqnksJDCZPZbDoMbQ6Q" \

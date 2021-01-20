@@ -57,9 +57,10 @@ def start(component_type: str, component_args: List[str] = [], repo: str = "",
     if gui:
         arguments.append("--gui")
     if mode:
-        arguments.append("--" + mode)
+        arguments.append(f"--{mode}")
     if component_id:
         arguments.append(f"--id={component_id}")
+
     if network:  # special case - this was added as a dynamic cli extension for only some plugins
         _validate_network(network, component_type)
         arguments.append(f"--{network}")
@@ -94,9 +95,6 @@ def stop(component_type: Optional[str]=None, component_id: str = "") -> None:
 def reset(component_type: str = "", component_id: str = "", repo: str = "",
         branch: str = "", deterministic_seed: bool=False) -> None:
 
-    if deterministic_seed:
-        set_deterministic_electrumsv_seed(component_id)
-
     arguments = ["", NameSpace.RESET]
     if repo:
         arguments.append(f"--repo={repo}")
@@ -104,6 +102,10 @@ def reset(component_type: str = "", component_id: str = "", repo: str = "",
         arguments.append(f"--branch={branch}")
     if component_id:
         arguments.append(f"--id={component_id}")
+
+    # Special case for electrumsv wallet only
+    if deterministic_seed:
+        arguments.append(f"--deterministic-seed")
 
     # Must place component type after start options:
     if component_type:

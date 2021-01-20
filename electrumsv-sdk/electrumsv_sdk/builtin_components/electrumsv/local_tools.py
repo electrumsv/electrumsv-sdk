@@ -22,13 +22,14 @@ class LocalTools:
     def __init__(self, plugin):
         self.plugin = plugin
         self.config: Config = plugin.config
+        self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
     def set_network(self):
         # make sure that only one network is set on cli
         count_networks_selected = len([getattr(self.config, network) for network in NETWORKS_LIST if
             getattr(self.config, network) is True])
         if count_networks_selected > 1:
-            logger.error("you must only select a single network")
+            self.logger.error("you must only select a single network")
             sys.exit(1)
 
         if count_networks_selected == 0:
@@ -37,10 +38,6 @@ class LocalTools:
             for network in NETWORKS_LIST:
                 if getattr(self.config, network):
                     self.plugin.network = network
-
-        logger.info(f"Network selected: {self.plugin.network}")
-        if self.plugin.network in {"scaling_testnet", "mainnet"}:
-            raise NotImplementedError("Scaling-testnet and mainnet not currently supported")
 
     def process_cli_args(self):
         self.set_network()

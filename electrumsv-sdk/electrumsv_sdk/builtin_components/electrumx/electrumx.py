@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import sys
+from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional, Dict
 
@@ -13,6 +14,17 @@ from electrumsv_sdk.utils import is_remote_repo, get_directory_name
 from electrumsv_sdk.plugin_tools import PluginTools
 
 from .local_tools import LocalTools
+
+
+def extend_start_cli(start_parser: ArgumentParser):
+    """if this method is present it allows extension of the start argparser only.
+    This occurs dynamically and adds the new cli options as attributes of the Config object"""
+    start_parser.add_argument("--regtest", action="store_true", help="run on regtest")
+    start_parser.add_argument("--testnet", action="store_true", help="run on testnet")
+
+    # variable names to be pulled from the start_parser
+    new_options = ['regtest', 'testnet']
+    return start_parser, new_options
 
 
 class Plugin(AbstractPlugin):
@@ -48,6 +60,8 @@ class Plugin(AbstractPlugin):
         self.port = None  # dynamically allocated
         self.component_info: Optional[Component] = None
 
+        self.network = self.BITCOIN_NETWORK
+
     def install(self):
         """required state: source_dir  - which are derivable from 'repo' and 'branch' flags"""
         repo = self.config.repo
@@ -68,6 +82,7 @@ class Plugin(AbstractPlugin):
 
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.port = self.plugin_tools.allocate_port()
+        self.tools.process_cli_args()  # cli args may override network in env vars
 
         command = f"{sys.executable} {self.src.joinpath('electrumx_server')}"
         env_vars = {
@@ -81,7 +96,7 @@ class Plugin(AbstractPlugin):
             "COST_HARD_LIMIT": f"{self.COST_HARD_LIMIT}",
             "MAX_SEND": f"{self.MAX_SEND}",
             "LOG_LEVEL": f"{self.LOG_LEVEL}",
-            "NET": f"{self.BITCOIN_NETWORK}",
+            "NET": f"{self.network}",
             "ALLOW_ROOT": f"{self.ALLOW_ROOT}",
         }
         logfile = self.plugin_tools.get_logfile_path(self.id)

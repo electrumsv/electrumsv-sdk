@@ -7,7 +7,8 @@ from typing import Optional, Dict
 
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
 from electrumsv_sdk.components import Component
-from electrumsv_sdk.utils import is_remote_repo, kill_process, get_directory_name
+from electrumsv_sdk.utils import is_remote_repo, kill_process, get_directory_name, \
+    set_deterministic_electrumsv_seed
 from electrumsv_sdk.plugin_tools import PluginTools
 from electrumsv_sdk.config import Config
 
@@ -17,14 +18,25 @@ from .local_tools import LocalTools
 def extend_start_cli(start_parser: ArgumentParser):
     """if this method is present it allows extension of the start argparser only.
     This occurs dynamically and adds the new cli options as attributes of the Config object"""
-    start_parser.add_argument("--regtest", action="store_true", help="")  # default
-    start_parser.add_argument("--testnet", action="store_true", help="")
-    start_parser.add_argument("--scaling-testnet", action="store_true", help="")
-    start_parser.add_argument("--mainnet", action="store_true", help="")
+    start_parser.add_argument("--regtest", action="store_true", help="run on regtest")
+    start_parser.add_argument("--testnet", action="store_true", help="run on testnet")
+    start_parser.add_argument("--deterministic-seed", action="store_true", help="use "
+        "deterministic seed for wallet")
 
     # variable names to be pulled from the start_parser
-    new_options = ['regtest', 'testnet', 'scaling_testnet', 'mainnet']
+    new_options = ['regtest', 'testnet', 'deterministic_seed']
     return start_parser, new_options
+
+
+def extend_reset_cli(reset_parser: ArgumentParser):
+    """if this method is present it allows extension of the start argparser only.
+    This occurs dynamically and adds the new cli options as attributes of the Config object"""
+    reset_parser.add_argument("--deterministic-seed", action="store_true", help="use "
+        "deterministic seed for wallet")
+
+    # variable names to be pulled from the start_parser
+    new_options = ['deterministic_seed']
+    return reset_parser, new_options
 
 
 class Plugin(AbstractPlugin):
@@ -97,8 +109,18 @@ class Plugin(AbstractPlugin):
                 component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
                 status_endpoint=status_endpoint, metadata=metadata)
 
+        if self.tools.wallet_db_exists():
+            if self.config.deterministic_seed:
+                if self.tools.wallet_db_exists():
+                    raise ValueError(f"Cannot set a deterministic seed. This wallet: '{self.id}' "
+                        f"already exists. Please try 'electrumsv-sdk reset --deterministic-seed "
+                        f"--id={self.id}' or create a new wallet with a new --id.")
+
         # If daemon or gui mode continue...
         elif not self.tools.wallet_db_exists():
+            if self.config.deterministic_seed:
+                set_deterministic_electrumsv_seed(self.config.selected_component,
+                    self.id)
             # reset wallet
             self.tools.delete_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
             self.tools.create_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
@@ -125,6 +147,9 @@ class Plugin(AbstractPlugin):
 
         def reset_electrumsv(component_dict: Dict):
             self.logger.debug("Resetting state of RegTest electrumsv server...")
+            if self.config.deterministic_seed:
+                set_deterministic_electrumsv_seed(self.config.selected_component,
+                    self.id)
             self.datadir = Path(component_dict.get('metadata').get("DATADIR"))
             self.id = component_dict.get('id')
             self.tools.delete_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
