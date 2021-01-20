@@ -442,7 +442,7 @@ def set_deterministic_electrumsv_seed(component_type: str, component_id: Optiona
         if component_id:
             component_store = ComponentStore()
             component_state = component_store.get_status(component_id=component_id)
-            stored_component_type = component_state.get('component_id').get('component_type')
+            stored_component_type = component_state.get('component_type')
 
         if stored_component_type and not stored_component_type == "electrumsv" \
                 and not component_type == 'electrumsv':

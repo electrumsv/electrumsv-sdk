@@ -1,7 +1,6 @@
 """This defines a set of exposed public methods for using the SDK as a library"""
 import logging
-import os
-from typing import Dict, List, Optional
+from typing import Dict, Optional, Tuple
 
 from .components import ComponentStore
 from .app_state import AppState
@@ -13,7 +12,7 @@ logger = logging.getLogger("commands")
 controller = Controller(None)  # app_state is only used for the node entrypoint
 
 
-def install(component_type: str = "", repo: str = "", branch: str = "",
+def install(component_type: str, repo: str = "", branch: str = "",
         component_id: str = "") -> None:
 
     arguments = ["", NameSpace.INSTALL]
@@ -24,7 +23,7 @@ def install(component_type: str = "", repo: str = "", branch: str = "",
     if component_id:
         arguments.append(f"--id={component_id}")
 
-    # Must place component type after start options:
+    # Must place component type after install options:
     arguments.append(component_type)
     app_state = AppState(arguments)
     app_state.handle_first_ever_run()
@@ -41,9 +40,10 @@ def _validate_network(network: str, component_type):
         raise ValueError(f"The only supported networks are: {valid_networks}")
 
 
-def start(component_type: str, component_args: List[str] = [], repo: str = "",
+def start(component_type: str, component_args: Tuple[str] = (), repo: str = "",
         branch: str = "", new_instance: bool = False, gui: bool = False,
-        mode: str="new-terminal", component_id: str = "", network: str="") -> None:
+        mode: str="new-terminal", component_id: str = "", network: str="",
+        deterministic_seed: bool=False) -> None:
     """mode: can be 'background', 'new-terminal' or 'inline'
     network: can be 'regtest' or 'testnet' """
 
@@ -65,11 +65,14 @@ def start(component_type: str, component_args: List[str] = [], repo: str = "",
         _validate_network(network, component_type)
         arguments.append(f"--{network}")
 
+    # Special case for electrumsv wallet only
+    if deterministic_seed:
+        arguments.append(f"--deterministic-seed")
+
     # Must place component type after start options:
     arguments.append(component_type)
-
     if component_args:
-        arguments.append(component_args)  # e.g. e.g. access electrumsv's internal CLI
+        arguments.extend(component_args)  # e.g. e.g. access electrumsv's internal CLI
 
     app_state = AppState(arguments)
     app_state.handle_first_ever_run()
@@ -83,7 +86,6 @@ def stop(component_type: Optional[str]=None, component_id: str = "") -> None:
     if component_id:
         arguments.append(f"--id={component_id}")
 
-    # Must place component type after start options:
     if component_type:
         arguments.append(component_type)
 
@@ -92,7 +94,7 @@ def stop(component_type: Optional[str]=None, component_id: str = "") -> None:
     controller.stop(app_state.config)
 
 
-def reset(component_type: str = "", component_id: str = "", repo: str = "",
+def reset(component_type: Optional[str]=None, component_id: str = "", repo: str = "",
         branch: str = "", deterministic_seed: bool=False) -> None:
 
     arguments = ["", NameSpace.RESET]
@@ -107,7 +109,6 @@ def reset(component_type: str = "", component_id: str = "", repo: str = "",
     if deterministic_seed:
         arguments.append(f"--deterministic-seed")
 
-    # Must place component type after start options:
     if component_type:
         arguments.append(component_type)
 

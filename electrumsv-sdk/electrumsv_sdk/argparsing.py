@@ -40,9 +40,9 @@ class ArgParser:
 
     def validate_cli_args(self):
         """calls the appropriate handler for the argparsing.NameSpace"""
-        handler = ValidateCliArgs(self.config)
+        handlers = ValidateCliArgs(self.config)
         parsed_args = self.subcmd_parsed_args_map[self.config.namespace]
-        func = getattr(handler, "handle_" + self.config.namespace + "_args")
+        func = getattr(handlers, "handle_" + self.config.namespace + "_args")
         func(parsed_args)
 
     def parse_first_arg(self, arg, cur_cmd_name, subcommand_indices):
@@ -169,9 +169,20 @@ class ArgParser:
 
             # print(f"subcommand_indices={subcommand_indices}, index={index}, arg={arg}")
 
-        if self.namespace in {NameSpace.START, NameSpace.INSTALL, NameSpace.RESET}:
+        if self.namespace in {NameSpace.START, NameSpace.INSTALL, NameSpace.RESET, NameSpace.STOP}:
             if self.selected_component:
                 self.new_cli_options = self.extend_cli(self.selected_component, self.namespace)
+            elif self.namespace in {NameSpace.RESET, NameSpace.STOP}:
+                # if no args then stop or reset all components
+                if not len(subcommand_indices[self.namespace]) == 0:  # no args -> stop all or reset
+                    # all (
+                    # valid)
+                    raise ValueError(
+                        f"The '{self.namespace}' command requires a component type unless you "
+                        f"supply no arguments - in which case it acts on all components.")
+            else:
+                raise ValueError("You must specify the component type even if using the --id flag")
+
         self.feed_to_argparsers(args, subcommand_indices)
 
     def generate_config(self):

@@ -2,7 +2,7 @@ import pprint
 import logging
 import signal
 import sys
-from typing import List, Optional
+from typing import List
 
 from .constants import NameSpace
 from .config import Config

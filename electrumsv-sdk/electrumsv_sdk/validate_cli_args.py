@@ -1,6 +1,8 @@
+"""This acts as a kind of middleware - which has now been whittled down to only providing
+logging information"""
+
 import logging
 import platform
-import sys
 
 from .constants import NameSpace
 from .config import Config
@@ -41,14 +43,6 @@ class ValidateCliArgs:
         if not self.config.namespace == NameSpace.START:
             return
 
-        def has_startup_flags():
-            return parsed_args.new or parsed_args.gui
-
-        if has_startup_flags():
-            if not self.config.selected_component:
-                logger.error("must select a component type when specifying --new or --gui flags")
-                sys.exit(1)
-
         # logging
         if parsed_args.new:
             logger.debug("new flag=set")
@@ -65,12 +59,6 @@ class ValidateCliArgs:
         """takes no arguments"""
         if not self.config.namespace == NameSpace.STOP:
             return
-
-        component_name = self.config.selected_component
-        if parsed_args.id and component_name:
-            logger.error("stop command cannot handle both --id flag and <component_type>. Please "
-                         "select one or the other.")
-            sys.exit(1)
 
         # logging
         if parsed_args.id != "":

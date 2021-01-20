@@ -140,7 +140,7 @@ class ComponentStore:
                     result = component_state.get(component_id)
                     if result:
                         return result
-                    raise ValueError(f"Component id: {component_id} not found in store.")
+                    raise ValueError(f"Component id: '{component_id}' not found in store.")
 
                 return component_state
             else:
