@@ -1,5 +1,6 @@
 import logging
 import os
+from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional, Dict
 
@@ -12,6 +13,17 @@ from electrumsv_sdk.plugin_tools import PluginTools
 from electrumsv_node import electrumsv_node
 
 from .local_tools import LocalTools
+
+
+def extend_start_cli(start_parser: ArgumentParser):
+    """if this method is present it allows extension of the start argparser only.
+    This occurs dynamically and adds the new cli options as attributes of the Config object"""
+    start_parser.add_argument("--regtest", action="store_true", help="run on regtest")
+    start_parser.add_argument("--testnet", action="store_true", help="run on testnet")
+
+    # variable names to be pulled from the start_parser
+    new_options = ['regtest', 'testnet']
+    return start_parser, new_options
 
 
 class Plugin(AbstractPlugin):
@@ -46,6 +58,8 @@ class Plugin(AbstractPlugin):
         self.zmq_port = None  # dynamically allocated
         self.component_info: Optional[Component] = None
 
+        self.network = self.BITCOIN_NETWORK
+
     def install(self):
         """The node component has a pip installer at https://pypi.org/project/electrumsv-node/ and
         only official releases from pypi are supported"""
@@ -55,6 +69,8 @@ class Plugin(AbstractPlugin):
     def start(self):
         # env vars take precedence for port and dbdir
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
+        self.tools.process_cli_args()  # cli args may override network in env vars
+
         if self.NODE_PORT:
             self.port = self.NODE_PORT
         else:
@@ -82,7 +98,7 @@ class Plugin(AbstractPlugin):
 
         shell_command = electrumsv_node.shell_command(data_path=str(self.datadir),
             rpcport=self.port,
-            p2p_port=self.p2p_port, zmq_port=self.zmq_port, network=self.BITCOIN_NETWORK,
+            p2p_port=self.p2p_port, zmq_port=self.zmq_port, network=self.network,
             print_to_console=True, extra_params=extra_params)
 
         command = " ".join(shell_command)
