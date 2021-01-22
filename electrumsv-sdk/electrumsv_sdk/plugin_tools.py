@@ -64,14 +64,14 @@ class PluginTools:
             for component_dict in components_state.values():
                 if component_dict.get("id") == id:
                     callable(component_dict)
-                    self.logger.info(f"terminated: {id}")
+                    self.logger.debug(f"terminated: {id}")
 
         # stop all running components of: <component_type>
         elif component_name:
             for component_dict in components_state.values():
                 if component_dict.get("component_type") == component_name:
                     callable(component_dict)
-                    self.logger.info(f"terminated: {component_dict.get('id')}")
+                    self.logger.debug(f"terminated: {component_dict.get('id')}")
 
     def get_component_datadir(self, component_name: str) -> Tuple[Path, Optional[str]]:
         """Used for multi-instance components"""

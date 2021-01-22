@@ -136,7 +136,7 @@ class Plugin(AbstractPlugin):
         """some components require graceful shutdown via a REST API or RPC API but most can use the
         generic 'plugin_tools.kill_component()' function."""
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
-        self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance(s) (if any)")
+        self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self):
         """

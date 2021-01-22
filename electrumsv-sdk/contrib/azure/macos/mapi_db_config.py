@@ -6,7 +6,7 @@ import asyncio
 import asyncpg
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+
 logger = logging.getLogger('mapi-db-config')
 
 

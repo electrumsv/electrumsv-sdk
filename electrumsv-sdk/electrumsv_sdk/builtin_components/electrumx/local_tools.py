@@ -124,7 +124,7 @@ class LocalTools:
                     if result:
                         return True
         except Exception as e:
-            self.logger.error(f"Could not connect to ElectrumX: {e}")
+            self.logger.debug(f"Could not connect to ElectrumX: {e}")
             return False
 
     def run_coroutine_ipython_friendly(self, func, *args, **kwargs):

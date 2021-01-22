@@ -119,7 +119,7 @@ class Plugin(AbstractPlugin):
             electrumsv_node.stop(rpcport=rpcport)
 
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=stop_node)
-        self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance(s) (if any)")
+        self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self):
         def reset_node(component_dict: Dict):
@@ -128,7 +128,6 @@ class Plugin(AbstractPlugin):
             if not rpcport:
                 raise Exception("rpcport data not found")
             electrumsv_node.reset(data_path=datadir, rpcport=rpcport)
-            self.logger.info(f"terminated: {component_dict.get('id')}")
 
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=reset_node)
         self.logger.debug("Reset of RegTest bitcoin daemon completed successfully.")

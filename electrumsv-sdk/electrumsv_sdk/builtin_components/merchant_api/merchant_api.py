@@ -86,7 +86,7 @@ class Plugin(AbstractPlugin):
 
     def stop(self):
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
-        self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance(s) (if any)")
+        self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self):
         self.logger.info("resetting Merchant API is not applicable")

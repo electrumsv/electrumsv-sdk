@@ -9,7 +9,7 @@ from typing import Optional, Dict
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.components import Component
-from electrumsv_sdk.utils import is_remote_repo, get_directory_name
+from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
 from .local_tools import LocalTools
@@ -114,11 +114,12 @@ class Plugin(AbstractPlugin):
                 raise Exception("rpcport data not found")
             was_successful = self.tools.run_coroutine_ipython_friendly(self.tools.stop_electrumx)
             if not was_successful:
-                self.logger.error("Unable to connect to ElectrumX - is it already stopped?")
+                self.logger.debug("Unable to connect to ElectrumX - is it already stopped?")
+                kill_process(component_dict)
 
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME,
             callable=stop_electrumx)
-        self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance(s) (if any)")
+        self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self):
         def reset_electrumx(component_dict: Dict):

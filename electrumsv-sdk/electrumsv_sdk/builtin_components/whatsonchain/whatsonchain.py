@@ -87,7 +87,7 @@ class Plugin(AbstractPlugin):
         """some components require graceful shutdown via a REST API or RPC API but most can use the
         generic 'app_state.kill_component()' function to track down the pid and kill the process."""
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
-        self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance(s) (if any)")
+        self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self):
         self.logger.info("resetting the whatsonchain is not applicable")
