@@ -97,8 +97,7 @@ class Plugin(AbstractPlugin):
             extra_params = None
 
         shell_command = electrumsv_node.shell_command(data_path=str(self.datadir),
-            rpcport=self.port,
-            p2p_port=self.p2p_port, zmq_port=self.zmq_port, network=self.network,
+            rpcport=self.port, p2p_port=self.p2p_port, zmq_port=self.zmq_port, network=self.network,
             print_to_console=True, extra_params=extra_params)
 
         command = " ".join(shell_command)
@@ -108,6 +107,10 @@ class Plugin(AbstractPlugin):
             status_endpoint=f"http://rpcuser:rpcpassword@127.0.0.1:{self.port}",
             metadata={"DATADIR": str(self.datadir), "rpcport": self.port, "p2p_port": self.p2p_port}
         )
+        if electrumsv_node.is_node_running():
+            return
+        else:
+            self.logger.exception("node failed to start")
 
     def stop(self):
         """The bitcoin node requires graceful shutdown via the RPC API - a good example of why this

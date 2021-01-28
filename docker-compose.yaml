@@ -6,7 +6,7 @@ services:
   node:
 #    image: electrumsvsdk/node:latest
     build:
-      context: .
+      context: electrumsv_sdk
       dockerfile: electrumsv_sdk/builtin_components/node/Dockerfile
     ports:
       - "0.0.0.0:18332:18332"
@@ -18,7 +18,7 @@ services:
   electrumx:
 #    image: electrumsvsdk/electrumx:latest
     build:
-      context: .
+      context: electrumsv_sdk
       dockerfile: electrumsv_sdk/builtin_components/electrumx/Dockerfile
     ports:
       - "0.0.0.0:51001:51001"
@@ -30,7 +30,7 @@ services:
   electrumsv:
 #    image: electrumsvsdk/electrumsv:latest
     build:
-      context: .
+      context: electrumsv_sdk
       dockerfile: electrumsv_sdk/builtin_components/electrumsv/Dockerfile
     ports:
       - "0.0.0.0:9999:9999"
@@ -50,7 +50,7 @@ services:
 #    image: electrumsvsdk/whatsonchain:latest
     build:
       context: electrumsv_sdk/builtin_components/whatsonchain
-      dockerfile: ./Dockerfile
+      dockerfile: electrumsv_sdk/builtin_components/whatsonchain/Dockerfile
     ports:
       - "0.0.0.0:3002:3002"
     environment:
@@ -67,7 +67,7 @@ services:
     #    image: electrumsvsdk/whatsonchain:latest
     build:
       context: electrumsv_sdk/builtin_components/whatsonchain_api
-      dockerfile: ./Dockerfile
+      dockerfile: electrumsv_sdk/builtin_components/whatsonchain_api/Dockerfile
     ports:
       - "0.0.0.0:12121:12121"
     environment:
