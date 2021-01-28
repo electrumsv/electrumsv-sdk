@@ -13,3 +13,4 @@ stringcase
 colorama
 python-dotenv
 asyncpg
+pylru
