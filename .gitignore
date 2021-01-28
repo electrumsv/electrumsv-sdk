@@ -1,6 +1,11 @@
 **.pyc
 *.idea*
-electrumsv-sdk/electrumsv_sdk.egg-info/*
+electrumsv_sdk.egg-info/*
+build/*
+dist/*
+docs/_build/*
+venv/*
+
 electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumsv
 electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumx
 electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumx_data
@@ -9,10 +14,6 @@ electrumsv-server/data
 electrumsv-sdk/electrumsv_sdk/run_scripts/proc_ids.json
 electrumsv-sdk/electrumsv_sdk/config.json
 electrumsv-sdk/electrumsv_sdk/component_state.json
-electrumsv-sdk/build/*
-electrumsv-sdk/dist/*
-docs/_build/*
-venv/*
 
 *localhost.cer
 *localhost.pfx
