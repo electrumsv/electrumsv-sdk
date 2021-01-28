@@ -1,0 +1,2 @@
+include electrumsv-sdk/electrumsv_sdk/scripts/*
+include electrumsv-server/*
