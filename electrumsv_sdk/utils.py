@@ -360,9 +360,8 @@ def spawn_new_terminal(command: str, env_vars: Dict, id: str=None, component_nam
         subprocess.Popen(split_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 
-def write_raw_blocks_to_file(filepath: Union[Path, str], node_id: str, from_height: Optional[
-    int]=None,
-        to_height: Optional[int]=None):
+def write_raw_blocks_to_file(filepath: Union[Path, str], node_id: str,
+        from_height: Optional[int]=None, to_height: Optional[int]=None):
 
     if not to_height:
         result = call_any_node_rpc('getinfo', node_id=node_id)

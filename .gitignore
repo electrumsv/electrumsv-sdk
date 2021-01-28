@@ -6,17 +6,17 @@ dist/*
 docs/_build/*
 venv/*
 
-electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumsv
-electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumx
-electrumsv-sdk/electrumsv_sdk/sdk_depends/electrumx_data
+electrumsv_sdk/electrumsv_sdk/sdk_depends/electrumsv
+electrumsv_sdk/electrumsv_sdk/sdk_depends/electrumx
+electrumsv_sdk/electrumsv_sdk/sdk_depends/electrumx_data
 .vscode/*
 electrumsv-server/data
-electrumsv-sdk/electrumsv_sdk/run_scripts/proc_ids.json
-electrumsv-sdk/electrumsv_sdk/config.json
-electrumsv-sdk/electrumsv_sdk/component_state.json
+electrumsv_sdk/electrumsv_sdk/run_scripts/proc_ids.json
+electrumsv_sdk/electrumsv_sdk/config.json
+electrumsv_sdk/electrumsv_sdk/component_state.json
 
 *localhost.cer
 *localhost.pfx
 *localhost.crt
-electrumsv-sdk/electrumsv_sdk/builtin_components/merchant_api/exe-config/.env
+electrumsv_sdk/builtin_components/merchant_api/exe-config/.env
 *.dat

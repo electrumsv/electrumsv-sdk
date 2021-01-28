@@ -23,7 +23,7 @@ and install the one you want:
 py -3.8 -m pip install electrumsv-sdk
 """
 
-with open('electrumsv-sdk/electrumsv_sdk/__init__.py', 'r') as f:
+with open('electrumsv_sdk/__init__.py', 'r') as f:
     for line in f:
         if line.startswith('__version__'):
             version = line.strip().split('= ')[1].strip("'")
@@ -40,7 +40,7 @@ def _locate_requirements():
 
     requirements = []
     for file_name in requirement_files:
-        with open(os.path.join("electrumsv-sdk/requirements", file_name), 'r') as f:
+        with open(os.path.join("requirements", file_name), 'r') as f:
             requirements.extend(f.read().splitlines())
     return requirements
 

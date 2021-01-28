@@ -48,7 +48,7 @@ jobs:
           sudo apt-get install libusb-1.0-0-dev libudev-dev
           python3 -m pip install pysqlite3-binary
       displayName: 'prepare for electrumsv'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     - script: |
         set -e
@@ -56,7 +56,7 @@ jobs:
         python3 -m pip install -e .
         python3 -m pip install pytest pytest-cov
       displayName: 'install electrumsv-sdk'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     - script: |
         set -e
@@ -76,7 +76,7 @@ jobs:
         sudo apt-get install libssl1.0-dev
         sudo apt install npm nodejs node-gyp nodejs-dev
       displayName: 'prepare node.js'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     # Download a secure file to the agent machine
@@ -94,7 +94,7 @@ jobs:
         electrumsv-sdk install whatsonchain
         electrumsv-sdk install --ssl=$(pfxCertificate.secureFilePath) merchant_api
       displayName: 'install all components'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     - script: |
         set -e
@@ -107,7 +107,7 @@ jobs:
         electrumsv-sdk start --background merchant_api
         electrumsv-sdk status
       displayName: 'start all components'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     - script: |
@@ -120,7 +120,7 @@ jobs:
         electrumsv-sdk stop merchant_api
         electrumsv-sdk status
       displayName: 'stop all components'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     - script: |
@@ -129,7 +129,7 @@ jobs:
         electrumsv-sdk reset
         electrumsv-sdk status
       displayName: 'reset all components'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     - script: |
@@ -140,7 +140,7 @@ jobs:
         electrumsv-sdk reset --id=electrumsv1 --deterministic-seed electrumsv
         electrumsv-sdk status
       displayName: 'reset by id'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     - task: PublishBuildArtifacts@1
@@ -184,7 +184,7 @@ jobs:
     - script: |
         brew upgrade sqlite3
       displayName: 'prepare for electrumsv'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     - script: |
         set -e
@@ -192,7 +192,7 @@ jobs:
         python3 -m pip install -e .
         python3 -m pip install pytest pytest-cov
       displayName: 'install electrumsv-sdk'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     # Download a secure file to the agent machine
     - task: DownloadSecureFile@1
@@ -205,7 +205,7 @@ jobs:
         set -e
         brew install node
       displayName: 'prepare node.js'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     - script: |
         set -e
@@ -215,7 +215,7 @@ jobs:
         electrumsv-sdk install whatsonchain
         electrumsv-sdk install --ssl=$(pfxCertificate.secureFilePath) merchant_api
       displayName: 'install all components'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     - script: |
         set -e
@@ -228,7 +228,7 @@ jobs:
         electrumsv-sdk start --background merchant_api
         electrumsv-sdk status
       displayName: 'start all components'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     - script: |
@@ -241,7 +241,7 @@ jobs:
         electrumsv-sdk stop merchant_api
         electrumsv-sdk status
       displayName: 'stop all components'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     - script: |
@@ -250,7 +250,7 @@ jobs:
         electrumsv-sdk reset
         electrumsv-sdk status
       displayName: 'reset all components'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     - script: |
@@ -261,7 +261,7 @@ jobs:
         electrumsv-sdk reset --id=electrumsv1 --deterministic-seed electrumsv
         electrumsv-sdk status
       displayName: 'reset by id'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     - task: PublishBuildArtifacts@1
@@ -294,7 +294,7 @@ jobs:
         py -3.7 -m pip install -e .
         py -3.7 -m pip install pytest pytest-cov
       displayName: 'install electrumsv-sdk'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     # Download a secure file to the agent machine
     - task: DownloadSecureFile@1
@@ -310,7 +310,7 @@ jobs:
         electrumsv-sdk install whatsonchain
         electrumsv-sdk install --ssl=$(pfxCertificate.secureFilePath) merchant_api
       displayName: 'install all components'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     - script: |
         electrumsv-sdk start --background status_monitor
@@ -322,7 +322,7 @@ jobs:
         electrumsv-sdk start --background merchant_api
         electrumsv-sdk status
       displayName: 'start all components'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     - script: |
@@ -334,7 +334,7 @@ jobs:
         electrumsv-sdk stop merchant_api
         electrumsv-sdk status
       displayName: 'stop all components'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     - script: |
@@ -342,7 +342,7 @@ jobs:
         electrumsv-sdk reset
         electrumsv-sdk status
       displayName: 'reset all components'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     - script: |
@@ -352,7 +352,7 @@ jobs:
         electrumsv-sdk reset --id=electrumsv1 --deterministic-seed electrumsv
         electrumsv-sdk status
       displayName: 'reset by id'
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
       continueOnError: true
 
     - task: PublishBuildArtifacts@1
@@ -369,7 +369,7 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install wheel
         python3 setup.py build bdist_wheel --plat-name macosx_10_5_x86_64 --dist-dir ../wheelhouse
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     - task: PublishBuildArtifacts@1
       inputs:
@@ -388,7 +388,7 @@ jobs:
         py -3 -m pip install --upgrade pip
         py -3 -m pip install wheel
         py -3 .\setup.py build bdist_wheel --plat-name win-amd64 --dist-dir ../wheelhouse
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     - task: PublishBuildArtifacts@1
       inputs:
@@ -408,7 +408,7 @@ jobs:
         py -3 -m pip install --upgrade pip
         py -3 -m pip install wheel
         py -3 .\setup.py build bdist_wheel --plat-name win32 --dist-dir ../wheelhouse
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     - task: PublishBuildArtifacts@1
       inputs:
@@ -428,7 +428,7 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install wheel
         python3 setup.py build bdist_wheel --plat-name manylinux2014_x86_64 --dist-dir ../wheelhouse
-      workingDirectory: electrumsv-sdk/
+      workingDirectory: electrumsv_sdk/
 
     - task: PublishBuildArtifacts@1
       inputs:

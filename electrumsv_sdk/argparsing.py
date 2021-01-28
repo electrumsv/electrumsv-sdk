@@ -172,14 +172,13 @@ class ArgParser:
         if self.namespace in {NameSpace.START, NameSpace.INSTALL, NameSpace.RESET, NameSpace.STOP}:
             if self.selected_component:
                 self.new_cli_options = self.extend_cli(self.selected_component, self.namespace)
-            elif self.namespace in {NameSpace.RESET, NameSpace.STOP}:
-                # if no args then stop or reset all components
-                if not len(subcommand_indices[self.namespace]) == 0:  # no args -> stop all or reset
-                    # all (
-                    # valid)
-                    raise ValueError(
-                        f"The '{self.namespace}' command requires a component type unless you "
-                        f"supply no arguments - in which case it acts on all components.")
+
+        elif self.namespace in {NameSpace.RESET, NameSpace.STOP}:
+            # if no args then stop or reset all components
+            if not len(subcommand_indices[self.namespace]) == 0:
+                raise ValueError(
+                    f"The '{self.namespace}' command requires a component type unless you "
+                    f"supply no arguments - in which case it acts on all components.")
             else:
                 raise ValueError("You must specify the component type even if using the --id flag")
 
