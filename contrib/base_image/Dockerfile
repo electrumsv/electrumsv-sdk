@@ -28,6 +28,6 @@ RUN apt-get -yq install build-essential nodejs
 
 # Install SDK
 RUN git clone https://github.com/electrumsv/electrumsv-sdk /electrumsv-sdk
-WORKDIR /electrumsv-sdk/electrumsv-sdk
+WORKDIR /electrumsv-sdk
 #RUN git checkout releases/0.0.23
 RUN pip install -e .
