@@ -22,13 +22,21 @@ from .exceptions import StartupError
 from .constants import DEFAULT_PAGE, RequestState
 from .config import parse_args
 from .payment_requests import get_next_script
+from .txstatewebsocket import TxStateWebSocket, WSClient
+
+# Silence verbose logging
+db_logger = logging.getLogger("peewee")
+db_logger.setLevel(logging.WARNING)
+aiohttp_logger = logging.getLogger("aiohttp")
+aiohttp_logger.setLevel(logging.WARNING)
 
 
 class ApplicationState(object):
 
-    # Todo - return f"<html>Page not found: {filepath}</html>"
-
-    def __init__(self, config: Namespace) -> None:
+    def __init__(self, config: Namespace, web_app: web.Application) -> None:
+        self.web_app = web_app
+        self.web_app['ws_clients'] = {}  # uuid: WSClient
+        self.web_app['tx_registrations_map'] = {}
         self.loop = asyncio.get_event_loop()
         self.config = config
         self.logger = logging.getLogger("application-state")
@@ -59,12 +67,13 @@ class ApplicationState(object):
 
     async def notify_listeners(self, value) -> None:
         text = json.dumps(value)
-        for ws in self._listeners:
-            await ws.send(text)
+        for ws_client in self.web_app['ws_clients']:
+            ws_client: WSClient
+            await ws_client.websocket.send(text)
 
     # ----- WEBSITE ----- #
 
-    async def serve_file(self, request: web.Request, filename: Optional[str] = None) -> Response:
+    async def serve_file(self, request: web.Request) -> Response:
         filepath = request.path[1:].split("/")
         try:
             if filepath == [""]:
@@ -297,25 +306,10 @@ class ApplicationState(object):
 
         return web.Response(body=json.dumps(data), status=200)
 
-    # Todo - Need a websocket that will be used to notify the client (browser) of paid invoices
-    #  this will likely be via relaying tx state changes on from ElectrumSV
-    # async def websocket_events(app: Application, request: Request,
-    #         websocket: websockets.Websocket) -> None:
-    #     app.register_listener(websocket)
-    #     while not websocket.closed:
-    #         # Discard any incoming messages.
-    #         msg = await websocket.recv()
-    #     app.unregister_listener(websocket)
-
-
-def add_base_routes(web_app: web.Application, app_state: ApplicationState):
-    web_app.add_routes([
-        web.get("/", app_state.serve_file),
-    ])
-    return web_app
-
 
 def add_website_routes(web_app: web.Application, app_state: ApplicationState):
+    """static from wwwroot dir"""
+    web_app.add_routes([web.get("/", app_state.serve_file)])  # Index
     web_paths = []
     for root_path, dirnames, filenames in os.walk(app_state.wwwroot_path):
         if len(filenames):
@@ -342,8 +336,13 @@ def add_api_routes(web_app: web.Application, app_state: ApplicationState):
         web.get("/api/bip270/{id_text}", app_state.get_invoice),
         web.post("/api/bip270/{id_text}", app_state.submit_invoice_payment),
     ])
+    return web_app
 
-    # server.websocket("/events")(partial(bip270.websocket_events, app))
+
+def add_websocket_route(web_app: web.Application, app_state: ApplicationState):
+    web_app.add_routes([
+        web.view("/websocket/text-events", TxStateWebSocket),
+    ])
     return web_app
 
 
@@ -354,14 +353,14 @@ def run() -> None:
             datefmt='%Y-%m-%d %H:%M:%S')
 
         config = parse_args()
-        app_state = ApplicationState(config)
         web_app = web.Application()
+        app_state = ApplicationState(config, web_app)
         web_app.app_state = app_state
 
         # routes
-        web_app = add_base_routes(web_app, app_state)
         web_app = add_website_routes(web_app, app_state)
         web_app = add_api_routes(web_app, app_state)
+        web_app = add_websocket_route(web_app, app_state)
 
         web.run_app(web_app, host="127.0.0.1", port=24242)  # type: ignore
     except StartupError as e:
