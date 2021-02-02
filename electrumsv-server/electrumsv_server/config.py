@@ -28,6 +28,7 @@ def parse_args() -> argparse.Namespace:
     extend_parser(parser)
     return parser.parse_args()
 
+
 def extend_parser(parser: argparse.ArgumentParser) -> argparse.Namespace:
     group = parser.add_argument_group("HTTP server options")
     group.add_argument("--database", action=EnvDefault, default=NAME_SQLITE, type=str,
