@@ -7,10 +7,11 @@ from .constants import NAME_SQLITE, RequestState
 from .exceptions import StartupError
 
 if TYPE_CHECKING:
-    from .application import Application
+    from .application import ApplicationState
 
 
 database_proxy = peewee.DatabaseProxy()
+
 
 class BaseModel(peewee.Model):
     class Meta:
@@ -40,7 +41,7 @@ class Payment(BaseModel):
     request = peewee.ForeignKeyField(PaymentRequest)
 
 
-def open_sqlite_database(app: 'Application') -> peewee.Database:
+def open_sqlite_database(app: 'ApplicationState') -> peewee.Database:
     db_path = os.path.join(app.data_path, "electrumsv_server.sqlite")
     db = peewee.SqliteDatabase(db_path, pragmas = {
         'journal_mode': 'wal',
@@ -49,7 +50,7 @@ def open_sqlite_database(app: 'Application') -> peewee.Database:
     return db
 
 
-def open_database(app: 'Application') -> peewee.Database:
+def open_database(app: 'ApplicationState') -> peewee.Database:
     if app.config.database == NAME_SQLITE:
         db = open_sqlite_database(app)
     else:

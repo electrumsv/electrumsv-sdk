@@ -1,3 +1,3 @@
-from . import main
+from . import application
 
-main.run()
+application.run()
