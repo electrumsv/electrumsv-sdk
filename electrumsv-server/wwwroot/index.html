@@ -384,8 +384,7 @@
         connect() {
           console.debug("ServerConnection.connect");
           this.isConnected = false;
-
-          this.socket = new WebSocket("ws://127.0.0.1:58200/events");
+          this.socket = new WebSocket("ws://127.0.0.1:24242/websocket/text-events");
           this.socket.onopen = this.onOpen.bind(this);
           this.socket.onclose = this.onClose.bind(this);
           this.socket.onmessage = this.onMessage.bind(this);
@@ -978,7 +977,7 @@
 
       window.onload = function () {
         dashboardPage.show()
-        //serverConnection = new ServerConnection();
+        serverConnection = new ServerConnection();
       };
     </script>
   </body>
