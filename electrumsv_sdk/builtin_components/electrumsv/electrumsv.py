@@ -161,4 +161,4 @@ class Plugin(AbstractPlugin):
 
         self.plugin_tools.call_for_component_id_or_type(
             self.COMPONENT_NAME, callable=reset_electrumsv)
-        self.logger.debug("Reset of RegTest electrumsv wallet completed successfully")
+        self.logger.info("Reset of RegTest electrumsv wallet completed successfully")

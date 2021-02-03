@@ -2,7 +2,8 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
+import shutil
 
 from electrumsv_sdk.abstract_plugin import AbstractPlugin
 from electrumsv_sdk.config import Config
@@ -10,18 +11,19 @@ from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
-from . import server_app
+
+MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class Plugin(AbstractPlugin):
-    SERVER_HOST = server_app.SERVER_HOST
-    SERVER_PORT = server_app.SERVER_PORT
+    SERVER_HOST = "127.0.0.1"
+    SERVER_PORT = 24242
     RESERVED_PORTS = {SERVER_PORT}
-    PING_URL = server_app.PING_URL
 
     COMPONENT_NAME = get_directory_name(__file__)
     COMPONENT_PATH = Path(os.path.dirname(os.path.abspath(__file__)))
-    SCRIPT_PATH = COMPONENT_PATH / "server_app.py"
+    ELECTRUMSV_SERVER_MODULE_PATH = Path(MODULE_DIR).parent.parent.parent.joinpath(
+        "electrumsv-server")
 
     def __init__(self, config: Config):
         self.config = config
@@ -38,13 +40,17 @@ class Plugin(AbstractPlugin):
         self.logger.debug(f"Installing {self.COMPONENT_NAME} is not applicable")
 
     def start(self) -> None:
-        self.id = self.plugin_tools.get_id(self.COMPONENT_NAME)
+        self.datadir, self.id = self.plugin_tools.get_component_datadir(self.COMPONENT_NAME)
         logfile = self.plugin_tools.get_logfile_path(self.id)
         env_vars = {"PYTHONUNBUFFERED": "1"}
-        command = f"{sys.executable} {self.SCRIPT_PATH}"
+        os.makedirs(self.ELECTRUMSV_SERVER_MODULE_PATH.joinpath("data"), exist_ok=True)
+        os.chdir(self.ELECTRUMSV_SERVER_MODULE_PATH)
+        command = f"{sys.executable} -m electrumsv_server --wwwroot-path=wwwroot " \
+            f"--data-path={self.datadir}"
 
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
-            component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile
+            component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile, metadata={
+            "datadir": str(self.datadir)}
         )
 
     def stop(self) -> None:
@@ -52,4 +58,13 @@ class Plugin(AbstractPlugin):
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
 
     def reset(self) -> None:
-        self.logger.info("resetting the status monitor is not applicable.")
+        def reset_server(component_dict: Dict):
+            datadir = Path(component_dict.get("metadata").get("datadir"))
+            if datadir.exists():
+                shutil.rmtree(datadir)
+                os.mkdir(datadir)
+            else:
+                os.makedirs(datadir, exist_ok=True)
+
+        self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=reset_server)
+        self.logger.info(f"Reset of {self.COMPONENT_NAME} completed successfully.")
