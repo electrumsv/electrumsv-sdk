@@ -1,3 +1,9 @@
+import sys
+
 from . import application
 
-application.run()
+try:
+    application.run()
+except KeyboardInterrupt:
+    sys.exit(0)
+

@@ -133,4 +133,4 @@ class Plugin(AbstractPlugin):
             electrumsv_node.reset(data_path=datadir, rpcport=rpcport)
 
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=reset_node)
-        self.logger.debug("Reset of RegTest bitcoin daemon completed successfully.")
+        self.logger.info("Reset of RegTest bitcoin daemon completed successfully.")
