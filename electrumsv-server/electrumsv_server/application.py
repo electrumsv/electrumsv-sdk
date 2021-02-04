@@ -67,9 +67,9 @@ class ApplicationState(object):
 
     async def notify_listeners(self, value) -> None:
         text = json.dumps(value)
-        for ws_client in self.web_app['ws_clients']:
+        for ws_client in self.web_app['ws_clients'].values():
             ws_client: WSClient
-            await ws_client.websocket.send(text)
+            await ws_client.websocket.send_str(text)
 
     # ----- WEBSITE ----- #
 
@@ -170,7 +170,8 @@ class ApplicationState(object):
         id_text = request.match_info['id_text']
         request_id = uuid.UUID(hex=id_text)
         result = await self._get_invoice(request_id)
-        return web.Response(body=json.dumps(result), status=200)
+        return web.Response(body=json.dumps(result), headers={'Content-Type': 'application/json'},
+            status=200)
 
     async def get_invoice_display_state(self, request: Request) -> Response:
         id_text = request.match_info['id_text']
