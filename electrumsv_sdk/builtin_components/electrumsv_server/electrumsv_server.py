@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional, Dict
 import shutil
@@ -13,6 +14,21 @@ from electrumsv_sdk.plugin_tools import PluginTools
 
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def extend_start_cli(start_parser: ArgumentParser):
+    """if this method is present it allows extension of the start argparser only.
+    This occurs dynamically and adds the new cli options as attributes of the Config object"""
+    start_parser.add_argument("--mapi-broadcast", action="store_true",
+        help="turn on broadcasting via the merchant api")
+    start_parser.add_argument("--mapi-host", type=str, default="127.0.0.1",
+        help="merchant api host")
+    start_parser.add_argument("--mapi-port", type=int, default=5051,
+        help="merchant api port")
+
+    # variable names to be pulled from the start_parser
+    new_options = ['mapi_broadcast', "mapi_host", "mapi_port"]
+    return start_parser, new_options
 
 
 class Plugin(AbstractPlugin):
@@ -47,6 +63,10 @@ class Plugin(AbstractPlugin):
         os.chdir(self.ELECTRUMSV_SERVER_MODULE_PATH)
         command = f"{sys.executable} -m electrumsv_server --wwwroot-path=wwwroot " \
             f"--data-path={self.datadir}"
+
+        if self.config.mapi_broadcast:  # extension cli option
+            command += f" --mapi-broadcast --mapi-host={self.config.mapi_host} " \
+                  f"--mapi-port={self.config.mapi_port}"
 
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile, metadata={

@@ -2,7 +2,7 @@ import argparse
 import os
 from typing import Any, Dict, Iterable, Optional
 
-from .constants import DEFAULT_HTTP_PORT, NAME_SQLITE
+from .constants import DEFAULT_HTTP_PORT, NAME_SQLITE, DEFAULT_MAPI_HOST, DEFAULT_MAPI_PORT
 
 
 class EnvDefault(argparse.Action):
@@ -39,3 +39,9 @@ def extend_parser(parser: argparse.ArgumentParser) -> argparse.Namespace:
         help="The path that web pages and content is served from.")
     group.add_argument("--http-server-port", action=EnvDefault, default=DEFAULT_HTTP_PORT, type=int,
         help="The port that the server listens to for HTTP requests.")
+    group.add_argument("--mapi-broadcast", action="store_true",
+        help="turn on broadcasting via the merchant api")
+    group.add_argument("--mapi-host", action=EnvDefault, default=DEFAULT_MAPI_HOST,
+        help="merchant api host")
+    group.add_argument("--mapi-port", action=EnvDefault, default=DEFAULT_MAPI_PORT,
+        help="merchant api port")

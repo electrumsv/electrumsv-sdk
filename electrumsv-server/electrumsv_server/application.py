@@ -1,15 +1,17 @@
 import asyncio
 import calendar
 import datetime
+import socket
 import sys
 import uuid
 import logging
 import mimetypes
-from typing import Optional, Dict
+from typing import Optional, Dict, Union, Any
 
+import aiohttp
 import bitcoinx
 import peewee
-from aiohttp import web
+from aiohttp import web, AsyncResolver
 from aiohttp.web_request import Request
 from aiohttp.web_response import Response
 
@@ -50,6 +52,37 @@ class ApplicationState(object):
 
         self.db = open_database(self)
         self._listeners = []
+
+        self.client_session: Optional[aiohttp.ClientSession]=None
+
+    @staticmethod
+    async def on_startup(app):
+        app.app_state.client_session = await app.app_state._get_aiohttp_session()
+
+    @staticmethod
+    async def on_shutdown(app):
+        await app.app_state._close_aiohttp_session()
+
+    async def _get_aiohttp_session(self):
+        # aiohttp session needs to be initialised in async function
+        # https://github.com/tiangolo/fastapi/issues/301
+        if self.client_session is None:
+            resolver = AsyncResolver()
+            conn = aiohttp.TCPConnector(family=socket.AF_INET, resolver=resolver, ttl_dns_cache=10,
+                                        force_close=True, enable_cleanup_closed=True)
+            self.client_session = aiohttp.ClientSession(connector=conn)
+        return self.client_session
+
+    async def _close_aiohttp_session(self):
+        self.logger.debug("closing aiohttp client session.")
+        if self.client_session:
+            await self.client_session.close()
+
+    async def _decode_response_body(self, response) -> Dict[Any, Any]:
+        body = await response.read()
+        if body == b"" or body == b"{}":
+            return {}
+        return json.loads(body.decode())
 
     def _validate_path(self, path: str, create: bool=False) -> str:
         path = os.path.realpath(path)
@@ -233,10 +266,34 @@ class ApplicationState(object):
             except KeyError:
                 return web.Response(body="Invoice has a missing output", status=400)
 
-            # TODO: Broadcast it.
-            # Broadcasting the transaction verifies that the transaction is valid.
+            # Broadcast via Merchant API
+            if self.config.mapi_broadcast:
+                # Broadcasting the transaction verifies that the transaction is valid.
+                self.client_session: aiohttp.ClientSession
+                mapi_uri = f"https://{self.config.mapi_host}:{self.config.mapi_port}/mapi/tx"
+                payload = {
+                    "rawtx": payment_object["transaction"],
+                    "merkleProof": False,
+                    "dsCheck": False,
+                    # "callbackUrl": f"http://127.0.0.1/mapi/callback/{id_text}",
+                }
+                headers = {'Content-Type': 'application/json'}
 
-            # TODO: If it fails to broadcast handle it.
+                # TODO - Wire up callbacks for merkleProof and dsCheck
+                async with self.client_session.post(mapi_uri, headers=headers,
+                        data=json.dumps(payload), ssl=False) as resp:
+
+                    json_response = await self._decode_response_body(resp)
+                    if resp.status != 200:
+                        self.logger.error(f"broadcast failed with: {json_response}")
+                        return web.Response(body="broadcast failed", status=400)
+                    assert json_response['encoding'].lower() == 'utf-8'
+                    json_payload = json.loads(json_response['payload'])
+                    self.logger.debug(f"successful broadcast for {json_payload['txid']}")
+
+            # Skip broadcast - ElectrumSV wallet needs to take responsibility for broadcast
+            else:
+                pass
 
             # Mark the invoice as paid by the given transaction.
             query = (PaymentRequest.update({PaymentRequest.tx_hash: tx.hash(),
@@ -347,22 +404,27 @@ def add_websocket_route(web_app: web.Application, app_state: ApplicationState):
     return web_app
 
 
+async def init():
+    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',
+        level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
+
+    config = parse_args()
+    web_app = web.Application()
+    app_state = ApplicationState(config, web_app)
+    web_app.app_state = app_state
+
+    # routes
+    web_app = add_website_routes(web_app, app_state)
+    web_app = add_api_routes(web_app, app_state)
+    web_app = add_websocket_route(web_app, app_state)
+
+    web_app.on_startup.append(app_state.on_startup)
+    web_app.on_shutdown.append(app_state.on_shutdown)
+    return web_app
+
+
 def run() -> None:
     try:
-        logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',
-            level=logging.DEBUG,
-            datefmt='%Y-%m-%d %H:%M:%S')
-
-        config = parse_args()
-        web_app = web.Application()
-        app_state = ApplicationState(config, web_app)
-        web_app.app_state = app_state
-
-        # routes
-        web_app = add_website_routes(web_app, app_state)
-        web_app = add_api_routes(web_app, app_state)
-        web_app = add_websocket_route(web_app, app_state)
-
-        web.run_app(web_app, host="127.0.0.1", port=24242)  # type: ignore
+        web.run_app(init(), host="127.0.0.1", port=24242)
     except StartupError as e:
         sys.exit(e)
