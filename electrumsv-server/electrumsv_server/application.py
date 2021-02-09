@@ -22,9 +22,12 @@ import os
 from .database import open_database, PaymentRequest, PaymentRequestOutput
 from .exceptions import StartupError
 from .constants import DEFAULT_PAGE, RequestState
-from .config import parse_args
+from .config import parse_args, get_network_choice, get_mapi_uri
 from .payment_requests import get_next_script
 from .txstatewebsocket import TxStateWebSocket, WSClient
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # Silence verbose logging
 db_logger = logging.getLogger("peewee")
@@ -42,6 +45,7 @@ class ApplicationState(object):
         self.loop = asyncio.get_event_loop()
         self.config = config
         self.logger = logging.getLogger("application-state")
+        self.mapi_uri = get_mapi_uri(self.config.network_choice)
 
         wwwroot_path = self._validate_path(config.wwwroot_path)
         if not os.path.exists(os.path.join(wwwroot_path, "index.html")):
@@ -270,7 +274,7 @@ class ApplicationState(object):
             if self.config.mapi_broadcast:
                 # Broadcasting the transaction verifies that the transaction is valid.
                 self.client_session: aiohttp.ClientSession
-                mapi_uri = f"https://{self.config.mapi_host}:{self.config.mapi_port}/mapi/tx"
+                mapi_uri = f"{self.mapi_uri}/tx"
                 payload = {
                     "rawtx": payment_object["transaction"],
                     "merkleProof": False,
@@ -279,7 +283,6 @@ class ApplicationState(object):
                 }
                 headers = {'Content-Type': 'application/json'}
 
-                # TODO - Wire up callbacks for merkleProof and dsCheck
                 async with self.client_session.post(mapi_uri, headers=headers,
                         data=json.dumps(payload), ssl=False) as resp:
 
@@ -409,6 +412,7 @@ async def init():
         level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
 
     config = parse_args()
+    config.network_choice = get_network_choice(config)
     web_app = web.Application()
     app_state = ApplicationState(config, web_app)
     web_app.app_state = app_state

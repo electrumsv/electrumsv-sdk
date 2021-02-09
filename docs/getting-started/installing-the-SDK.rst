@@ -185,7 +185,15 @@ Open PgAdmin4 in the browser (on windows) and add the superuser account
 
 Linux
 ~~~~~~~~~
-I suggest you learn to use docker to pull an official postgres image from:
+Either follow these instructions here to do a system installation of postgres:
+https://www.digitalocean.com/community/tutorials/how-to-install-and-use-postgresql-on-ubuntu-18-04
+
+Setup a postgres user::
+
+    user=mapimaster
+    password=mapimasterpass
+
+Or learn to use docker to pull an official postgres image from:
 https://hub.docker.com/_/postgres
 
 Don't forget to run it with evironment variables set for::
@@ -232,8 +240,12 @@ Linux or MacOS
 ~~~~~~~~~~~~~~~~~
 ::
 
+    sudo apt-get update
+    sudo apt-get install dos2unix
+    dos2unix dev_cert_gen.sh
+    sudo apt-get install libnss3-tools
     sudo chmod +x dev_cert_gen.sh
-    ./dev_cert_gen.sh
+    sudo ./dev_cert_gen.sh
 
 
 There will now be a ``localhost.pfx`` in the current working directory.
@@ -249,6 +261,22 @@ There will now be a ``localhost.pfx`` in the current working directory.
 
 This is a one-time thing and now the ``localhost.pfx`` file is stored in the
 SDK datadir for merchant API.
+
+3. **Add Your Node to the Merchant API**
+
+::
+
+    curl --location --request POST 'https://127.0.0.1:5051/api/v1/Node' \
+    --header 'Content-Type: application/json' \
+    --header 'Api-Key: apikey' \
+    --data-raw '{
+        "id": "localhost:18332",
+        "username": "rpcuser",
+        "password": "rpcpassword",
+        "remarks": "remarks"
+    }' --insecure
+
+
 
 Now you are ready to launch any component!
 I suggest you now checkout:

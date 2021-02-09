@@ -2,7 +2,16 @@ import argparse
 import os
 from typing import Any, Dict, Iterable, Optional
 
+from . import constants
 from .constants import DEFAULT_HTTP_PORT, NAME_SQLITE, DEFAULT_MAPI_HOST, DEFAULT_MAPI_PORT
+
+
+MAPI_URI_MAP = {
+    constants.REGTEST: "https://127.0.0.1:5051/mapi/",
+    constants.TESTNET: "https://austecondevserver.app/mapi/",
+    constants.SCALING_TESTNET: "https://mapi.test.taal.com/mapi/",
+    constants.MAINNET: "https://merchantapi.taal.com/mapi/",
+}
 
 
 class EnvDefault(argparse.Action):
@@ -31,6 +40,12 @@ def parse_args() -> argparse.Namespace:
 
 def extend_parser(parser: argparse.ArgumentParser) -> argparse.Namespace:
     group = parser.add_argument_group("HTTP server options")
+    group.add_argument("--regtest", action="store_true", help="run on regtest")
+    group.add_argument("--testnet", action="store_true", help="run on testnet")
+    group.add_argument("--scaling-testnet", action="store_true",
+        help="run on scaling-testnet")
+    group.add_argument("--main", action="store_true", help="run on mainnet")
+
     group.add_argument("--database", action=EnvDefault, default=NAME_SQLITE, type=str,
         help=f"'{NAME_SQLITE}' or some as yet undefined thing for postgres.")
     group.add_argument("--data-path", action=EnvDefault, type=str,
@@ -45,3 +60,22 @@ def extend_parser(parser: argparse.ArgumentParser) -> argparse.Namespace:
         help="merchant api host")
     group.add_argument("--mapi-port", action=EnvDefault, default=DEFAULT_MAPI_PORT,
         help="merchant api port")
+
+
+def get_network_choice(config):
+    network_options = [config.regtest, config.testnet, config.scaling_testnet, config.main]
+    assert len([is_selected for is_selected in network_options if is_selected]) in {0, 1}, \
+        "can only select 1 network"
+    network_choice = constants.REGTEST
+    if config.testnet:
+        network_choice = constants.TESTNET
+    elif config.scaling_testnet:
+        network_choice = constants.SCALING_TESTNET
+    elif config.main:
+        network_choice = constants.MAINNET
+    return network_choice
+
+
+def get_mapi_uri(network_choice):
+    return MAPI_URI_MAP[network_choice]
+

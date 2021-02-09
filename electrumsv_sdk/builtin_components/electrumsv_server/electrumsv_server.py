@@ -12,6 +12,8 @@ from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
+from .local_tools import LocalTools
+
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -26,8 +28,15 @@ def extend_start_cli(start_parser: ArgumentParser):
     start_parser.add_argument("--mapi-port", type=int, default=5051,
         help="merchant api port")
 
+    start_parser.add_argument("--regtest", action="store_true", help="run on regtest")
+    start_parser.add_argument("--testnet", action="store_true", help="run on testnet")
+    start_parser.add_argument("--scaling-testnet", action="store_true",
+        help="run on scaling-testnet")
+    start_parser.add_argument("--main", action="store_true", help="run on mainnet")
+
     # variable names to be pulled from the start_parser
-    new_options = ['mapi_broadcast', "mapi_host", "mapi_port"]
+    new_options = ['mapi_broadcast', "mapi_host", "mapi_port", "regtest", "scaling_testnet",
+        "testnet", "main"]
     return start_parser, new_options
 
 
@@ -44,6 +53,7 @@ class Plugin(AbstractPlugin):
     def __init__(self, config: Config):
         self.config = config
         self.plugin_tools = PluginTools(self, self.config)
+        self.tools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
         self.src = self.COMPONENT_PATH
@@ -62,7 +72,10 @@ class Plugin(AbstractPlugin):
         os.makedirs(self.ELECTRUMSV_SERVER_MODULE_PATH.joinpath("data"), exist_ok=True)
         os.chdir(self.ELECTRUMSV_SERVER_MODULE_PATH)
         command = f"{sys.executable} -m electrumsv_server --wwwroot-path=wwwroot " \
-            f"--data-path={self.datadir}"
+            f"--data-path={self.datadir} "
+
+        network_choice = self.tools.get_network_choice()
+        command += f"--{network_choice}"
 
         if self.config.mapi_broadcast:  # extension cli option
             command += f" --mapi-broadcast --mapi-host={self.config.mapi_host} " \

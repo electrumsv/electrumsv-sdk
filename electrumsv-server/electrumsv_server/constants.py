@@ -18,3 +18,9 @@ class RequestState(IntEnum):
     UNPAID = 1
     PAID = 2
     CLOSED = 3
+
+
+REGTEST = "regtest"
+TESTNET = "testnet"
+SCALING_TESTNET = "scaling_testnet"
+MAINNET = "main"
