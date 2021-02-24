@@ -7,10 +7,10 @@ from .constants import DEFAULT_HTTP_PORT, NAME_SQLITE, DEFAULT_MAPI_HOST, DEFAUL
 
 
 MAPI_URI_MAP = {
-    constants.REGTEST: "https://127.0.0.1:5051/mapi/",
-    constants.TESTNET: "https://austecondevserver.app/mapi/",
-    constants.SCALING_TESTNET: "https://mapi.test.taal.com/mapi/",
-    constants.MAINNET: "https://merchantapi.taal.com/mapi/",
+    constants.REGTEST: "https://127.0.0.1:5051/mapi",
+    constants.TESTNET: "https://austecondevserver.app/mapi",
+    constants.SCALING_TESTNET: "https://mapi.test.taal.com/mapi",
+    constants.MAINNET: "https://merchantapi.taal.com/mapi",
 }
 
 

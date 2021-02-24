@@ -11,7 +11,7 @@ ENV ELECTRUMX_HOST=host.docker.internal
 
 RUN apt-get update && apt-get install -y dos2unix
 
-RUN dos2unix /electrumsv-sdk/electrumsv_sdk/builtin_components/whatsonchain/docker-entrypoint.sh
-RUN chmod +x /electrumsv-sdk/electrumsv_sdk/builtin_components/whatsonchain/docker-entrypoint.sh
-ENTRYPOINT [ "electrumsv-sdk/electrumsv_sdk/builtin_components/whatsonchain/docker-entrypoint.sh" ]
+RUN dos2unix electrumsv_sdk/builtin_components/whatsonchain/docker-entrypoint.sh
+RUN chmod +x electrumsv_sdk/builtin_components/whatsonchain/docker-entrypoint.sh
+ENTRYPOINT [ "electrumsv_sdk/builtin_components/whatsonchain/docker-entrypoint.sh" ]
 EXPOSE 3002

@@ -4,9 +4,9 @@
 
 services:
   node:
-#    image: electrumsvsdk/node:latest
+    # image: electrumsvsdk/node:latest
     build:
-      context: electrumsv_sdk
+      context: .
       dockerfile: electrumsv_sdk/builtin_components/node/Dockerfile
     ports:
       - "0.0.0.0:18332:18332"
@@ -16,9 +16,9 @@ services:
       - NODE_PORT=18332
 
   electrumx:
-#    image: electrumsvsdk/electrumx:latest
+    # image: electrumsvsdk/electrumx:latest
     build:
-      context: electrumsv_sdk
+      context: .
       dockerfile: electrumsv_sdk/builtin_components/electrumx/Dockerfile
     ports:
       - "0.0.0.0:51001:51001"
@@ -28,9 +28,9 @@ services:
       - node
 
   electrumsv:
-#    image: electrumsvsdk/electrumsv:latest
+    # image: electrumsvsdk/electrumsv:latest
     build:
-      context: electrumsv_sdk
+      context: .
       dockerfile: electrumsv_sdk/builtin_components/electrumsv/Dockerfile
     ports:
       - "0.0.0.0:9999:9999"
@@ -47,9 +47,9 @@ services:
       - electrumx
 
   whatsonchain:
-#    image: electrumsvsdk/whatsonchain:latest
+    # image: electrumsvsdk/whatsonchain:latest
     build:
-      context: electrumsv_sdk/builtin_components/whatsonchain
+      context: .
       dockerfile: electrumsv_sdk/builtin_components/whatsonchain/Dockerfile
     ports:
       - "0.0.0.0:3002:3002"
@@ -64,9 +64,9 @@ services:
       - node
 
   whatsonchain_api:
-    #    image: electrumsvsdk/whatsonchain:latest
+    # image: electrumsvsdk/whatsonchain:latest
     build:
-      context: electrumsv_sdk/builtin_components/whatsonchain_api
+      context: .
       dockerfile: electrumsv_sdk/builtin_components/whatsonchain_api/Dockerfile
     ports:
       - "0.0.0.0:12121:12121"
@@ -78,21 +78,21 @@ services:
     depends_on:
       - node
 
-  merchant_api:
-    #    image: electrumsvsdk/merchant_api:latest
-    build:
-      context: electrumsv_sdk/builtin_components/merchant_api
-      dockerfile: ./Dockerfile
-    ports:
-      - "0.0.0.0:45111:45111"
-      - "0.0.0.0:28332:28332"
-    environment:
-      - NODE_HOST=host.docker.internal
-      - NODE_RPC_PORT=18332
-      - NODE_RPC_USERNAME=rpcuser
-      - NODE_RPC_PASSWORD=rpcpassword
-      - NODE_ZMQ_PORT=28332
-      - MERCHANT_API_HOST=0.0.0.0
-      - MERCHANT_API_PORT=45111
-    depends_on:
-      - node
+#  merchant_api:
+#    #    image: electrumsvsdk/merchant_api:latest
+#    build:
+#      context: .
+#      dockerfile: electrumsv_sdk/builtin_components/merchant_api/Dockerfile
+#    ports:
+#      - "0.0.0.0:45111:45111"
+#      - "0.0.0.0:28332:28332"
+#    environment:
+#      - NODE_HOST=host.docker.internal
+#      - NODE_RPC_PORT=18332
+#      - NODE_RPC_USERNAME=rpcuser
+#      - NODE_RPC_PASSWORD=rpcpassword
+#      - NODE_ZMQ_PORT=28332
+#      - MERCHANT_API_HOST=0.0.0.0
+#      - MERCHANT_API_PORT=45111
+#    depends_on:
+#      - node
