@@ -20,9 +20,10 @@ For Merchant API:
 On linux, please install these system dependencies before proceeding::
 
     sudo apt-get update
-    sudo apt-get install libusb-1.0-0-dev libudev-dev libssl1.0-dev
+    sudo apt-get install libusb-1.0-0-dev libudev-dev
+    sudo apt-get install git net-tools xterm
+    sudo apt-get install libssl1.0-dev   # OR libssl-dev for newer linux distros
     python3 -m pip install pysqlite3-binary
-
 
 On MacOS X please install these system dependencies before proceeding::
 
