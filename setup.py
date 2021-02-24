@@ -7,20 +7,14 @@ import sys
 site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 _ = """
-py -3.7-32 .\setup.py build bdist_wheel --plat-name win32
-py -3.8-32 .\setup.py build bdist_wheel --plat-name win32
-py -3.7 .\setup.py build bdist_wheel --plat-name win-amd64
-py -3.8 .\setup.py build bdist_wheel --plat-name win-amd64
+py -3.9 .\setup.py build bdist_wheel --plat-name win-amd64
 twine upload dist/*
 
 now uninstall all conflicting versions of the script:
-py -3.7-32 -m pip uninstall electrumsv-sdk
-py -3.8-32 -m pip uninstall electrumsv-sdk
-py -3.7 -m pip uninstall electrumsv-sdk
-py -3.8 -m pip uninstall electrumsv-sdk
+py -3.9 -m pip uninstall electrumsv-sdk
 
 and install the one you want:
-py -3.8 -m pip install electrumsv-sdk
+py -3.9 -m pip install electrumsv-sdk
 """
 
 with open('electrumsv_sdk/__init__.py', 'r') as f:
@@ -80,8 +74,6 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows :: Windows 10',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: Implementation :: CPython',
     ],

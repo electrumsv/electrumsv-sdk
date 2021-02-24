@@ -8,7 +8,7 @@ while offline (and is especially aimed at facilitating rigourous CI/CD functiona
     Licence: The Open BSV License
     Maintainers: Roger Taylor, AustEcon
     Project Lead: Roger Taylor
-    Language: Python (>=3.7)
+    Language: Python (>=3.9)
     Homepage: https://electrumsv.io/
 
 [![PyPI version](https://badge.fury.io/py/electrumsv-sdk.svg)](https://badge.fury.io/py/electrumsv-sdk)

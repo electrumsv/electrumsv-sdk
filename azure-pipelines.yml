@@ -40,7 +40,7 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.7
+        versionSpec: 3.9
 
     - script: |
           set -e
@@ -171,7 +171,7 @@ jobs:
 
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.7
+        versionSpec: 3.9
 
     - script: |
         brew upgrade sqlite3
@@ -265,18 +265,18 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.7
+        versionSpec: 3.9
         addToPath: true
         architecture: 'x64'
 
     # need to add python Scripts/ dir to PATH to find 'electrumsv-sdk' command
     - pwsh: |
-        $scripts_dir = py -3.7 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
+        $scripts_dir = py -3.9 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
         $env:PATH += $scripts_dir
-        py -3.7 -m pip install --upgrade pip
-        py -3.7 -m pip install wheel
-        py -3.7 -m pip install -e .
-        py -3.7 -m pip install pytest pytest-cov
+        py -3.9 -m pip install --upgrade pip
+        py -3.9 -m pip install wheel
+        py -3.9 -m pip install -e .
+        py -3.9 -m pip install pytest pytest-cov
       displayName: 'install electrumsv-sdk'
 
     # Download a secure file to the agent machine
@@ -359,7 +359,7 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.7
+        versionSpec: 3.9
 
     - script: |
         py -3 -m pip install --upgrade pip
@@ -372,24 +372,6 @@ jobs:
         pathtoPublish: 'wheelhouse'
       displayName: 'build wheel windows'
 
-- job: BuildWindowsx86
-  pool: {vmImage: 'windows-latest'}
-  steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: 3.7
-        architecture: x86
-
-    - script: |
-        py -3 -m pip install --upgrade pip
-        py -3 -m pip install wheel
-        py -3 .\setup.py build bdist_wheel --plat-name win32 --dist-dir ./wheelhouse
-
-    - task: PublishBuildArtifacts@1
-      inputs:
-        artifactName: 'Windowsx86'
-        pathtoPublish: 'wheelhouse'
-      displayName: 'build wheel windowsx86'
 
 - job: BuildLinux
   pool:
@@ -397,7 +379,7 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.7
+        versionSpec: 3.9
 
     - bash: |
         python3 -m pip install --upgrade pip

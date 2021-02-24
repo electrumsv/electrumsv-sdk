@@ -1,4 +1,4 @@
-﻿FROM python:3.8
+﻿FROM python:3.9
 
 # To build and push a new image to dockerhub (see: https://docs.docker.com/docker-hub/repos/):
 # docker build -t electrumsvsdk/base_image:<version> .

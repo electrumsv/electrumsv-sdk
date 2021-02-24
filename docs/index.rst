@@ -10,7 +10,7 @@ ElectrumSV Software Development Kit
 :Licence: The Open BSV License
 :Maintainers: Roger Taylor, AustEcon
 :Project Lead: Roger Taylor
-:Language: Python (>=3.7)
+:Language: Python (>=3.9)
 :Homepage: https://github.com/electrumsv/electrumsv-sdk
 
 Overview
