@@ -1,5 +1,5 @@
 electrumsv-node>=0.0.21
-requests>=2.24.0
+requests
 filelock>=3.0.12
 psutil>=5.6.6
 setuptools>=49.6.0
@@ -7,7 +7,7 @@ aiorpcX>=0.18.4
 bitcoinX>=0.2.4
 peewee>=3.13.3
 wheel
-aiohttp<=3.7.3
+aiohttp>=3.7.3
 tailer
 stringcase
 colorama
