@@ -87,6 +87,12 @@ class LocalTools:
         make it work"""
 
         os.chdir(self.plugin.src)
+
+        # Default to the last commit of ElectrumX that used aiorpcX<0.19 for compatibility with
+        # ElectrumSV until ElectrumSV can be safely moved to a later version - see changelog of
+        # aiorpcX since v0.19.
+        subprocess.run(f"git checkout ce6c23fe578bbbcf51cae6b6a2bfbbb6517413bf", shell=True,
+            check=True)
         checkout_branch(branch)
         requirements_path = self.plugin.src.joinpath('requirements.txt')
 
