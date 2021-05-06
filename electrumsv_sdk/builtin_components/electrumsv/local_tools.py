@@ -54,17 +54,6 @@ class LocalTools:
                     cmd2 = f"{sys.executable} -m pip install 'chardet<4.0'"
                     process2 = subprocess.Popen(cmd2, shell=True)
                     process2.wait()
-            if 'requests' in line:
-                v_major, v_minor, v_last = int(line.split("==")[1].split(".")[0]), \
-                                           int(line.split("==")[1].split(".")[1]), \
-                                           int(line.split("==")[1].split(".")[2])
-                if v_major == 2 and v_minor >= 25 and v_last >= 1:
-                    cmd1 = f"{sys.executable} -m pip uninstall -y requests"
-                    process1 = subprocess.Popen(cmd1, shell=True)
-                    process1.wait()
-                    cmd2 = f"{sys.executable} -m pip install 'requests<2.25.1'"
-                    process2 = subprocess.Popen(cmd2, shell=True)
-                    process2.wait()
 
     def is_offline_cli_mode(self):
         if len(self.config.component_args) != 0:
