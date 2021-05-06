@@ -71,8 +71,7 @@ jobs:
     - script: |
         set -e
         sudo apt-get update
-        sudo apt-get install libssl1.0-dev
-        sudo apt install npm nodejs node-gyp nodejs-dev
+        sudo apt install npm nodejs node-gyp
       displayName: 'prepare node.js'
       continueOnError: true
 
