@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'ElectrumSV SDK'
-copyright = '2020, The ElectrumSV SDK developers'
+copyright = '2021, The ElectrumSV SDK developers'
 author = 'The ElectrumSV SDK developers'
 
 
