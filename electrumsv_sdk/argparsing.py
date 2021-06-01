@@ -81,7 +81,7 @@ class ArgParser:
                 continue
 
             elif self.namespace == NameSpace.TOP_LEVEL:
-                subcommand_indices[NameSpace].append(index)
+                subcommand_indices[NameSpace.TOP_LEVEL].append(index)
 
             elif self.namespace in {NameSpace.START, NameSpace.INSTALL}:
                 # <start options>
