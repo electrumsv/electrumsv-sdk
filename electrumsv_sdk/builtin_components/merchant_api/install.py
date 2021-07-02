@@ -48,20 +48,20 @@ PREBUILT_ENTRIES = {
 def trust_cert(pfx_path):
     if platform.system() in {'Windows'}:
         command1 = f"dotnet dev-certs https --clean"
-        process = subprocess.Popen(shlex.split(command1, posix=0))
+        process = subprocess.Popen(shlex.split(command1, posix=False))
         process.wait()
 
         command2 = f"dotnet dev-certs https --export-path {pfx_path}"
-        process = subprocess.Popen(shlex.split(command2, posix=0))
+        process = subprocess.Popen(shlex.split(command2, posix=False))
         process.wait()
 
     elif platform.system() in {'Darwin'}:
         command1 = f"dotnet dev-certs https --clean"
-        process = subprocess.Popen(shlex.split(command1, posix=1))
+        process = subprocess.Popen(shlex.split(command1, posix=True))
         process.wait()
 
         command2 = f"dotnet dev-certs https --export-path {pfx_path}"
-        process = subprocess.Popen(shlex.split(command2, posix=1))
+        process = subprocess.Popen(shlex.split(command2, posix=True))
         process.wait()
 
 

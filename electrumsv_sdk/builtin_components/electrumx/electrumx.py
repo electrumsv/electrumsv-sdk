@@ -6,7 +6,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional, Dict
 
-from electrumsv_sdk.abstract_plugin import AbstractPlugin
+from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process
@@ -102,8 +102,7 @@ class Plugin(AbstractPlugin):
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
             status_endpoint=f"http://127.0.0.1:{self.port}",
-            metadata={"DATADIR": str(self.datadir), "rpcport": 8000}
-        )
+            metadata={"DATADIR": str(self.datadir), "rpcport": 8000})
 
     def stop(self):
         """some components require graceful shutdown via a REST API or RPC API but most can use the

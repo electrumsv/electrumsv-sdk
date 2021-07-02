@@ -9,7 +9,7 @@ Fortunately the help menu displays as expected so does not deviate from the stan
 import argparse
 import logging
 import sys
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 
 from .constants import NameSpace
 from .config import Config
@@ -61,14 +61,15 @@ class ArgParser:
             sys.exit(1)
         return cur_cmd_name, subcommand_indices
 
-    def manual_argparsing(self, args: List[str]) -> Config:
+    def manual_argparsing(self, args: List[str]) -> None:
         """manually iterate through sys.argv and feed arguments to either:
         a) parent ArgumentParser
         b) child ArgumentParsers (aka subcommands)"""
         component_selected = False
         args.pop(0)
 
-        subcommand_indices = {}  # cmd_name: [index_arg1, index_arg2]
+        # cmd_name: [index_arg1, index_arg2]
+        subcommand_indices: Dict[Optional[str], List[int]] = {}
 
         cur_cmd_name = NameSpace.TOP_LEVEL
         self.namespace = NameSpace.TOP_LEVEL

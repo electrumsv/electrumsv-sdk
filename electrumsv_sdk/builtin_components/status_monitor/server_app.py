@@ -183,8 +183,8 @@ class ApplicationState(object):
         """Client must respond to all 'ping' messages with a 'pong' within <= 2 seconds to stay
         connected."""
         ws = web.WebSocketResponse()
-        ws._id = int(random() * 1_000_000_000_000)
-        logger.info(f"new websocket connection with allocated id: {ws._id}")
+        ws._id = int(random() * 1_000_000_000_000)  # type: ignore
+        logger.info(f"new websocket connection with allocated id: {ws._id}")  # type: ignore
         try:
             await ws.prepare(request)
             self.websockets.add(ws)
@@ -209,9 +209,9 @@ def run_server() -> None:
     web_app = web.Application()
     web_app.app_state = app_state
     web_app.add_routes([
-        web.get("/", web_app.app_state.ping),
-        web.get("/api/get_status", web_app.app_state.get_status),
-        web.get("/ws", web_app.app_state.websocket_handler),
+        web.get("/", web_app.app_state.ping),  # type: ignore
+        web.get("/api/get_status", web_app.app_state.get_status),  # type: ignore
+        web.get("/ws", web_app.app_state.websocket_handler),  # type: ignore
     ])
     web.run_app(web_app, host=SERVER_HOST, port=SERVER_PORT)  # type: ignore
 

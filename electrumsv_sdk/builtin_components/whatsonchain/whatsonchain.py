@@ -3,7 +3,7 @@ import os
 import sys
 from typing import Optional
 
-from electrumsv_sdk.abstract_plugin import AbstractPlugin
+from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.plugin_tools import PluginTools
 from electrumsv_sdk.components import Component
@@ -27,12 +27,11 @@ class Plugin(AbstractPlugin):
     DEFAULT_PORT = 3002
     RESERVED_PORTS = {DEFAULT_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
-    logger = logging.getLogger(COMPONENT_NAME)
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools = PluginTools(self, self.config)
-        self.tools = LocalTools(self)
+        self.plugin_tools: PluginTools = PluginTools(self, self.config)  # type: ignore
+        self.tools = LocalTools(self)  # type: ignore
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
         self.src = self.plugin_tools.get_source_dir("woc-explorer")
@@ -80,8 +79,7 @@ class Plugin(AbstractPlugin):
         status_endpoint="http://127.0.0.1:3002"
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
-            status_endpoint=status_endpoint
-        )
+            status_endpoint=status_endpoint)
 
     def stop(self):
         """some components require graceful shutdown via a REST API or RPC API but most can use the

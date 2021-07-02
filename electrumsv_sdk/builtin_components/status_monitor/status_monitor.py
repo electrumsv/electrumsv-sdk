@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from electrumsv_sdk.abstract_plugin import AbstractPlugin
+from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
@@ -44,8 +44,7 @@ class Plugin(AbstractPlugin):
         command = f"{sys.executable} {self.SCRIPT_PATH}"
 
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
-            component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile
-        )
+            component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile)
 
     def stop(self) -> None:
         self.logger.debug("Attempting to kill the process if it is even running")

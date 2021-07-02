@@ -4,7 +4,7 @@ import sys
 from argparse import ArgumentParser
 from typing import Optional
 
-from electrumsv_sdk.abstract_plugin import AbstractPlugin
+from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
@@ -81,8 +81,7 @@ class Plugin(AbstractPlugin):
 
         self.plugin_tools.spawn_process(str(command), env_vars=os.environ.copy(), id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
-            status_endpoint=status_endpoint
-        )
+            status_endpoint=status_endpoint)
 
     def stop(self):
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)

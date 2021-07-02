@@ -4,6 +4,8 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Optional
+
 import stringcase
 
 from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command
@@ -133,7 +135,7 @@ class LocalTools:
         process2 = subprocess.Popen(cmd2, shell=True)
         process2.wait()
 
-    def normalize_wallet_name(self, wallet_name: str):
+    def normalize_wallet_name(self, wallet_name: Optional[str]):
         if wallet_name is not None:
             if not wallet_name.endswith(".sqlite"):
                 wallet_name += ".sqlite"
@@ -151,15 +153,15 @@ class LocalTools:
                 line += " " + f"--dir {self.plugin.datadir}"
         return line
 
-    def get_wallet_path_for_network(self, datadir: Path, wallet_name: str=None):
+    def get_wallet_path_for_network(self, datadir: Path, wallet_name: Optional[str]=None):
         wallet_name = self.normalize_wallet_name(wallet_name)
         if self.plugin.network == NETWORKS.REGTEST:
             return datadir.joinpath(f"regtest/wallets/{wallet_name}")
         elif self.plugin.network == NETWORKS.TESTNET:
             return datadir.joinpath(f"testnet/wallets/{wallet_name}")
-        elif self.plugin.network == NETWORKS.SCALINGTESTNET:
-            return datadir.joinpath(f"scalingtestnet/wallets/{wallet_name}")
-        elif self.plugin.network == NETWORKS.MAINNET:
+        # elif self.plugin.network == NETWORKS.SCALINGTESTNET:
+        #     return datadir.joinpath(f"scalingtestnet/wallets/{wallet_name}")
+        elif self.plugin.network == 'mainnet':
             logger.error(f"mainnet is not supported at this time")
             sys.exit(1)
 

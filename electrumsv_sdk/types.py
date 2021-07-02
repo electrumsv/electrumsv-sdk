@@ -1,15 +1,21 @@
 import abc
 from pathlib import Path
+from types import ModuleType
 from typing import Set, Optional
 
-from .config import Config
+from electrumsv_sdk.config import Config
+
+import typing
+
+if typing.TYPE_CHECKING:
+    from .components import Component
 
 
 class AbstractPlugin(abc.ABC):
 
     DEFAULT_PORT: int = 54321
     RESERVED_PORTS: Set[int] = {DEFAULT_PORT}
-    COMPONENT_NAME = None
+    COMPONENT_NAME = ""
     DEFAULT_REMOTE_REPO = "https://github.com/electrumsv/electrumsv.git"
 
     def __init__(self, config: Config):
@@ -35,3 +41,6 @@ class AbstractPlugin(abc.ABC):
     def reset(self):
         raise NotImplementedError
 
+
+class AbstractModuleType(ModuleType):
+    Plugin = AbstractPlugin

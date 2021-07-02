@@ -7,7 +7,7 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from typing import List, Dict, Optional, Sequence, Union
+from typing import List, Dict, Optional, Union
 
 import colorama
 import psutil
@@ -34,7 +34,7 @@ def topup_wallet():
         logger.debug(f"Generated {nblocks}: {result.json()['result']} to {toaddress}")
 
 
-def cast_str_int_args_to_int(node_args: Sequence[str]) -> List[str]:
+def cast_str_int_args_to_int(node_args: List) -> List[int]:
     int_indices = []
     for index, arg in enumerate(node_args):
 
@@ -122,7 +122,7 @@ def sigkill(parent_pid):
                     subprocess.run(f"taskkill.exe /PID {pid} /T /F")
 
 
-def kill_by_pid(pid: id):
+def kill_by_pid(pid: int):
     """kills parent and all children"""
     # todo - it may make sense to add an optional timeout for waiting on a graceful shutdown
     #  via sigint before escalating to sigkill/sigterm - this would be specified for each plugin
@@ -135,8 +135,8 @@ def kill_by_pid(pid: id):
             sigkill(parent_pid=pid)
 
 
-def kill_process(component_dict: Dict):
-    pid = component_dict.get('pid')
+def kill_process(component_dict: Dict) -> None:
+    pid = component_dict['pid']
     kill_by_pid(pid)
 
 
@@ -146,9 +146,9 @@ def is_default_component_id(component_name, component_id):
 
 def split_command(command: str) -> List[str]:
     if sys.platform == 'win32':
-        split_command = shlex.split(command, posix=0)
+        split_command = shlex.split(command, posix=False)
     elif sys.platform in {'darwin', 'linux'}:
-        split_command = shlex.split(command, posix=1)
+        split_command = shlex.split(command, posix=True)
     else:
         raise NotImplementedError("OS not supported")
     return split_command
@@ -181,8 +181,9 @@ def tail(logfile):
         print(line)
 
 
-def update_status_monitor(pid: int, component_state: str, id: str=None, component_name: str=None,
-        src: Path=None, logfile: Path=None, status_endpoint: str=None, metadata: Dict=None) -> None:
+def update_status_monitor(pid: int, component_state: Optional[ComponentState], id: str,
+        component_name: str, src: Path=None, logfile: Path=None, status_endpoint: str=None,
+        metadata: Dict=None) -> None:
 
     component_info = Component(id, pid, component_name, str(src),
         status_endpoint=status_endpoint, component_state=component_state,
@@ -193,11 +194,10 @@ def update_status_monitor(pid: int, component_state: str, id: str=None, componen
     component_store.update_status_file(component_info)
 
 
-def spawn_inline(command: str, env_vars: Dict=None, id: str=None, component_name:
-        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
-            metadata: Dict=None) -> None:
+def spawn_inline(command: str, env_vars: Dict, id: str, component_name: str, src: Path=None,
+        logfile: Path=None, status_endpoint: str=None, metadata: Dict=None) -> None:
     """only for running servers with logging requirements - not for simple commands"""
-    def update_state(process, component_state: str):
+    def update_state(process, component_state: Optional[ComponentState]):
         update_status_monitor(pid=process.pid, component_state=component_state, id=id,
             component_name=component_name, src=src, logfile=logfile,
             status_endpoint=status_endpoint, metadata=metadata)
@@ -254,8 +254,8 @@ def spawn_inline(command: str, env_vars: Dict=None, id: str=None, component_name
         sys.exit(1)
 
 
-def spawn_background_supervised(command: str, env_vars: Dict, id: str=None, component_name:
-        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
+def spawn_background_supervised(command: str, env_vars: Dict, id: str, component_name:
+        str, src: Path=None, logfile: Path=None, status_endpoint: str=None,
             metadata: Dict=None) -> None:
     """spawns a child process that can wait for the process to exit and check the returncode"""
     run_background_script = Path(MODULE_DIR).joinpath("scripts/run_background.py")
@@ -278,15 +278,15 @@ def spawn_background_supervised(command: str, env_vars: Dict, id: str=None, comp
         subprocess.Popen(cmd, env=env)
 
 
-def spawn_background(command: str, env_vars: Dict, id: str=None, component_name:
-        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
+def spawn_background(command: str, env_vars: Dict, id: str, component_name:
+        str, src: Path=None, logfile: Path=None, status_endpoint: str=None,
             metadata: Dict=None) -> None:
 
     env = os.environ.copy()
     if env_vars:
         env.update(env_vars)
 
-    def update_state(process, component_state: str):
+    def update_state(process, component_state: ComponentState):
         update_status_monitor(pid=process.pid, component_state=component_state, id=id,
             component_name=component_name, src=src, logfile=logfile,
             status_endpoint=status_endpoint, metadata=metadata)
@@ -308,7 +308,7 @@ def spawn_background(command: str, env_vars: Dict, id: str=None, component_name:
                 process = subprocess.Popen(command, stdout=logfile_handle, stderr=logfile_handle,
                     env=env, creationflags=subprocess.DETACHED_PROCESS)
             else:
-                process = subprocess.Popen(shlex.split(command, posix=1), stdout=logfile_handle,
+                process = subprocess.Popen(shlex.split(command, posix=True), stdout=logfile_handle,
                     stderr=logfile_handle, env=env)
     else:
         # no logging
@@ -328,8 +328,8 @@ def wrap_and_escape_text(string: str):
     return "\'" + string.replace('"', '\\"') + "\'"
 
 
-def spawn_new_terminal(command: str, env_vars: Dict, id: str=None, component_name:
-        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
+def spawn_new_terminal(command: str, env_vars: Dict, id: str, component_name:
+        str, src: Path=None, logfile: Path=None, status_endpoint: str=None,
             metadata: Dict=None) -> None:
 
     component_info = Component(id=id, pid=None, component_type=component_name, location=str(src),
@@ -345,7 +345,7 @@ def spawn_new_terminal(command: str, env_vars: Dict, id: str=None, component_nam
     command += f" --component_info {wrap_and_escape_text(component_json)}"
 
     if sys.platform in 'linux':
-        split_command = shlex.split(f"xterm -fa 'Monospace' -fs 10 -e {command}", posix=1)
+        split_command = shlex.split(f"xterm -fa 'Monospace' -fs 10 -e {command}", posix=True)
         subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE)
 
@@ -356,7 +356,7 @@ def spawn_new_terminal(command: str, env_vars: Dict, id: str=None, component_nam
             stdin=subprocess.PIPE)
 
     elif sys.platform == 'win32':
-        split_command = shlex.split(f"cmd /c {command}", posix=0)
+        split_command = shlex.split(f"cmd /c {command}", posix=False)
         subprocess.Popen(split_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 
@@ -365,7 +365,7 @@ def write_raw_blocks_to_file(filepath: Union[Path, str], node_id: str,
 
     if not to_height:
         result = call_any_node_rpc('getinfo', node_id=node_id)
-        to_height = result['result']['blocks']
+        to_height = int(result['result']['blocks'])
 
     if not from_height:
         from_height = 0
@@ -415,10 +415,11 @@ def call_any_node_rpc(method: str, *args: Union[str, int], node_id: str='node1')
     component_store = ComponentStore()
     DEFAULT_RPCHOST = "127.0.0.1"
     DEFAULT_RPCPORT = 18332
-    component_dict = component_store.component_status_data_by_id(node_id)
+    component_dict: Dict = component_store.component_status_data_by_id(node_id)
     if component_dict:
         rpchost = DEFAULT_RPCHOST
-        rpcport = component_dict.get("metadata").get("rpcport")
+        metadata: Dict = component_dict.get("metadata", {})
+        rpcport = metadata.get("rpcport")
     else:
         logger.error(f"could not locate metadata for node instance: {node_id}, "
                      f"using default of 18332")

@@ -2,7 +2,7 @@ import logging
 import subprocess
 import sys
 
-from electrumsv_sdk.abstract_plugin import AbstractPlugin
+from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
 
 from .constants import NETWORKS_LIST

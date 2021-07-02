@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional, Dict
 
-from electrumsv_sdk.abstract_plugin import AbstractPlugin
+from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name
@@ -46,8 +46,8 @@ class Plugin(AbstractPlugin):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools = PluginTools(self, self.config)
-        self.tools = LocalTools(self)
+        self.plugin_tools = PluginTools(self, self.config)  # type: ignore
+        self.tools = LocalTools(self)  # type: ignore
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
         self.src = Path(electrumsv_node.FILE_PATH).parent
@@ -102,11 +102,11 @@ class Plugin(AbstractPlugin):
 
         command = " ".join(shell_command)
         logfile = self.plugin_tools.get_logfile_path(self.id)
-        self.plugin_tools.spawn_process(command, env_vars=None, id=self.id,
+        self.plugin_tools.spawn_process(command, env_vars=os.environ.copy(), id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
             status_endpoint=f"http://rpcuser:rpcpassword@127.0.0.1:{self.port}",
-            metadata={"DATADIR": str(self.datadir), "rpcport": self.port, "p2p_port": self.p2p_port}
-        )
+            metadata={"DATADIR": str(self.datadir), "rpcport": self.port,
+                "p2p_port": self.p2p_port})
         if electrumsv_node.is_node_running():
             return
         else:
@@ -116,7 +116,7 @@ class Plugin(AbstractPlugin):
         """The bitcoin node requires graceful shutdown via the RPC API - a good example of why this
         entrypoint is provided for user customizations (rather than always killing the process)."""
         def stop_node(component_dict: Dict):
-            rpcport = component_dict.get("metadata").get("rpcport")
+            rpcport = component_dict.get("metadata", {}).get("rpcport")
             if not rpcport:
                 raise Exception("rpcport data not found")
             electrumsv_node.stop(rpcport=rpcport)
@@ -126,8 +126,8 @@ class Plugin(AbstractPlugin):
 
     def reset(self):
         def reset_node(component_dict: Dict):
-            rpcport = component_dict.get("metadata").get("rpcport")
-            datadir = component_dict.get("metadata").get("DATADIR")
+            rpcport = component_dict.get("metadata", {}).get("rpcport")
+            datadir = component_dict.get("metadata", {}).get("DATADIR")
             if not rpcport:
                 raise Exception("rpcport data not found")
             electrumsv_node.reset(data_path=datadir, rpcport=rpcport)

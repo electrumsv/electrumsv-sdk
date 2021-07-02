@@ -34,11 +34,11 @@ import sys
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
-from typing import Optional, Union, Dict
+from typing import Optional, Union, Dict, cast
 from filelock import FileLock
 
 from .config import Config
-from .abstract_plugin import AbstractPlugin
+from .types import AbstractPlugin, AbstractModuleType
 from .constants import SDK_HOME_DIR, LOCAL_PLUGINS_DIR, USER_PLUGINS_DIR, BUILTIN_COMPONENTS_DIR, \
     LOCAL_PLUGINS_DIRNAME, ComponentState, BUILTIN_PLUGINS_DIRNAME, USER_PLUGINS_DIRNAME
 
@@ -60,8 +60,7 @@ class Component:
         component_type: str,
         location: Union[str, Path],
         status_endpoint: Optional[str],
-        component_state:
-            Union[ComponentState.RUNNING, ComponentState.STOPPED, ComponentState.FAILED] = None,
+        component_state: Optional[ComponentState] = None,
         metadata: Optional[dict] = None,
         logging_path: Optional[Union[str, Path]] = None,
     ):
@@ -208,7 +207,7 @@ class ComponentStore:
 
         return component_map
 
-    def import_plugin_module(self, component_name: str) -> ModuleType:
+    def import_plugin_module(self, component_name: str) -> AbstractModuleType:
         plugin_dir = self.component_map.get(component_name)
         if not plugin_dir:
             logger.error(f"plugin for {component_name} not found")
@@ -228,6 +227,7 @@ class ComponentStore:
             # do absolute import
             component_module = import_module(f'{basename}.{component_name}')
 
+        component_module = cast(AbstractModuleType, component_module)
         return component_module
 
     def instantiate_plugin(self, config: Config) -> Optional[AbstractPlugin]:
@@ -237,7 +237,7 @@ class ComponentStore:
         """
         if not config.selected_component:  # i.e. if --id set
             component_dict = self.component_status_data_by_id(config.component_id)
-            component_name = component_dict.get("component_type")
+            component_name = component_dict["component_type"]
         else:
             component_name = config.selected_component
 

@@ -4,11 +4,10 @@ import os
 import time
 from pathlib import Path
 import sys
-from typing import Dict, Optional, Callable, Tuple
+from typing import Dict, Optional, Callable, Tuple, Set
 import requests
 
-
-from .abstract_plugin import AbstractPlugin
+from .types import AbstractPlugin
 from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR
 from .components import ComponentStore
 from .utils import port_is_in_use, is_default_component_id, is_remote_repo, checkout_branch, \
@@ -124,11 +123,10 @@ class PluginTools:
         return new_dir, id
 
     def port_clash_check_ok(self) -> bool:
-        reserved_ports = set()
+        reserved_ports: Set[int] = set()
         for component_name in self.component_store.component_map:
             try:
                 component_module = self.component_store.import_plugin_module(component_name)
-                component_module.Plugin: AbstractPlugin
                 # avoids instantiation by accessing RESERVED_PORTS as a class attribute
                 if component_module.Plugin.RESERVED_PORTS in reserved_ports:
                     self.logger.exception(
@@ -185,9 +183,9 @@ class PluginTools:
             time.sleep(sleep_time)
         return False
 
-    def spawn_process(self, command: str, env_vars: Dict=None, id: str=None, component_name:
-        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
-            metadata: Dict=None) -> None:
+    def spawn_process(self, command: str, env_vars: Dict, id: str, component_name: str,
+            src: Path = None, logfile: Path = None, status_endpoint: str = None,
+            metadata: Dict = None) -> None:
         if not env_vars:
             env_vars = {}
 
@@ -209,7 +207,7 @@ class PluginTools:
     def get_default_id(self, component_name: str) -> str:
         return component_name + str(1)
 
-    def get_id(self, component_name: str) -> str:
+    def get_id(self, component_name: str) -> Optional[str]:
         """This method is exclusively for single-instance components.
         Multi-instance components (that use the --new flag) need to get allocated a component_id
         via the 'get_component_datadir()' method"""
@@ -222,7 +220,9 @@ class PluginTools:
             return id
 
         elif new:
-            self.logger.error("The --new flag is only for multi-instance conponents")
+            self.logger.error("The --new flag is only for multi-instance components")
+            return None
+        return None
 
     def get_logfile_path(self, id: str) -> Path:
         """deterministic / standardised location for logging to file"""

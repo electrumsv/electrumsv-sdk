@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional, Dict
 
-from electrumsv_sdk.abstract_plugin import AbstractPlugin
+from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import is_remote_repo, kill_process, get_directory_name, \
     set_deterministic_electrumsv_seed

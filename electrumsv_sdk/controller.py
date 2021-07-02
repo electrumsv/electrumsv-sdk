@@ -2,6 +2,7 @@ import pprint
 import logging
 import signal
 import sys
+import typing
 from typing import List
 
 from .constants import NameSpace
@@ -11,16 +12,18 @@ from .utils import cast_str_int_args_to_int, call_any_node_rpc
 
 logger = logging.getLogger("runners")
 
+if typing.TYPE_CHECKING:
+    from .builtin_components.status_monitor.server_app import ApplicationState
 
 if sys.platform in ('linux', 'darwin'):
     # https://stackoverflow.com/questions/3234569/python-popen-waitpid-returns-errno-10-no-child-processes
-    signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+    signal.signal(signal.SIGCHLD, signal.SIG_DFL)  # type: ignore
 
 
 class Controller:
     """Five main execution pathways (corresponding to 5 cli commands)"""
 
-    def __init__(self, app_state: "ApplicationState"):
+    def __init__(self, app_state: ApplicationState):
         self.app_state = app_state
         self.component_store = ComponentStore()
         self.component_info = None
