@@ -23,7 +23,7 @@ if sys.platform in ('linux', 'darwin'):
 class Controller:
     """Five main execution pathways (corresponding to 5 cli commands)"""
 
-    def __init__(self, app_state: AppState):
+    def __init__(self, app_state: "AppState"):
         self.app_state = app_state
         self.component_store = ComponentStore()
         self.component_info = None
@@ -132,6 +132,6 @@ class Controller:
         result = call_any_node_rpc(rpc_args[0], *rpc_args[1:], node_id=component_id)
         logger.info(result["result"])
 
-    def status(self, config: Config):
+    def status(self, config: Config) -> None:
         status = self.component_store.get_status(config.selected_component, config.component_id)
         pprint.pprint(status, indent=4)

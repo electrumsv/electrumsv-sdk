@@ -7,7 +7,7 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from typing import List, Dict, Optional, Union, Any
+from typing import List, Dict, Optional, Union
 
 import colorama
 import psutil

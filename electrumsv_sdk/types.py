@@ -7,10 +7,9 @@ from electrumsv_sdk.config import Config
 
 import typing
 
-from .plugin_tools import PluginTools
-
 if typing.TYPE_CHECKING:
     from .components import Component
+    from .plugin_tools import PluginTools
 
 
 class AbstractPlugin(abc.ABC):

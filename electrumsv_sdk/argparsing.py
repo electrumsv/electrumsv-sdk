@@ -9,7 +9,7 @@ Fortunately the help menu displays as expected so does not deviate from the stan
 import argparse
 import logging
 import sys
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List
 
 from .constants import NameSpace
 from .config import Config
