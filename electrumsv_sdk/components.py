@@ -73,7 +73,7 @@ class Component:
         self.logging_path = str(logging_path)
         self.last_updated = get_str_datetime()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"Component(id={self.id}, pid={self.pid}, "
             f"component_type={self.component_type}, "
@@ -84,14 +84,14 @@ class Component:
             f"last_updated={self.last_updated})"
         )
 
-    def to_dict(self):
+    def to_dict(self) -> Dict:
         config_dict = {}
         for key, val in self.__dict__.items():
             config_dict[key] = val
         return config_dict
 
     @classmethod
-    def from_dict(cls, component_dict: Dict):
+    def from_dict(cls, component_dict: Dict) -> "Component":
         component_dict.pop('last_updated')
         return cls(**component_dict)
 
@@ -144,7 +144,7 @@ class ComponentStore:
             else:
                 return {}
 
-    def update_status_file(self, new_component_info: Component):
+    def update_status_file(self, new_component_info: Component) -> None:
         """updates to the *file* (component.json) - does *not* update the server"""
 
         component_state = {}

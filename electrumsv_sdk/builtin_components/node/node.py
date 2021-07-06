@@ -2,7 +2,7 @@ import logging
 import os
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple, List
 
 from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
@@ -15,7 +15,7 @@ from electrumsv_node import electrumsv_node
 from .local_tools import LocalTools
 
 
-def extend_start_cli(start_parser: ArgumentParser):
+def extend_start_cli(start_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
     """if this method is present it allows extension of the start argparser only.
     This occurs dynamically and adds the new cli options as attributes of the Config object"""
     start_parser.add_argument("--regtest", action="store_true", help="run on regtest")

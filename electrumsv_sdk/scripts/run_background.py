@@ -13,7 +13,7 @@ from electrumsv_sdk.utils import spawn_background
 logger = logging.getLogger("run-background-script")
 
 
-def unwrap_and_unescape_text(arg: str):
+def unwrap_and_unescape_text(arg: str) -> str:
     return arg.strip("\'").replace('\\"', '"')
 
 

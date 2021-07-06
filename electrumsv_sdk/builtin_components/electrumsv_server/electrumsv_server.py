@@ -3,7 +3,7 @@ import os
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple, List
 import shutil
 
 from electrumsv_sdk.types import AbstractPlugin
@@ -18,7 +18,7 @@ from .local_tools import LocalTools
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def extend_start_cli(start_parser: ArgumentParser):
+def extend_start_cli(start_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
     """if this method is present it allows extension of the start argparser only.
     This occurs dynamically and adds the new cli options as attributes of the Config object"""
     start_parser.add_argument("--mapi-broadcast", action="store_true",

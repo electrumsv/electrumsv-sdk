@@ -30,7 +30,7 @@ def install(component_type: str, repo: str = "", branch: str = "",
     controller.install(app_state.config)
 
 
-def _validate_network(network: str, component_type):
+def _validate_network(network: str, component_type) -> None:
     components_with_network_option = {'node', 'electrumx', 'electrumsv'}
     if network != '' and component_type not in components_with_network_option:
         raise ValueError(f"Can only specify 'network' for {components_with_network_option}")

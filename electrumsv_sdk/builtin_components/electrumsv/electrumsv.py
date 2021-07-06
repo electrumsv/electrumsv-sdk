@@ -3,7 +3,7 @@ import os
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple, List
 
 from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.components import Component
@@ -15,7 +15,7 @@ from electrumsv_sdk.config import Config
 from .local_tools import LocalTools
 
 
-def extend_start_cli(start_parser: ArgumentParser):
+def extend_start_cli(start_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
     """if this method is present it allows extension of the start argparser only.
     This occurs dynamically and adds the new cli options as attributes of the Config object"""
     start_parser.add_argument("--regtest", action="store_true", help="run on regtest")
@@ -28,7 +28,7 @@ def extend_start_cli(start_parser: ArgumentParser):
     return start_parser, new_options
 
 
-def extend_reset_cli(reset_parser: ArgumentParser):
+def extend_reset_cli(reset_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
     """if this method is present it allows extension of the start argparser only.
     This occurs dynamically and adds the new cli options as attributes of the Config object"""
     reset_parser.add_argument("--deterministic-seed", action="store_true", help="use "

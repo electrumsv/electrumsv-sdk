@@ -24,13 +24,13 @@ class PluginTools:
         self.component_store = ComponentStore()
         self.logger = logging.getLogger("plugin-tools")
 
-    def allocate_port(self):
+    def allocate_port(self) -> int:
         assert self.plugin.id is not None
         component_port = self.get_component_port(self.plugin.DEFAULT_PORT,
             self.plugin.COMPONENT_NAME, self.plugin.id)
         return component_port
 
-    def allocate_datadir_and_id(self):
+    def allocate_datadir_and_id(self) -> Tuple[Path, str]:
         component_datadir, component_id = \
             self.get_component_datadir(self.plugin.COMPONENT_NAME)
         return component_datadir, component_id
@@ -49,7 +49,7 @@ class PluginTools:
             self.plugin.src = Path(self.config.repo)
         return self.plugin.src
 
-    def call_for_component_id_or_type(self, component_name: str, callable: Callable):
+    def call_for_component_id_or_type(self, component_name: str, callable: Callable) -> None:
         """Used to either kill/stop/reset components by --id or <component_type>)
         - callable is called with one argument: component_dict with all relevant info about the
         component of interest - if there are many components of a particular type then the

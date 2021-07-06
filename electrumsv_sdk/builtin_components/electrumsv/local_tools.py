@@ -26,7 +26,7 @@ class LocalTools:
         self.config: Config = plugin.config
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
-    def set_network(self):
+    def set_network(self) -> None:
         # make sure that only one network is set on cli
         count_networks_selected = len([getattr(self.config, network) for network in NETWORKS_LIST if
             getattr(self.config, network) is True])
@@ -41,10 +41,10 @@ class LocalTools:
                 if getattr(self.config, network):
                     self.plugin.network = network
 
-    def process_cli_args(self):
+    def process_cli_args(self) -> None:
         self.set_network()
 
-    def reinstall_conflicting_dependencies(self):
+    def reinstall_conflicting_dependencies(self) -> None:
         cmd1 = f"{sys.executable} -m pip freeze"
         output = subprocess.check_output(cmd1, shell=True)
         for line in output.decode('utf-8').splitlines():
@@ -57,13 +57,13 @@ class LocalTools:
                     process2 = subprocess.Popen(cmd2, shell=True)
                     process2.wait()
 
-    def is_offline_cli_mode(self):
+    def is_offline_cli_mode(self) -> bool:
         if len(self.config.component_args) != 0:
             if self.config.component_args[0] in ['create_wallet', 'create_account', '--help']:
                 return True
         return False
 
-    def wallet_db_exists(self):
+    def wallet_db_exists(self) -> bool:
         if os.path.exists(self.get_wallet_path_for_network(self.plugin.datadir)):
             return True
         time.sleep(3)  # takes a short time for .sqlite file to become visible

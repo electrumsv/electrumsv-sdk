@@ -20,12 +20,12 @@ logger = logging.getLogger("utils")
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def checkout_branch(branch: str):
+def checkout_branch(branch: str) -> None:
     if branch != "":
         subprocess.run(f"git checkout {branch}", shell=True, check=True)
 
 
-def topup_wallet():
+def topup_wallet() -> None:
     logger.debug("Topping up wallet...")
     nblocks = 1
     toaddress = "mwv1WZTsrtKf3S9mRQABEeMaNefLbQbKpg"
@@ -48,11 +48,11 @@ def cast_str_int_args_to_int(node_args: List) -> List[int]:
     return node_args
 
 
-def is_remote_repo(repo: str):
+def is_remote_repo(repo: str) -> bool:
     return repo == "" or repo.startswith("https://")
 
 
-def read_sdk_version():
+def read_sdk_version() -> str:
     with open(Path(MODULE_DIR).joinpath('__init__.py'), 'r') as f:
         for line in f:
             if line.startswith('__version__'):
@@ -76,13 +76,13 @@ def port_is_in_use(port) -> bool:
     return False
 
 
-def get_directory_name(component__file__):
+def get_directory_name(component__file__) -> str:
     MODULE_DIR = os.path.dirname(os.path.abspath(component__file__))
     component_name = os.path.basename(MODULE_DIR)
     return component_name
 
 
-def get_parent_and_child_pids(parent_pid):
+def get_parent_and_child_pids(parent_pid) -> Optional[List[int]]:
     try:
         pids = []
         parent = psutil.Process(parent_pid)
@@ -91,10 +91,10 @@ def get_parent_and_child_pids(parent_pid):
             pids.append(child.pid)
         return pids
     except psutil.NoSuchProcess:
-        pass
+        return None
 
 
-def sigint(pid):
+def sigint(pid) -> None:
     """attempt graceful shutdown via sigint"""
     if sys.platform in ("linux", "darwin"):
         try:
@@ -109,7 +109,7 @@ def sigint(pid):
             pass
 
 
-def sigkill(parent_pid):
+def sigkill(parent_pid) -> None:
     """kill process if sigint failed"""
     pids = get_parent_and_child_pids(parent_pid)
     if pids:
@@ -122,7 +122,7 @@ def sigkill(parent_pid):
                     subprocess.run(f"taskkill.exe /PID {pid} /T /F")
 
 
-def kill_by_pid(pid: int):
+def kill_by_pid(pid: int) -> None:
     """kills parent and all children"""
     # todo - it may make sense to add an optional timeout for waiting on a graceful shutdown
     #  via sigint before escalating to sigkill/sigterm - this would be specified for each plugin
@@ -140,7 +140,7 @@ def kill_process(component_dict: Dict) -> None:
     kill_by_pid(pid)
 
 
-def is_default_component_id(component_name, component_id):
+def is_default_component_id(component_name, component_id) -> bool:
     return component_name + str(1) == component_id
 
 
@@ -154,7 +154,7 @@ def split_command(command: str) -> List[str]:
     return split_command
 
 
-def is_docker():
+def is_docker() -> bool:
     path = '/proc/self/cgroup'
     return (
         os.path.exists('/.dockerenv') or
@@ -162,16 +162,16 @@ def is_docker():
     )
 
 
-def get_sdk_datadir():
+def get_sdk_datadir() -> Path:
     sdk_home_datadir = None
     if sys.platform == "win32":
-        sdk_home_datadir = Path(os.environ.get("LOCALAPPDATA")) / "ElectrumSV-SDK"
+        sdk_home_datadir = Path(os.environ["LOCALAPPDATA"]) / "ElectrumSV-SDK"
     if sdk_home_datadir is None:
         sdk_home_datadir = Path.home() / ".electrumsv-sdk"
     return sdk_home_datadir
 
 
-def tail(logfile):
+def tail(logfile) -> None:
     colorama.init()
     for line in tailer.follow(open(logfile), delay=0.3):
         # "https://www.devdungeon.com/content/colorize-terminal-output-python"
@@ -323,7 +323,7 @@ def spawn_background(command: str, env_vars: Dict, id: str, component_name:
     on_exit(process)
 
 
-def wrap_and_escape_text(string: str):
+def wrap_and_escape_text(string: str) -> str:
     assert isinstance(string, str), "string type required"
     return "\'" + string.replace('"', '\\"') + "\'"
 
@@ -361,7 +361,7 @@ def spawn_new_terminal(command: str, env_vars: Dict, id: str, component_name:
 
 
 def write_raw_blocks_to_file(filepath: Union[Path, str], node_id: str,
-        from_height: Optional[int]=None, to_height: Optional[int]=None):
+        from_height: Optional[int]=None, to_height: Optional[int]=None) -> None:
 
     if not to_height:
         result = call_any_node_rpc('getinfo', node_id=node_id)
@@ -384,7 +384,7 @@ def write_raw_blocks_to_file(filepath: Union[Path, str], node_id: str,
             f.write(line + "\n")
 
 
-def read_raw_blocks_from_file(filepath: Path):
+def read_raw_blocks_from_file(filepath: Path) -> List[str]:
     if not os.path.exists(filepath):
         raise FileNotFoundError
 
@@ -392,14 +392,14 @@ def read_raw_blocks_from_file(filepath: Path):
         return f.readlines()
 
 
-def delete_raw_blocks_file(filepath: Union[Path, str]):
+def delete_raw_blocks_file(filepath: Union[Path, str]) -> None:
     if not os.path.exists(filepath):
         raise FileNotFoundError
 
     os.remove(filepath)
 
 
-def submit_blocks_from_file(node_id: str, filepath: Union[Path, str]):
+def submit_blocks_from_file(node_id: str, filepath: Union[Path, str]) -> None:
     if not os.path.exists(filepath):
         raise FileNotFoundError
 
@@ -437,7 +437,7 @@ def call_any_node_rpc(method: str, *args: Union[str, int], node_id: str='node1')
 
 
 def set_deterministic_electrumsv_seed(component_type: str, component_id: Optional[str]=None):
-    def raise_for_not_electrumsv_type():
+    def raise_for_not_electrumsv_type() -> None:
         stored_component_type = None
         if component_id:
             component_store = ComponentStore()

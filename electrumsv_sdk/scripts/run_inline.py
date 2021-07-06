@@ -17,7 +17,7 @@ filelock_logger = logging.getLogger("filelock")
 filelock_logger.setLevel(logging.WARNING)
 
 
-def unwrap_and_unescape_text(arg: str):
+def unwrap_and_unescape_text(arg: str) -> str:
     return arg.strip("\'").replace('\\"', '"')
 
 
