@@ -33,7 +33,6 @@ import os
 import sys
 from importlib import import_module
 from pathlib import Path
-from types import ModuleType
 from typing import Optional, Union, Dict, cast
 from filelock import FileLock
 
