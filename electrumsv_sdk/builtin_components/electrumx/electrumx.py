@@ -49,11 +49,11 @@ class Plugin(AbstractPlugin):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools = PluginTools(self, self.config)
-        self.tools = LocalTools(self)
+        self.plugin_tools: PluginTools = PluginTools(self, self.config)  # type: ignore
+        self.tools: LocalTools = LocalTools(self)  # type: ignore
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
-        self.src = self.plugin_tools.get_source_dir(dirname="electrumx")
+        self.src = self.plugin_tools.get_source_dir(dirname="electrumx")  # type: ignore
         self.datadir = None  # dynamically allocated
         self.id = None  # dynamically allocated
         self.port = None  # dynamically allocated
@@ -108,7 +108,7 @@ class Plugin(AbstractPlugin):
         """some components require graceful shutdown via a REST API or RPC API but most can use the
         generic 'app_state.kill_component()' function to track down the pid and kill the process."""
         def stop_electrumx(component_dict: Dict):
-            rpcport = component_dict.get("metadata").get("rpcport")
+            rpcport = component_dict.get("metadata", {}).get("rpcport")
             if not rpcport:
                 raise Exception("rpcport data not found")
             was_successful = self.tools.run_coroutine_ipython_friendly(self.tools.stop_electrumx)
@@ -123,7 +123,7 @@ class Plugin(AbstractPlugin):
     def reset(self):
         def reset_electrumx(component_dict: Dict):
             self.logger.debug("Resetting state of RegTest electrumx server...")
-            datadir = Path(component_dict.get('metadata').get("DATADIR"))
+            datadir = Path(component_dict.get('metadata', {}).get("DATADIR"))
             if datadir.exists():
                 shutil.rmtree(datadir)
                 os.mkdir(datadir)

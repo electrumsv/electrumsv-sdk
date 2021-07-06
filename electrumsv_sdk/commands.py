@@ -9,7 +9,6 @@ from .controller import Controller
 from .utils import call_any_node_rpc
 
 logger = logging.getLogger("commands")
-controller = Controller(None)  # app_state is only used for the node entrypoint
 
 
 def install(component_type: str, repo: str = "", branch: str = "",
@@ -27,6 +26,7 @@ def install(component_type: str, repo: str = "", branch: str = "",
     arguments.append(component_type)
     app_state = AppState(arguments)
     app_state.handle_first_ever_run()
+    controller = Controller(app_state)
     controller.install(app_state.config)
 
 
@@ -40,7 +40,7 @@ def _validate_network(network: str, component_type):
         raise ValueError(f"The only supported networks are: {valid_networks}")
 
 
-def start(component_type: str, component_args: Tuple[str] = (), repo: str = "",
+def start(component_type: str, component_args: Tuple[str] = ("",), repo: str = "",
         branch: str = "", new_instance: bool = False, gui: bool = False,
         mode: str="new-terminal", component_id: str = "", network: str="",
         deterministic_seed: bool=False) -> None:
@@ -76,6 +76,7 @@ def start(component_type: str, component_args: Tuple[str] = (), repo: str = "",
 
     app_state = AppState(arguments)
     app_state.handle_first_ever_run()
+    controller = Controller(app_state)
     controller.start(app_state.config)
 
 
@@ -91,6 +92,7 @@ def stop(component_type: Optional[str]=None, component_id: str = "") -> None:
 
     app_state = AppState(arguments)
     app_state.handle_first_ever_run()
+    controller = Controller(app_state)
     controller.stop(app_state.config)
 
 
@@ -114,6 +116,7 @@ def reset(component_type: Optional[str]=None, component_id: str = "", repo: str 
 
     app_state = AppState(arguments)
     app_state.handle_first_ever_run()
+    controller = Controller(app_state)
     controller.reset(app_state.config)
 
 

@@ -60,11 +60,11 @@ class Plugin(AbstractPlugin):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools = PluginTools(self, self.config)
-        self.tools = LocalTools(self)
+        self.plugin_tools: PluginTools = PluginTools(self, self.config)  # type: ignore
+        self.tools: LocalTools = LocalTools(self)  # type: ignore
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
-        self.src = self.plugin_tools.get_source_dir(dirname="electrumsv")
+        self.src = self.plugin_tools.get_source_dir(dirname="electrumsv")  # type: ignore
         self.datadir = None  # dynamically allocated
         self.id = None  # dynamically allocated
         self.port = None  # dynamically allocated
@@ -151,10 +151,10 @@ class Plugin(AbstractPlugin):
             # reset is sometimes used with no args and so the --deterministic-seed extension
             # doesn't take effect
             if hasattr(self.config, 'deterministic_seed'):
-                if self.config.deterministic_seed:
+                if self.config.deterministic_seed:  # type: ignore
                     set_deterministic_electrumsv_seed(self.config.selected_component,
                         self.id)
-            self.datadir = Path(component_dict.get('metadata').get("DATADIR"))
+            self.datadir = Path(component_dict.get('metadata', {}).get("DATADIR"))
             self.id = component_dict.get('id')
             self.tools.delete_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
             self.tools.create_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')

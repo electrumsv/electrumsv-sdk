@@ -8,7 +8,8 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s'
     level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
 
 logger = logging.getLogger("main")
-logger_requests = logging.getLogger("urllib3").setLevel(logging.WARNING)
+logger_requests = logging.getLogger("urllib3")
+logger_requests.setLevel(logging.WARNING)
 
 
 def main():

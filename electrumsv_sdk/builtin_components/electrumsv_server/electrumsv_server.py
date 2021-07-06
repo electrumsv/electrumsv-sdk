@@ -52,8 +52,8 @@ class Plugin(AbstractPlugin):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools = PluginTools(self, self.config)
-        self.tools = LocalTools(self)
+        self.plugin_tools: PluginTools = PluginTools(self, self.config)  # type: ignore
+        self.tools: LocalTools = LocalTools(self)  # type: ignore
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
         self.src = self.COMPONENT_PATH
@@ -77,9 +77,11 @@ class Plugin(AbstractPlugin):
         network_choice = self.tools.get_network_choice()
         command += f"--{network_choice}"
 
-        if self.config.mapi_broadcast:  # extension cli option
-            command += f" --mapi-broadcast --mapi-host={self.config.mapi_host} " \
-                  f"--mapi-port={self.config.mapi_port}"
+        # These mapi attributes are added to config as extension cli options
+        # (see: extend_start_cli() above)
+        if self.config.mapi_broadcast:  # type: ignore
+            command += (f" --mapi-broadcast --mapi-host={self.config.mapi_host} "  # type: ignore
+                        f"--mapi-port={self.config.mapi_port}")  # type: ignore
 
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
@@ -91,7 +93,7 @@ class Plugin(AbstractPlugin):
 
     def reset(self) -> None:
         def reset_server(component_dict: Dict):
-            datadir = Path(component_dict.get("metadata").get("datadir"))
+            datadir = Path(component_dict.get("metadata", {}).get("datadir"))
             if datadir.exists():
                 shutil.rmtree(datadir)
                 os.mkdir(datadir)

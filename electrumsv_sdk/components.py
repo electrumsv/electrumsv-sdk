@@ -230,7 +230,7 @@ class ComponentStore:
         component_module = cast(AbstractModuleType, component_module)
         return component_module
 
-    def instantiate_plugin(self, config: Config) -> Optional[AbstractPlugin]:
+    def instantiate_plugin(self, config: Config) -> AbstractPlugin:
         """
         Each plugin must have a 'Plugin' class that is instantiated and has the main entrypoints:
         (install, start, stop, reset, status_check) as instance methods.

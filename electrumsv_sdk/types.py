@@ -7,6 +7,8 @@ from electrumsv_sdk.config import Config
 
 import typing
 
+from .plugin_tools import PluginTools
+
 if typing.TYPE_CHECKING:
     from .components import Component
 
@@ -20,8 +22,8 @@ class AbstractPlugin(abc.ABC):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools = None
-        self.tools = None
+        self.plugin_tools: PluginTools
+        self.tools = None  # Todo - abstract base class for LocalTools typing
 
         self.src: Optional[Path] = None
         self.datadir: Optional[Path] = None

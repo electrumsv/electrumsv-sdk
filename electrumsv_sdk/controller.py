@@ -13,7 +13,7 @@ from .utils import cast_str_int_args_to_int, call_any_node_rpc
 logger = logging.getLogger("runners")
 
 if typing.TYPE_CHECKING:
-    from .builtin_components.status_monitor.server_app import ApplicationState
+    from .app_state import AppState
 
 if sys.platform in ('linux', 'darwin'):
     # https://stackoverflow.com/questions/3234569/python-popen-waitpid-returns-errno-10-no-child-processes
@@ -23,7 +23,7 @@ if sys.platform in ('linux', 'darwin'):
 class Controller:
     """Five main execution pathways (corresponding to 5 cli commands)"""
 
-    def __init__(self, app_state: ApplicationState):
+    def __init__(self, app_state: AppState):
         self.app_state = app_state
         self.component_store = ComponentStore()
         self.component_info = None
@@ -78,7 +78,7 @@ class Controller:
             if relevant_components:
                 # dynamic imports of plugin
                 for component_dict in relevant_components:
-                    component_name = component_dict.get("component_type")
+                    component_name = component_dict.get("component_type", "")
                     new_config = Config(
                         selected_component=component_name,
                         background_flag=config.background_flag,
@@ -117,7 +117,7 @@ class Controller:
         node_argparser = self.app_state.argparser.parser_map[NameSpace.NODE]
         cli_options = [arg for arg in config.node_args if arg.startswith("--")]
         rpc_args = [arg for arg in config.node_args if not arg.startswith("--")]
-        rpc_args = cast_str_int_args_to_int(rpc_args)
+        rpc_args = cast_str_int_args_to_int(rpc_args)  # type: ignore
 
         parsed_node_options = node_argparser.parse_args(cli_options)
         if not parsed_node_options.id:

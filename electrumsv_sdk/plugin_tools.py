@@ -72,7 +72,7 @@ class PluginTools:
                     callable(component_dict)
                     self.logger.debug(f"terminated: {component_dict.get('id')}")
 
-    def get_component_datadir(self, component_name: str) -> Tuple[Path, Optional[str]]:
+    def get_component_datadir(self, component_name: str) -> Tuple[Path, str]:
         """Used for multi-instance components"""
         def is_new_and_no_id(id: str, new: bool) -> bool:
             return id == "" and new
@@ -207,7 +207,7 @@ class PluginTools:
     def get_default_id(self, component_name: str) -> str:
         return component_name + str(1)
 
-    def get_id(self, component_name: str) -> Optional[str]:
+    def get_id(self, component_name: str) -> str:  # type: ignore
         """This method is exclusively for single-instance components.
         Multi-instance components (that use the --new flag) need to get allocated a component_id
         via the 'get_component_datadir()' method"""
@@ -221,8 +221,7 @@ class PluginTools:
 
         elif new:
             self.logger.error("The --new flag is only for multi-instance components")
-            return None
-        return None
+            sys.exit(1)
 
     def get_logfile_path(self, id: str) -> Path:
         """deterministic / standardised location for logging to file"""

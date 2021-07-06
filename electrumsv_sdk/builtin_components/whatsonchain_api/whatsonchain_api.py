@@ -15,7 +15,7 @@ from . import server_app
 
 class Plugin(AbstractPlugin):
     SERVER_HOST = server_app.SERVER_HOST
-    SERVER_PORT = server_app.SERVER_PORT
+    SERVER_PORT = int(server_app.SERVER_PORT)
     RESERVED_PORTS = {SERVER_PORT}
     PING_URL = server_app.PING_URL
 
@@ -25,7 +25,7 @@ class Plugin(AbstractPlugin):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools = PluginTools(self, self.config)  # type: ignore
+        self.plugin_tools: PluginTools = PluginTools(self, self.config)  # type: ignore
         self.logger = logging.getLogger(self.COMPONENT_NAME)  # type: ignore
 
         self.src = self.COMPONENT_PATH
