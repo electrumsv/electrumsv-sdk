@@ -130,7 +130,7 @@ class ApplicationState(object):
                 else:
                     return {}
 
-    async def manual_heartbeat(self, ws):
+    async def manual_heartbeat(self, ws, ws_id):
         """It seems that aiohttp's built-in heartbeat functionality has bugs
         https://github.com/aio-libs/aiohttp/issues/2309 - resorting to manual ping/pong
         between client / server...
@@ -146,7 +146,7 @@ class ApplicationState(object):
                 if not self.pong_event.is_set():
                     raise ConnectionResetError
             except Exception as e:
-                logger.info(f"closing websocket id: {ws._id}")
+                logger.info(f"closing websocket id: {ws_id}")
                 self.remove_websockets(ws)
                 break
             finally:
@@ -183,8 +183,8 @@ class ApplicationState(object):
         """Client must respond to all 'ping' messages with a 'pong' within <= 2 seconds to stay
         connected."""
         ws = web.WebSocketResponse()
-        ws._id = int(random() * 1_000_000_000_000)  # type: ignore
-        logger.info(f"new websocket connection with allocated id: {ws._id}")  # type: ignore
+        ws_id = int(random() * 1_000_000_000_000)
+        logger.info(f"new websocket connection with allocated id: {ws_id}")
         try:
             await ws.prepare(request)
             self.websockets.add(ws)
@@ -194,7 +194,7 @@ class ApplicationState(object):
             await ws.send_json(component_state)
             await asyncio.gather(
                 self.listen_for_close(ws),
-                self.manual_heartbeat(ws),
+                self.manual_heartbeat(ws, ws_id),
             )
             return ws
         except ConnectionResetError:
@@ -207,13 +207,13 @@ def run_server() -> None:
     app_state = ApplicationState(loop)
 
     web_app = web.Application()
-    web_app.app_state = app_state
+    web_app['app_state'] = app_state
     web_app.add_routes([
-        web.get("/", web_app.app_state.ping),  # type: ignore
-        web.get("/api/get_status", web_app.app_state.get_status),  # type: ignore
-        web.get("/ws", web_app.app_state.websocket_handler),  # type: ignore
+        web.get("/", web_app['app_state'].ping),
+        web.get("/api/get_status", web_app['app_state'].get_status),
+        web.get("/ws", web_app['app_state'].websocket_handler),
     ])
-    web.run_app(web_app, host=SERVER_HOST, port=SERVER_PORT)  # type: ignore
+    web.run_app(web_app, host=SERVER_HOST, port=SERVER_PORT)
 
 
 if __name__ == "__main__":

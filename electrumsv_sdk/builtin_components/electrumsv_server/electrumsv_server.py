@@ -52,8 +52,8 @@ class Plugin(AbstractPlugin):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools: PluginTools = PluginTools(self, self.config)  # type: ignore
-        self.tools: LocalTools = LocalTools(self)  # type: ignore
+        self.plugin_tools: PluginTools = PluginTools(self, self.config)
+        self.tools: LocalTools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
         self.src = self.COMPONENT_PATH
@@ -79,9 +79,10 @@ class Plugin(AbstractPlugin):
 
         # These mapi attributes are added to config as extension cli options
         # (see: extend_start_cli() above)
-        if self.config.mapi_broadcast:  # type: ignore
-            command += (f" --mapi-broadcast --mapi-host={self.config.mapi_host} "  # type: ignore
-                        f"--mapi-port={self.config.mapi_port}")  # type: ignore
+        if self.config.cli_extension_args['mapi_broadcast']:
+            command += (f" --mapi-broadcast "
+                        f"--mapi-host={self.config.cli_extension_args['mapi_host']} "
+                        f"--mapi-port={self.config.cli_extension_args['mapi_port']}")
 
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,

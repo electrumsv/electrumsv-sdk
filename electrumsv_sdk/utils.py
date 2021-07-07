@@ -34,7 +34,7 @@ def topup_wallet() -> None:
         logger.debug(f"Generated {nblocks}: {result.json()['result']} to {toaddress}")
 
 
-def cast_str_int_args_to_int(node_args: List) -> List[int]:
+def cast_str_int_args_to_int(node_args: List) -> List:
     int_indices = []
     for index, arg in enumerate(node_args):
 

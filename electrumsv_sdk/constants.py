@@ -61,3 +61,12 @@ class ComponentState:
 SUCCESS_EXITCODE = 0
 SIGINT_EXITCODE = 130  # (2 + 128)
 SIGKILL_EXITCODE = 137  # (9 + 128)
+
+
+class NETWORKS:
+    # do not change these names - must match cli args
+    REGTEST = 'regtest'
+    TESTNET = 'testnet'
+
+
+NETWORKS_LIST = [NETWORKS.REGTEST, NETWORKS.TESTNET]

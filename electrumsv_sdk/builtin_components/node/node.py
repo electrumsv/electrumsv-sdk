@@ -46,8 +46,8 @@ class Plugin(AbstractPlugin):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools = PluginTools(self, self.config)  # type: ignore
-        self.tools = LocalTools(self)  # type: ignore
+        self.plugin_tools = PluginTools(self, self.config)
+        self.tools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
         self.src = Path(electrumsv_node.FILE_PATH).parent

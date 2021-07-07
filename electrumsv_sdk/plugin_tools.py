@@ -4,7 +4,7 @@ import os
 import time
 from pathlib import Path
 import sys
-from typing import Dict, Optional, Callable, Tuple, Set
+from typing import Dict, Callable, Tuple, Set
 import requests
 
 from .types import AbstractPlugin
@@ -13,6 +13,15 @@ from .components import ComponentStore
 from .utils import port_is_in_use, is_default_component_id, is_remote_repo, checkout_branch, \
     spawn_inline, spawn_new_terminal, spawn_background_supervised
 from .config import Config
+
+
+class NETWORKS:
+    # do not change these names - must match cli args
+    REGTEST = 'regtest'
+    TESTNET = 'testnet'
+
+
+NETWORKS_LIST = [NETWORKS.REGTEST, NETWORKS.TESTNET]
 
 
 class PluginTools:
@@ -207,7 +216,7 @@ class PluginTools:
     def get_default_id(self, component_name: str) -> str:
         return component_name + str(1)
 
-    def get_id(self, component_name: str) -> str:  # type: ignore
+    def get_id(self, component_name: str) -> str:
         """This method is exclusively for single-instance components.
         Multi-instance components (that use the --new flag) need to get allocated a component_id
         via the 'get_component_datadir()' method"""
@@ -216,12 +225,8 @@ class PluginTools:
         if not id and not new:  # Default component id (and port + DATADIR)
             return self.get_default_id(component_name)
 
-        elif id:
+        else:
             return id
-
-        elif new:
-            self.logger.error("The --new flag is only for multi-instance components")
-            sys.exit(1)
 
     def get_logfile_path(self, id: str) -> Path:
         """deterministic / standardised location for logging to file"""
@@ -232,3 +237,18 @@ class PluginTools:
         os.makedirs(logpath, exist_ok=True)
         logfile = logpath.joinpath(f"{logfile_name}")
         return logfile
+
+    def set_network(self) -> None:
+        # make sure that only one network is set on cli
+        count_networks_selected = len([self.config.cli_extension_args[network] for network in
+            NETWORKS_LIST if self.config.cli_extension_args[network] is True])
+        if count_networks_selected > 1:
+            self.logger.error("you must only select a single network")
+            sys.exit(1)
+
+        if count_networks_selected == 0:
+            self.plugin.network = self.plugin.network
+        if count_networks_selected == 1:
+            for network in NETWORKS_LIST:
+                if self.config.cli_extension_args[network]:
+                    self.plugin.network = network

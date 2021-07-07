@@ -249,7 +249,7 @@ class ArgParser:
         if self.new_cli_options:
             for varname in self.new_cli_options:
                 value = getattr(self.subcmd_parsed_args_map[self.namespace], varname)
-                setattr(self.config, varname, value)
+                self.config.cli_extension_args[varname] = value
 
         return self.config
 
@@ -413,6 +413,7 @@ class ArgParser:
         try:
             parser = self.parser_map[namespace]
             main_module = getattr(component_module, selected_component)
+            # e.g. "extend_start_cli"
             cli_extender = getattr(main_module, "extend_" + namespace + "_cli")
             new_parser, new_options = cli_extender(parser)
             self.parser_map[namespace] = new_parser

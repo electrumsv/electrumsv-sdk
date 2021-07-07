@@ -22,3 +22,4 @@ class Config(object):
     inline_flag: bool = False
     new_terminal_flag: bool = False
     component_id: str = ""
+    cli_extension_args: dict = {}

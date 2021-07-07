@@ -2,18 +2,23 @@ import logging
 import os
 import subprocess
 
+import typing
 from electrumsv_node import electrumsv_node
 
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR
-from electrumsv_sdk.types import AbstractPlugin
+from electrumsv_sdk.types import AbstractLocalTools
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import checkout_branch
 
 
-class LocalTools:
+if typing.TYPE_CHECKING:
+    from electrumsv_sdk.builtin_components.whatsonchain import Plugin
+
+
+class LocalTools(AbstractLocalTools):
     """helper for operating on plugin-specific state (like source dir, port, datadir etc.)"""
 
-    def __init__(self, plugin: AbstractPlugin):
+    def __init__(self, plugin: 'Plugin'):
         self.plugin = plugin
         self.plugin_tools = self.plugin.plugin_tools
         self.config: Config = plugin.config

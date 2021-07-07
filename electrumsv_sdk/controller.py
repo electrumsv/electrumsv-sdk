@@ -17,7 +17,10 @@ if typing.TYPE_CHECKING:
 
 if sys.platform in ('linux', 'darwin'):
     # https://stackoverflow.com/questions/3234569/python-popen-waitpid-returns-errno-10-no-child-processes
-    signal.signal(signal.SIGCHLD, signal.SIG_DFL)  # type: ignore
+    if sys.platform == "win32":
+        signal.signal(signal.SIGBREAK, signal.SIG_DFL)
+    else:
+        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
 
 
 class Controller:
@@ -117,7 +120,7 @@ class Controller:
         node_argparser = self.app_state.argparser.parser_map[NameSpace.NODE]
         cli_options = [arg for arg in config.node_args if arg.startswith("--")]
         rpc_args = [arg for arg in config.node_args if not arg.startswith("--")]
-        rpc_args = cast_str_int_args_to_int(rpc_args)  # type: ignore
+        rpc_args = cast_str_int_args_to_int(rpc_args)
 
         parsed_node_options = node_argparser.parse_args(cli_options)
         if not parsed_node_options.id:

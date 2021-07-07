@@ -7,42 +7,32 @@ from pathlib import Path
 from typing import Optional
 
 import stringcase
+import typing
 
+from electrumsv_sdk.plugin_tools import PluginTools
 from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command
 from electrumsv_sdk.config import Config
-from electrumsv_sdk.constants import REMOTE_REPOS_DIR
-
-from .constants import NETWORKS, NETWORKS_LIST
+from electrumsv_sdk.constants import REMOTE_REPOS_DIR, NETWORKS
+from electrumsv_sdk.types import AbstractLocalTools
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
+if typing.TYPE_CHECKING:
+    from electrumsv_sdk.builtin_components.electrumsv import Plugin
 
-class LocalTools:
+
+class LocalTools(AbstractLocalTools):
     """helper for operating on plugin-specific state (like source dir, port, datadir etc.)"""
 
-    def __init__(self, plugin):
+    def __init__(self, plugin: 'Plugin'):
         self.plugin = plugin
+        self.plugin_tools: PluginTools = self.plugin.plugin_tools
         self.config: Config = plugin.config
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
-    def set_network(self) -> None:
-        # make sure that only one network is set on cli
-        count_networks_selected = len([getattr(self.config, network) for network in NETWORKS_LIST if
-            getattr(self.config, network) is True])
-        if count_networks_selected > 1:
-            self.logger.error("you must only select a single network")
-            sys.exit(1)
-
-        if count_networks_selected == 0:
-            self.plugin.network = self.plugin.network
-        if count_networks_selected == 1:
-            for network in NETWORKS_LIST:
-                if getattr(self.config, network):
-                    self.plugin.network = network
-
     def process_cli_args(self) -> None:
-        self.set_network()
+        self.plugin_tools.set_network()
 
     def reinstall_conflicting_dependencies(self) -> None:
         cmd1 = f"{sys.executable} -m pip freeze"

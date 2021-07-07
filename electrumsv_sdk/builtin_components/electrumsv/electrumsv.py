@@ -60,11 +60,11 @@ class Plugin(AbstractPlugin):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools: PluginTools = PluginTools(self, self.config)  # type: ignore
-        self.tools: LocalTools = LocalTools(self)  # type: ignore
+        self.plugin_tools: PluginTools = PluginTools(self, self.config)
+        self.tools: LocalTools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
-        self.src = self.plugin_tools.get_source_dir(dirname="electrumsv")  # type: ignore
+        self.src = self.plugin_tools.get_source_dir(dirname="electrumsv")
         self.datadir = None  # dynamically allocated
         self.id = None  # dynamically allocated
         self.port = None  # dynamically allocated
@@ -110,7 +110,7 @@ class Plugin(AbstractPlugin):
                 status_endpoint=status_endpoint, metadata=metadata)
 
         if self.tools.wallet_db_exists():
-            if self.config.deterministic_seed:
+            if self.config.cli_extension_args['deterministic_seed']:
                 if self.tools.wallet_db_exists():
                     raise ValueError(f"Cannot set a deterministic seed. This wallet: '{self.id}' "
                         f"already exists. Please try 'electrumsv-sdk reset --deterministic-seed "
@@ -118,7 +118,7 @@ class Plugin(AbstractPlugin):
 
         # If daemon or gui mode continue...
         elif not self.tools.wallet_db_exists():
-            if self.config.deterministic_seed:
+            if self.config.cli_extension_args['deterministic_seed']:
                 set_deterministic_electrumsv_seed(self.config.selected_component,
                     self.config.component_id)
             # reset wallet
@@ -151,7 +151,7 @@ class Plugin(AbstractPlugin):
             # reset is sometimes used with no args and so the --deterministic-seed extension
             # doesn't take effect
             if hasattr(self.config, 'deterministic_seed'):
-                if self.config.deterministic_seed:  # type: ignore
+                if self.config.cli_extension_args['deterministic_seed']:
                     set_deterministic_electrumsv_seed(self.config.selected_component,
                         self.id)
             self.datadir = Path(component_dict.get('metadata', {}).get("DATADIR"))

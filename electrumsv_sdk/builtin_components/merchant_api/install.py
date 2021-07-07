@@ -78,10 +78,10 @@ def load_pfx_file(config):
     location"""
     pfx_location = _get_pfx_store_location()
 
-    user_pfx_input = hasattr(config, "ssl") and config.ssl is not None
-    if user_pfx_input:
-        if os.path.isfile(config.ssl):
-            src = config.ssl
+    ssl_cert_path = config.cli_extension_args.get('ssl')
+    if ssl_cert_path:
+        if os.path.isfile(ssl_cert_path):
+            src = ssl_cert_path
             logger.debug(f"Copying .pfx file to {pfx_location}")
             os.makedirs(os.path.dirname(pfx_location), exist_ok=True)
             shutil.copy(src, pfx_location)

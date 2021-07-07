@@ -42,10 +42,10 @@ class Plugin(AbstractPlugin):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools = PluginTools(self, self.config)  # type: ignore
+        self.plugin_tools = PluginTools(self, self.config)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
-        self.src = self.plugin_tools.get_source_dir(dirname="merchant_api")  # type: ignore
+        self.src = self.plugin_tools.get_source_dir(dirname="merchant_api")
         self.datadir = None  # dynamically allocated
         self.id = None  # dynamically allocated
         self.port = None  # dynamically allocated

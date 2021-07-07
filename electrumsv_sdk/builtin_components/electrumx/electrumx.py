@@ -49,11 +49,11 @@ class Plugin(AbstractPlugin):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools: PluginTools = PluginTools(self, self.config)  # type: ignore
-        self.tools: LocalTools = LocalTools(self)  # type: ignore
+        self.plugin_tools: PluginTools = PluginTools(self, self.config)
+        self.tools: LocalTools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
-        self.src = self.plugin_tools.get_source_dir(dirname="electrumx")  # type: ignore
+        self.src = self.plugin_tools.get_source_dir(dirname="electrumx")
         self.datadir = None  # dynamically allocated
         self.id = None  # dynamically allocated
         self.port = None  # dynamically allocated
