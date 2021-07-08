@@ -3,7 +3,7 @@ import os
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Dict, Tuple, List, cast
 
 from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.components import Component
@@ -60,8 +60,8 @@ class Plugin(AbstractPlugin):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools: PluginTools = PluginTools(self, self.config)
-        self.tools: LocalTools = LocalTools(self)
+        self.plugin_tools = PluginTools(self, self.config)
+        self.tools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
         self.src = self.plugin_tools.get_source_dir(dirname="electrumsv")

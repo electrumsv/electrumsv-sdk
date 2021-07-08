@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:
 class AbstractLocalTools(abc.ABC):
     def __init__(self, plugin):
         self.plugin = plugin
-        self.config: Config = plugin.config
+        self.config = plugin.config
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
 
@@ -29,8 +29,7 @@ class AbstractPlugin(abc.ABC):
 
     def __init__(self, config: Config):
         self.config = config
-        self.plugin_tools: PluginTools = PluginTools(self, config)
-        self.tools: AbstractLocalTools
+        self.plugin_tools = PluginTools(self, config)
         self.src: Optional[Path] = None
         self.datadir: Optional[Path] = None
         self.id: Optional[str] = None

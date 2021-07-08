@@ -21,7 +21,7 @@ class LocalTools(AbstractLocalTools):
     def __init__(self, plugin: 'Plugin'):
         self.plugin = plugin
         self.plugin_tools = self.plugin.plugin_tools
-        self.config: Config = plugin.config
+        self.config = plugin.config
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
     def fetch_whatsonchain(self, url="https://github.com/AustEcon/woc-explorer.git",

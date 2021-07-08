@@ -42,7 +42,7 @@ class AppState:
 
         self.argparser = ArgParser()
         self.argparser.manual_argparsing(arguments)  # allows library to inject args (vs sys.argv)
-        self.config: Config = self.argparser.generate_config()
+        self.config = self.argparser.generate_config()
         self.argparser.validate_cli_args()
         self.controller = Controller(self)
 

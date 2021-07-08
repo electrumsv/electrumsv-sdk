@@ -19,7 +19,7 @@ class LocalTools(AbstractLocalTools):
 
     def __init__(self, plugin: 'Plugin'):
         self.plugin = plugin
-        self.config: Config = plugin.config
+        self.config = plugin.config
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
     def get_network_choice(self):

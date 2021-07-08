@@ -17,7 +17,7 @@ from aiohttp import web
 
 
 SERVER_HOST = os.environ.get("SERVER_HOST") or "127.0.0.1"
-SERVER_PORT = os.environ.get("SERVER_PORT") or 12121
+SERVER_PORT = int(os.environ.get("SERVER_PORT") or 12121)
 BITCOIN_NODE_HOST = os.environ.get("BITCOIN_NODE_HOST") or "127.0.0.1"
 BITCOIN_NODE_PORT = os.environ.get("BITCOIN_NODE_PORT") or 18332
 
@@ -58,7 +58,7 @@ def run_server() -> None:
         web.get("/", get_blank_page),
         web.get("/v1/bsv/main/tx/{txid}/hex", get_tx_hex),
     ])
-    web.run_app(web_app, host=SERVER_HOST, port=SERVER_PORT) # type: ignore
+    web.run_app(web_app, host=SERVER_HOST, port=SERVER_PORT)
 
 
 if __name__ == "__main__":
