@@ -51,6 +51,22 @@ def get_str_datetime():
     return datetime.datetime.now().strftime(TIME_FORMAT)
 
 
+from typing import TypedDict
+
+
+
+class ComponentTypedDict(TypedDict):
+    id: str
+    pid: Optional[int]
+    component_type: str
+    location: Union[str, Path]
+    status_endpoint: Optional[str]
+    component_state: Optional[ComponentState]
+    metadata: Optional[dict]
+    logging_path: Optional[Union[str, Path]]
+    last_updated: Optional[str]
+
+
 class Component:
     def __init__(
         self,
@@ -59,19 +75,22 @@ class Component:
         component_type: str,
         location: Union[str, Path],
         status_endpoint: Optional[str],
-        component_state: Optional[ComponentState] = None,
-        metadata: Optional[dict] = None,
-        logging_path: Optional[Union[str, Path]] = None,
+        component_state: Optional[str]=None,
+        metadata: Optional[Dict]=None,
+        logging_path: Optional[Union[str, Path]]=None,
+        last_updated: Optional[str]=None
     ):
         self.id = id  # human-readable identifier for instance
         self.pid = pid
         self.component_type = str(component_type)
         self.status_endpoint = status_endpoint
-        self.component_state = str(component_state)
+        self.component_state = ComponentState.from_str(str(component_state))
         self.location = str(location)
         self.metadata = metadata
         self.logging_path = str(logging_path)
-        self.last_updated = get_str_datetime()
+        self.last_updated = last_updated
+        if not last_updated:
+            self.last_updated = get_str_datetime()
 
     def __repr__(self) -> str:
         return (
@@ -84,15 +103,23 @@ class Component:
             f"last_updated={self.last_updated})"
         )
 
-    def to_dict(self) -> Dict:
-        config_dict = {}
-        for key, val in self.__dict__.items():
-            config_dict[key] = val
+    def to_dict(self) -> ComponentTypedDict:
+        config_dict = ComponentTypedDict(
+            id=self.id,
+            pid=self.pid,
+            component_type=self.component_type,
+            location=self.location,
+            status_endpoint=self.status_endpoint,
+            component_state=self.component_state,
+            metadata=self.metadata,
+            logging_path=self.logging_path,
+            last_updated=self.last_updated
+        )
         return config_dict
 
     @classmethod
-    def from_dict(cls, component_dict: Dict) -> "Component":
-        component_dict.pop('last_updated')
+    def from_dict(cls, component_dict: ComponentTypedDict) -> "Component":
+        component_dict['last_updated'] = get_str_datetime()
         return cls(**component_dict)
 
 

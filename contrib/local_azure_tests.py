@@ -13,6 +13,10 @@ commands = [
 
 if os.getenv("LOCAL_DEV"):
     additional_commands = [
+        "electrumsv-sdk install node",
+        "electrumsv-sdk install electrumx",
+        "electrumsv-sdk install electrumsv",
+        "electrumsv-sdk install whatsonchain",
         "electrumsv-sdk start status_monitor",
         "electrumsv-sdk start node",
         "electrumsv-sdk start electrumx",
@@ -43,6 +47,8 @@ and_more_commands = [
 ]
 
 try:
+    commands.extend(additional_commands)
+    commands.extend(and_more_commands)
     for command in commands:
         subprocess.run(command, shell=True, check=True)
 finally:

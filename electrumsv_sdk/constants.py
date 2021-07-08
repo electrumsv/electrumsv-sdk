@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -51,12 +52,26 @@ class ComponentOptions:
     BRANCH = "branch"
 
 
-class ComponentState:
+class ComponentState(str):
     """If the user terminates an application without using the SDK, it will be registered as
     'Failed' status."""
     RUNNING = "Running"
     STOPPED = "Stopped"
     FAILED = "Failed"
+    NONE = "None"
+
+    @classmethod
+    def from_str(cls, component_state_str: Optional[str]):
+        if component_state_str == "Running":
+            return cls.RUNNING
+        elif component_state_str == "Stopped":
+            return cls.STOPPED
+        elif component_state_str == "Failed":
+            return cls.FAILED
+        elif component_state_str == 'None':
+            return cls.NONE
+        else:
+            raise ValueError(f"ComponentState {component_state_str}, not recognised")
 
 SUCCESS_EXITCODE = 0
 SIGINT_EXITCODE = 130  # (2 + 128)

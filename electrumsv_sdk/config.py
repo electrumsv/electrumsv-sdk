@@ -1,6 +1,23 @@
+from argparse import Namespace
 from typing import List, Optional
 
 import attr
+
+
+class ParsedArgs(Namespace):
+    namespace: Optional[str] = None
+    selected_component: str = ""
+    component_args: List[str] = []
+    node_args: List[str] = []
+    repo: str = ""
+    branch: str = ""
+    new_flag: bool = False
+    gui_flag: bool = False
+    background_flag: bool = False
+    inline_flag: bool = False
+    new_terminal_flag: bool = False
+    component_id: str = ""
+    cli_extension_args: dict = {}
 
 
 @attr.s(auto_attribs=True, frozen=False)

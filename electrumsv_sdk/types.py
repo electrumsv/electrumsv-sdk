@@ -2,7 +2,7 @@ import abc
 import logging
 from pathlib import Path
 from types import ModuleType
-from typing import Set, Optional
+from typing import Set, Optional, List, Dict
 
 from electrumsv_sdk.config import Config
 
@@ -53,3 +53,6 @@ class AbstractPlugin(abc.ABC):
 
 class AbstractModuleType(ModuleType):
     Plugin = AbstractPlugin
+
+
+SubcommandIndicesType = Dict[str, List[int]]

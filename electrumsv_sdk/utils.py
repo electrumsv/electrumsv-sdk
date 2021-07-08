@@ -328,7 +328,7 @@ def wrap_and_escape_text(string: str) -> str:
     return "\'" + string.replace('"', '\\"') + "\'"
 
 
-def spawn_new_terminal(command: str, env_vars: Dict, id: str, component_name:
+def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, component_name:
         str, src: Path=None, logfile: Path=None, status_endpoint: str=None,
             metadata: Dict=None) -> None:
 

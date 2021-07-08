@@ -10,10 +10,11 @@ import argparse
 from argparse import ArgumentParser
 import logging
 import sys
-from typing import Optional, Dict, List, Tuple
+from typing import Dict, List, Tuple, cast
 
 from .constants import NameSpace
-from .config import Config
+from .config import Config, ParsedArgs
+from .types import SubcommandIndicesType
 from .validate_cli_args import ValidateCliArgs
 from .components import ComponentStore
 
@@ -25,15 +26,19 @@ class ArgParser:
         self.component_store = ComponentStore()
 
         # globals that are packed into Config after argparsing
-        self.namespace: Optional[str] = ""  # 'start', 'stop', 'reset', 'node', or 'status'
+        self.namespace: str = ""  # 'start', 'stop', 'reset', 'node', or 'status'
         self.selected_component: str = ""
         self.component_args = []  # e.g. store arguments to pass to the electrumsv's cli interface
         self.node_args = None
 
         # data types for storing intermediate steps of argparsing
-        self.parser_map: Dict[str, ArgumentParser] = {}  # namespace: ArgumentParser
-        self.parser_raw_args_map: Dict[str, List[str]] = {}  # {namespace: raw arguments}
-        self.subcmd_parsed_args_map = {}  # {namespace: parsed arguments}
+
+        # {namespace: ArgumentParser}
+        self.parser_map: Dict[str, ArgumentParser] = {}
+        # {namespace: raw_args}
+        self.parser_raw_args_map: Dict[str, List[str]] = {}
+        # {namespace: parsed_args}
+        self.subcmd_parsed_args_map: Dict[str, ParsedArgs] = {}
         self.config = None
 
         self.new_cli_options: List[str] = []  # used for dynamic, plugin-specific extensions to cli
@@ -41,13 +46,16 @@ class ArgParser:
 
     def validate_cli_args(self) -> None:
         """calls the appropriate handler for the argparsing.NameSpace"""
+        # Node RPC args are treated differently
+        if self.config.namespace == NameSpace.NODE:
+            return
         handlers = ValidateCliArgs(self.config)
         parsed_args = self.subcmd_parsed_args_map[self.config.namespace]
         func = getattr(handlers, "handle_" + self.config.namespace + "_args")
         func(parsed_args)
 
     def parse_first_arg(self, arg: str, cur_cmd_name: str,
-            subcommand_indices: Dict[str, List[int]]) -> Tuple[str, Dict[str, List[int]]]:
+            subcommand_indices: SubcommandIndicesType) -> Tuple[str, Dict[str, List[int]]]:
         if arg in {NameSpace.INSTALL, NameSpace.START, NameSpace.STOP, NameSpace.RESET,
                 NameSpace.NODE, NameSpace.STATUS}:
             cur_cmd_name = arg
@@ -72,7 +80,7 @@ class ArgParser:
         args.pop(0)
 
         # cmd_name: [index_arg1, index_arg2]
-        subcommand_indices: Dict[str, List[int]] = {}
+        subcommand_indices: SubcommandIndicesType = {}
 
         cur_cmd_name = NameSpace.TOP_LEVEL
         self.namespace = NameSpace.TOP_LEVEL
@@ -189,6 +197,15 @@ class ArgParser:
         self.feed_to_argparsers(args, subcommand_indices)
 
     def generate_config(self) -> Config:
+        # Node RPC args are treated differently to the rest
+        if self.namespace == NameSpace.NODE:
+            self.config = Config(
+                namespace=self.namespace,
+                node_args=self.node_args,
+                # --id is managed manually see controller.node()
+            )
+            return self.config
+
         parsed_args = self.subcmd_parsed_args_map[self.namespace]
         if self.namespace == NameSpace.INSTALL:
             self.config = Config(
@@ -228,12 +245,6 @@ class ArgParser:
                 selected_component=self.selected_component,
                 component_id=parsed_args.id,
             )
-        elif self.namespace == NameSpace.NODE:
-            self.config = Config(
-                namespace=self.namespace,
-                node_args=self.node_args,
-                # --id is managed manually see controller.node()
-            )
         elif self.namespace == NameSpace.STATUS:
             self.config = Config(
                 namespace=self.namespace,
@@ -253,12 +264,14 @@ class ArgParser:
 
         return self.config
 
-    def update_subcommands_args_map(self, args, subcommand_indices) -> None:
+    def update_subcommands_args_map(self, args: List[str], subcommand_indices:
+            SubcommandIndicesType) -> None:
         for namespace in subcommand_indices:
             for index in subcommand_indices[namespace]:
                 self.parser_raw_args_map[namespace].append(args[index])
 
-    def feed_to_argparsers(self, args, subcommand_indices) -> None:
+    def feed_to_argparsers(self, args: List[str], subcommand_indices: SubcommandIndicesType) \
+            -> None:
         """feeds relevant arguments to each child (or parent) ArgumentParser"""
         self.update_subcommands_args_map(args, subcommand_indices)
 
@@ -266,10 +279,10 @@ class ArgParser:
             if cmd_name == NameSpace.NODE:
                 self.node_args = self.parser_raw_args_map[cmd_name]
             else:
-                parsed_args = self.parser_map[cmd_name].parse_args(
+                parsed_args = cast(ParsedArgs, self.parser_map[cmd_name].parse_args(
                     args=self.parser_raw_args_map[cmd_name]
-                )
-            self.subcmd_parsed_args_map[cmd_name] = parsed_args
+                ))
+                self.subcmd_parsed_args_map[cmd_name] = parsed_args
 
     def add_install_argparser(self, namespaces) -> Tuple[ArgumentParser, List[ArgumentParser]]:
         start_parser = namespaces.add_parser("help", help="specify which servers to run")
