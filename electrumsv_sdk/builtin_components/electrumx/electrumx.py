@@ -4,11 +4,11 @@ import shutil
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Tuple, List
 
 from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
-from electrumsv_sdk.components import Component
+from electrumsv_sdk.components import Component, ComponentTypedDict
 from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
@@ -107,8 +107,10 @@ class Plugin(AbstractPlugin):
     def stop(self):
         """some components require graceful shutdown via a REST API or RPC API but most can use the
         generic 'app_state.kill_component()' function to track down the pid and kill the process."""
-        def stop_electrumx(component_dict: Dict):
-            rpcport = component_dict.get("metadata", {}).get("rpcport")
+        def stop_electrumx(component_dict: ComponentTypedDict):
+            metadata = component_dict.get("metadata", {})
+            assert metadata is not None  # typing bug
+            rpcport = metadata.get("rpcport")
             if not rpcport:
                 raise Exception("rpcport data not found")
             was_successful = self.tools.run_coroutine_ipython_friendly(self.tools.stop_electrumx)
@@ -121,9 +123,11 @@ class Plugin(AbstractPlugin):
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self):
-        def reset_electrumx(component_dict: Dict):
+        def reset_electrumx(component_dict: ComponentTypedDict):
             self.logger.debug("Resetting state of RegTest electrumx server...")
-            datadir = Path(component_dict.get('metadata', {}).get("DATADIR"))
+            metadata = component_dict.get('metadata', {})
+            assert metadata is not None  # typing bug
+            datadir = Path(metadata["DATADIR"])
             if datadir.exists():
                 shutil.rmtree(datadir)
                 os.mkdir(datadir)

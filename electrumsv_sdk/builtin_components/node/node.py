@@ -2,11 +2,11 @@ import logging
 import os
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Tuple, List
 
 from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
-from electrumsv_sdk.components import Component
+from electrumsv_sdk.components import Component, ComponentTypedDict
 from electrumsv_sdk.utils import get_directory_name
 from electrumsv_sdk.plugin_tools import PluginTools
 
@@ -115,8 +115,10 @@ class Plugin(AbstractPlugin):
     def stop(self):
         """The bitcoin node requires graceful shutdown via the RPC API - a good example of why this
         entrypoint is provided for user customizations (rather than always killing the process)."""
-        def stop_node(component_dict: Dict):
-            rpcport = component_dict.get("metadata", {}).get("rpcport")
+        def stop_node(component_dict: ComponentTypedDict):
+            metadata = component_dict.get("metadata", {})
+            assert metadata is not None  # typing bug
+            rpcport = metadata.get("rpcport")
             if not rpcport:
                 raise Exception("rpcport data not found")
             electrumsv_node.stop(rpcport=rpcport)
@@ -125,9 +127,11 @@ class Plugin(AbstractPlugin):
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self):
-        def reset_node(component_dict: Dict):
-            rpcport = component_dict.get("metadata", {}).get("rpcport")
-            datadir = component_dict.get("metadata", {}).get("DATADIR")
+        def reset_node(component_dict: ComponentTypedDict):
+            metadata = component_dict.get("metadata", {})
+            assert metadata is not None  # typing bug
+            rpcport = metadata.get('rpcport')
+            datadir = metadata.get("DATADIR")
             if not rpcport:
                 raise Exception("rpcport data not found")
             electrumsv_node.reset(data_path=datadir, rpcport=rpcport)

@@ -1,6 +1,6 @@
 """This defines a set of exposed public methods for using the SDK as a library"""
 import logging
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, List
 
 from .components import ComponentStore
 from .app_state import AppState
@@ -30,7 +30,7 @@ def install(component_type: str, repo: str = "", branch: str = "",
     controller.install(app_state.config)
 
 
-def _validate_network(network: str, component_type) -> None:
+def _validate_network(network: str, component_type: str) -> None:
     components_with_network_option = {'node', 'electrumx', 'electrumsv'}
     if network != '' and component_type not in components_with_network_option:
         raise ValueError(f"Can only specify 'network' for {components_with_network_option}")
@@ -121,7 +121,11 @@ def reset(component_type: Optional[str]=None, component_id: str = "", repo: str 
 
 
 def node(method: str, *args: str, node_id: str = 'node1') -> Dict:
-    return call_any_node_rpc(method, *args, node_id=node_id)
+    result = call_any_node_rpc(method, *args, node_id=node_id)
+    if result:
+        return result
+    else:
+        return {}
 
 
 def status(component_type: str = "", component_id: str = "") -> Dict:

@@ -7,14 +7,15 @@ Fortunately the help menu displays as expected so does not deviate from the stan
 """
 
 import argparse
-from argparse import ArgumentParser
+from argparse import ArgumentParser, _SubParsersAction
 import logging
 import sys
-from typing import Dict, List, Tuple, cast
+from typing import Dict, List, Tuple, cast, Optional
 
 from .constants import NameSpace
 from .config import Config, ParsedArgs
-from .types import SubcommandIndicesType
+from .types import SubcommandIndicesType, ParserMap, RawArgsMap, SubcommandParsedArgsMap, \
+    SelectedComponent
 from .validate_cli_args import ValidateCliArgs
 from .components import ComponentStore
 
@@ -27,18 +28,18 @@ class ArgParser:
 
         # globals that are packed into Config after argparsing
         self.namespace: str = ""  # 'start', 'stop', 'reset', 'node', or 'status'
-        self.selected_component: str = ""
+        self.selected_component: SelectedComponent = ""
         self.component_args = []  # e.g. store arguments to pass to the electrumsv's cli interface
-        self.node_args = None
+        self.node_args: Optional[List[str]] = None
 
         # data types for storing intermediate steps of argparsing
 
         # {namespace: ArgumentParser}
-        self.parser_map: Dict[str, ArgumentParser] = {}
+        self.parser_map: ParserMap = {}
         # {namespace: raw_args}
-        self.parser_raw_args_map: Dict[str, List[str]] = {}
+        self.parser_raw_args_map: RawArgsMap = {}
         # {namespace: parsed_args}
-        self.subcmd_parsed_args_map: Dict[str, ParsedArgs] = {}
+        self.subcmd_parsed_args_map: SubcommandParsedArgsMap = {}
         self.config = None
 
         self.new_cli_options: List[str] = []  # used for dynamic, plugin-specific extensions to cli
@@ -199,6 +200,7 @@ class ArgParser:
     def generate_config(self) -> Config:
         # Node RPC args are treated differently to the rest
         if self.namespace == NameSpace.NODE:
+            assert self.node_args is not None
             self.config = Config(
                 namespace=self.namespace,
                 node_args=self.node_args,
@@ -284,7 +286,7 @@ class ArgParser:
                 ))
                 self.subcmd_parsed_args_map[cmd_name] = parsed_args
 
-    def add_install_argparser(self, namespaces) -> Tuple[ArgumentParser, List[ArgumentParser]]:
+    def add_install_argparser(self, namespaces: _SubParsersAction) -> Tuple[ArgumentParser, List[ArgumentParser]]:
         start_parser = namespaces.add_parser("help", help="specify which servers to run")
         start_parser.add_argument("--background", action="store_true", help="")
         start_parser.add_argument("--id", type=str, default="", help="human-readable identifier "
@@ -304,7 +306,7 @@ class ArgParser:
 
         return start_parser, start_namespace_subcommands
 
-    def add_start_argparser(self, namespaces) -> Tuple[ArgumentParser, List[ArgumentParser]]:
+    def add_start_argparser(self, namespaces: _SubParsersAction) -> Tuple[ArgumentParser, List[ArgumentParser]]:
         start_parser = namespaces.add_parser("start", help="specify which servers to run")
         start_parser.add_argument("--new", action="store_true",
             help="run a new instance with unique 'id'")
@@ -329,7 +331,7 @@ class ArgParser:
             start_namespace_subcommands.append(component_parser)
         return start_parser, start_namespace_subcommands
 
-    def add_stop_argparser(self, namespaces) -> Tuple[ArgumentParser, List[ArgumentParser]]:
+    def add_stop_argparser(self, namespaces: _SubParsersAction) -> Tuple[ArgumentParser, List[ArgumentParser]]:
         stop_parser = namespaces.add_parser("stop", help="stop all spawned processes")
         stop_parser.add_argument("--id", type=str, default="", help="human-readable identifier "
             "for component (e.g. 'electrumsv1')")
@@ -343,7 +345,7 @@ class ArgParser:
 
         return stop_parser, stop_namespace_subcommands
 
-    def add_reset_argparser(self, namespaces) -> Tuple[ArgumentParser, List[ArgumentParser]]:
+    def add_reset_argparser(self, namespaces: _SubParsersAction) -> Tuple[ArgumentParser, List[ArgumentParser]]:
         """only relevant for component types with a DATADIR (e.g. node, electrumx, electrumsv)"""
         reset_parser = namespaces.add_parser("reset", help="reset state of relevant servers to "
             "genesis")
@@ -363,7 +365,7 @@ class ArgParser:
 
         return reset_parser, reset_namespace_subcommands
 
-    def add_node_argparser(self, namespaces) -> ArgumentParser:
+    def add_node_argparser(self, namespaces: _SubParsersAction) -> ArgumentParser:
         node_parser = namespaces.add_parser(
             "node",
             help="direct access to the built-in bitcoin daemon RPC commands",
@@ -375,7 +377,7 @@ class ArgParser:
         # NOTE: all args are actually directed at the bitcoin RPC over http
         return node_parser
 
-    def add_status_argparser(self, namespaces) -> ArgumentParser:
+    def add_status_argparser(self, namespaces: _SubParsersAction) -> ArgumentParser:
         status_parser = namespaces.add_parser(
             "status", help="get a status update of SDK applications"
         )
@@ -390,7 +392,7 @@ class ArgParser:
             reset_namespace_subcommands.append(component_parser)
         return status_parser
 
-    def add_global_flags(self, top_level_parser) -> None:
+    def add_global_flags(self, top_level_parser: ArgumentParser) -> None:
         top_level_parser.add_argument(
             "--version", action="store_true", dest="version", default=False,
             help="version information",
@@ -421,7 +423,7 @@ class ArgParser:
         for namespace in self.parser_map.keys():
             self.parser_raw_args_map[namespace] = []
 
-    def extend_cli(self, selected_component: str, namespace: str) -> List[str]:
+    def extend_cli(self, selected_component: SelectedComponent, namespace: str) -> List[str]:
         component_module = self.component_store.import_plugin_module(selected_component)
         try:
             parser = self.parser_map[namespace]

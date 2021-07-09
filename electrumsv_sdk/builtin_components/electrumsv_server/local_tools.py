@@ -4,7 +4,6 @@ import typing
 
 from electrumsv_sdk.types import AbstractLocalTools
 from electrumsv_sdk.utils import get_directory_name
-from electrumsv_sdk.config import Config
 
 
 COMPONENT_NAME = get_directory_name(__file__)

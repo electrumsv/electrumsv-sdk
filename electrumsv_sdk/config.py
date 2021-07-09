@@ -3,10 +3,12 @@ from typing import List, Optional
 
 import attr
 
+from electrumsv_sdk.types import SelectedComponent
+
 
 class ParsedArgs(Namespace):
     namespace: Optional[str] = None
-    selected_component: str = ""
+    selected_component: SelectedComponent = ""
     component_args: List[str] = []
     node_args: List[str] = []
     repo: str = ""
@@ -28,7 +30,7 @@ class Config(object):
     for use as a python library.
     """
     namespace: Optional[str] = None
-    selected_component: str = ""
+    selected_component: SelectedComponent = ""
     component_args: List[str] = []
     node_args: List[str] = []
     repo: str = ""

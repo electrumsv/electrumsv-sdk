@@ -3,10 +3,10 @@ import os
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Dict, Tuple, List, cast
+from typing import Optional, Tuple, List
 
 from electrumsv_sdk.types import AbstractPlugin
-from electrumsv_sdk.components import Component
+from electrumsv_sdk.components import Component, ComponentTypedDict
 from electrumsv_sdk.utils import is_remote_repo, kill_process, get_directory_name, \
     set_deterministic_electrumsv_seed
 from electrumsv_sdk.plugin_tools import PluginTools
@@ -145,7 +145,7 @@ class Plugin(AbstractPlugin):
         """
         self.tools.reinstall_conflicting_dependencies()
 
-        def reset_electrumsv(component_dict: Dict):
+        def reset_electrumsv(component_dict: ComponentTypedDict):
             self.logger.debug("Resetting state of RegTest electrumsv server...")
 
             # reset is sometimes used with no args and so the --deterministic-seed extension
@@ -154,7 +154,9 @@ class Plugin(AbstractPlugin):
                 if self.config.cli_extension_args['deterministic_seed']:
                     set_deterministic_electrumsv_seed(self.config.selected_component,
                         self.id)
-            self.datadir = Path(component_dict.get('metadata', {}).get("DATADIR"))
+            metadata = component_dict.get('metadata', {})
+            assert metadata is not None
+            self.datadir = Path(metadata["DATADIR"])
             self.id = component_dict.get('id')
             self.tools.delete_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
             self.tools.create_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')

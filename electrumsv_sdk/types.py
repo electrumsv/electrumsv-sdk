@@ -1,14 +1,14 @@
 import abc
 import logging
+from argparse import ArgumentParser
 from pathlib import Path
 from types import ModuleType
 from typing import Set, Optional, List, Dict
 
-from electrumsv_sdk.config import Config
-
 import typing
 
 if typing.TYPE_CHECKING:
+    from electrumsv_sdk.config import Config, ParsedArgs
     from .components import Component
     from .plugin_tools import PluginTools
 
@@ -27,7 +27,7 @@ class AbstractPlugin(abc.ABC):
     COMPONENT_NAME = ""
     DEFAULT_REMOTE_REPO = "https://github.com/electrumsv/electrumsv.git"
 
-    def __init__(self, config: Config):
+    def __init__(self, config: "Config"):
         self.config = config
         self.plugin_tools = PluginTools(self, config)
         self.src: Optional[Path] = None
@@ -55,3 +55,7 @@ class AbstractModuleType(ModuleType):
 
 
 SubcommandIndicesType = Dict[str, List[int]]
+ParserMap = Dict[str, ArgumentParser]
+RawArgsMap = Dict[str, List[str]]
+SubcommandParsedArgsMap = Dict[str, "ParsedArgs"]
+SelectedComponent = str

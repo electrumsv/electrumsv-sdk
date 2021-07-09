@@ -3,12 +3,12 @@ import os
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Tuple, List
 import shutil
 
 from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
-from electrumsv_sdk.components import Component
+from electrumsv_sdk.components import Component, ComponentTypedDict
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
@@ -93,8 +93,10 @@ class Plugin(AbstractPlugin):
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
 
     def reset(self) -> None:
-        def reset_server(component_dict: Dict):
-            datadir = Path(component_dict.get("metadata", {}).get("datadir"))
+        def reset_server(component_dict: ComponentTypedDict):
+            metadata = component_dict.get("metadata", {})
+            assert metadata is not None
+            datadir: Path = Path(metadata["datadir"])
             if datadir.exists():
                 shutil.rmtree(datadir)
                 os.mkdir(datadir)

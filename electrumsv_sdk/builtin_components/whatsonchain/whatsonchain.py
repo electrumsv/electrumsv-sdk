@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from typing import Optional, cast
+from typing import Optional
 
 from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config

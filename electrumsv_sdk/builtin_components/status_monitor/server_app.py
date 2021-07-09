@@ -14,6 +14,7 @@ from typing import Dict
 import aiohttp
 
 from aiohttp import web
+from aiohttp.web_ws import WebSocketResponse
 from filelock import FileLock
 
 from electrumsv_sdk.utils import get_directory_name, get_sdk_datadir
@@ -130,7 +131,7 @@ class ApplicationState(object):
                 else:
                     return {}
 
-    async def manual_heartbeat(self, ws, ws_id):
+    async def manual_heartbeat(self, ws: WebSocketResponse, ws_id):
         """It seems that aiohttp's built-in heartbeat functionality has bugs
         https://github.com/aio-libs/aiohttp/issues/2309 - resorting to manual ping/pong
         between client / server...
@@ -153,7 +154,7 @@ class ApplicationState(object):
                 await asyncio.sleep(HEARTBEAT_INTERVAL)
         raise ConnectionResetError
 
-    async def listen_for_close(self, ws):
+    async def listen_for_close(self, ws: WebSocketResponse):
         async for msg in ws:
             if msg.type == aiohttp.WSMsgType.TEXT:
                 if msg.data == 'close':

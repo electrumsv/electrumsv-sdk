@@ -5,7 +5,6 @@ import sys
 import typing
 
 from electrumsv_sdk.types import AbstractLocalTools
-from electrumsv_sdk.config import Config
 
 
 if typing.TYPE_CHECKING:

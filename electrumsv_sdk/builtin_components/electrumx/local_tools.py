@@ -10,8 +10,6 @@ import sys
 import typing
 from aiorpcx import timeout_after
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR
-from electrumsv_sdk.config import Config
-from electrumsv_sdk.plugin_tools import PluginTools
 from electrumsv_sdk.utils import checkout_branch
 
 from electrumsv_sdk.types import AbstractLocalTools

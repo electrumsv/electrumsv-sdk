@@ -10,7 +10,6 @@ from typing import List
 from electrumsv_node import electrumsv_node
 
 from .argparsing import ArgParser
-from .config import Config
 from .constants import SDK_HOME_DIR, REMOTE_REPOS_DIR, DATADIR, LOGS_DIR, \
     USER_PLUGINS_DIR, CONFIG_PATH
 from .controller import Controller

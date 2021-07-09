@@ -7,7 +7,6 @@ from electrumsv_node import electrumsv_node
 
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR
 from electrumsv_sdk.types import AbstractLocalTools
-from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import checkout_branch
 
 

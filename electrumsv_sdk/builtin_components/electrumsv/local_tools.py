@@ -9,9 +9,7 @@ from typing import Optional
 import stringcase
 import typing
 
-from electrumsv_sdk.plugin_tools import PluginTools
 from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command
-from electrumsv_sdk.config import Config
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR, NETWORKS
 from electrumsv_sdk.types import AbstractLocalTools
 

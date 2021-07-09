@@ -7,13 +7,13 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, cast
 
 import colorama
 import psutil
 import tailer
 from electrumsv_node import electrumsv_node
-from .components import Component, ComponentStore
+from .components import Component, ComponentStore, ComponentTypedDict
 from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE
 
 logger = logging.getLogger("utils")
@@ -76,13 +76,13 @@ def port_is_in_use(port) -> bool:
     return False
 
 
-def get_directory_name(component__file__) -> str:
+def get_directory_name(component__file__: str) -> str:
     MODULE_DIR = os.path.dirname(os.path.abspath(component__file__))
     component_name = os.path.basename(MODULE_DIR)
     return component_name
 
 
-def get_parent_and_child_pids(parent_pid) -> Optional[List[int]]:
+def get_parent_and_child_pids(parent_pid: int) -> Optional[List[int]]:
     try:
         pids = []
         parent = psutil.Process(parent_pid)
@@ -94,7 +94,7 @@ def get_parent_and_child_pids(parent_pid) -> Optional[List[int]]:
         return None
 
 
-def sigint(pid) -> None:
+def sigint(pid: int) -> None:
     """attempt graceful shutdown via sigint"""
     if sys.platform in ("linux", "darwin"):
         try:
@@ -109,7 +109,7 @@ def sigint(pid) -> None:
             pass
 
 
-def sigkill(parent_pid) -> None:
+def sigkill(parent_pid: int) -> None:
     """kill process if sigint failed"""
     pids = get_parent_and_child_pids(parent_pid)
     if pids:
@@ -122,10 +122,12 @@ def sigkill(parent_pid) -> None:
                     subprocess.run(f"taskkill.exe /PID {pid} /T /F")
 
 
-def kill_by_pid(pid: int) -> None:
+def kill_by_pid(pid: Optional[int]) -> None:
     """kills parent and all children"""
     # todo - it may make sense to add an optional timeout for waiting on a graceful shutdown
     #  via sigint before escalating to sigkill/sigterm - this would be specified for each plugin
+    if not pid:
+        return
     pids = get_parent_and_child_pids(parent_pid=pid)
     if pids:
         for pid in pids:
@@ -135,12 +137,12 @@ def kill_by_pid(pid: int) -> None:
             sigkill(parent_pid=pid)
 
 
-def kill_process(component_dict: Dict) -> None:
+def kill_process(component_dict: ComponentTypedDict) -> None:
     pid = component_dict['pid']
     kill_by_pid(pid)
 
 
-def is_default_component_id(component_name, component_id) -> bool:
+def is_default_component_id(component_name: str, component_id: str) -> bool:
     return component_name + str(1) == component_id
 
 
@@ -171,7 +173,7 @@ def get_sdk_datadir() -> Path:
     return sdk_home_datadir
 
 
-def tail(logfile) -> None:
+def tail(logfile: Path) -> None:
     colorama.init()
     for line in tailer.follow(open(logfile), delay=0.3):
         # "https://www.devdungeon.com/content/colorize-terminal-output-python"
@@ -182,8 +184,8 @@ def tail(logfile) -> None:
 
 
 def update_status_monitor(pid: int, component_state: Optional[ComponentState], id: str,
-        component_name: str, src: Path=None, logfile: Path=None, status_endpoint: str=None,
-        metadata: Dict=None) -> None:
+        component_name: str, src: Optional[Path]=None, logfile: Optional[Path]=None,
+        status_endpoint: Optional[str]=None, metadata: Optional[Dict]=None) -> None:
 
     component_info = Component(id, pid, component_name, str(src),
         status_endpoint=status_endpoint, component_state=component_state,
@@ -194,8 +196,9 @@ def update_status_monitor(pid: int, component_state: Optional[ComponentState], i
     component_store.update_status_file(component_info)
 
 
-def spawn_inline(command: str, env_vars: Dict, id: str, component_name: str, src: Path=None,
-        logfile: Path=None, status_endpoint: str=None, metadata: Dict=None) -> None:
+def spawn_inline(command: str, env_vars: Dict, id: str, component_name: str,
+        src: Optional[Path]=None, logfile: Optional[Path]=None, status_endpoint: Optional[str]=None,
+        metadata: Optional[Dict]=None) -> None:
     """only for running servers with logging requirements - not for simple commands"""
     def update_state(process, component_state: Optional[ComponentState]):
         update_status_monitor(pid=process.pid, component_state=component_state, id=id,
@@ -365,7 +368,10 @@ def write_raw_blocks_to_file(filepath: Union[Path, str], node_id: str,
 
     if not to_height:
         result = call_any_node_rpc('getinfo', node_id=node_id)
-        to_height = int(result['result']['blocks'])
+        if result:
+            to_height = int(result['result']['blocks'])
+        else:
+            return
 
     if not from_height:
         from_height = 0
@@ -373,8 +379,9 @@ def write_raw_blocks_to_file(filepath: Union[Path, str], node_id: str,
     raw_hex_blocks = []
     for height in range(from_height, to_height+1):
         result = call_any_node_rpc('getblockbyheight', str(height), str(0), node_id=node_id)
-        raw_hex_block = result['result']
-        raw_hex_blocks.append(raw_hex_block)
+        if result:
+            raw_hex_block = result['result']
+            raw_hex_blocks.append(raw_hex_block)
 
     if not os.path.exists(filepath):
         open(filepath, 'w').close()
@@ -410,17 +417,23 @@ def submit_blocks_from_file(node_id: str, filepath: Union[Path, str]) -> None:
         call_any_node_rpc('submitblock', hex_block.rstrip('\n'), node_id=node_id)
 
 
-def call_any_node_rpc(method: str, *args: Union[str, int], node_id: str='node1') -> Dict:
+def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Optional[Dict]:
     rpc_args = cast_str_int_args_to_int(list(args))
     component_store = ComponentStore()
     DEFAULT_RPCHOST = "127.0.0.1"
     DEFAULT_RPCPORT = 18332
-    component_dict: Dict = component_store.component_status_data_by_id(node_id)
-    if component_dict:
-        rpchost = DEFAULT_RPCHOST
-        metadata: Dict = component_dict.get("metadata", {})
-        rpcport = metadata.get("rpcport")
-    else:
+    component_dict: Optional[ComponentTypedDict] = \
+        component_store.component_status_data_by_id(node_id)
+    rpchost = DEFAULT_RPCHOST
+    if component_dict is None:
+        logger.error(f"node component: '{node_id}' not found")
+        return None
+
+    assert component_dict is not None  # typing bug
+    metadata = component_dict["metadata"]
+    assert metadata is not None  # typing bug
+    rpcport = metadata.get("rpcport")
+    if not metadata:
         logger.error(f"could not locate metadata for node instance: {node_id}, "
                      f"using default of 18332")
         rpchost = DEFAULT_RPCHOST

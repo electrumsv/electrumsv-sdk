@@ -7,21 +7,12 @@ import sys
 from typing import Dict, Callable, Tuple, Set
 import requests
 
-from .types import AbstractPlugin
-from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR
-from .components import ComponentStore
+from .types import AbstractPlugin, SelectedComponent
+from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR, NETWORKS_LIST
+from .components import ComponentStore, ComponentTypedDict
 from .utils import port_is_in_use, is_default_component_id, is_remote_repo, checkout_branch, \
     spawn_inline, spawn_new_terminal, spawn_background_supervised
 from .config import Config
-
-
-class NETWORKS:
-    # do not change these names - must match cli args
-    REGTEST = 'regtest'
-    TESTNET = 'testnet'
-
-
-NETWORKS_LIST = [NETWORKS.REGTEST, NETWORKS.TESTNET]
 
 
 class PluginTools:
@@ -58,7 +49,8 @@ class PluginTools:
             self.plugin.src = Path(self.config.repo)
         return self.plugin.src
 
-    def call_for_component_id_or_type(self, component_name: str, callable: Callable) -> None:
+    def call_for_component_id_or_type(self, component_name: SelectedComponent,
+            callable: Callable[[ComponentTypedDict], None]) -> None:
         """Used to either kill/stop/reset components by --id or <component_type>)
         - callable is called with one argument: component_dict with all relevant info about the
         component of interest - if there are many components of a particular type then the

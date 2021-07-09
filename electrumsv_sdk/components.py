@@ -62,7 +62,7 @@ class ComponentTypedDict(TypedDict):
     location: Union[str, Path]
     status_endpoint: Optional[str]
     component_state: Optional[ComponentState]
-    metadata: Optional[dict]
+    metadata: Optional[Dict]
     logging_path: Optional[Union[str, Path]]
     last_updated: Optional[str]
 
@@ -137,7 +137,7 @@ class ComponentStore:
         self.component_map = self.get_component_map()
 
     def get_status(self, component_type: Optional[str]=None,
-            component_id: Optional[str]=None) -> Dict:
+            component_id: Optional[str]=None) -> Dict[str, ComponentTypedDict]:
         filelock_logger = logging.getLogger("filelock")
         filelock_logger.setLevel(logging.WARNING)
 
@@ -145,6 +145,7 @@ class ComponentStore:
             if self.component_state_path.exists():
                 with open(self.component_state_path, "r") as f:
                     data = f.read()
+                    component_state: Dict[str, ComponentTypedDict]
                     if data:
                         component_state = json.loads(data)
                     else:
@@ -155,16 +156,18 @@ class ComponentStore:
                         "Please choose one or the other.")
 
                 if component_type:
-                    filtered_result = {}
+                    filtered_result: Dict[str, ComponentTypedDict] = {}
+                    # Only save / modify the relevant component types
                     for key, val in component_state.items():
                         if val['component_type'] == component_type:
                             filtered_result[key] = val
+
                     return filtered_result
 
                 if component_id:
                     result = component_state.get(component_id)
                     if result:
-                        return result
+                        return {component_id: result}
                     raise ValueError(f"Component id: '{component_id}' not found in store.")
 
                 return component_state
@@ -191,13 +194,24 @@ class ComponentStore:
             f.flush()
         logger.debug(f"updated status: {new_component_info}")
 
-    def component_status_data_by_id(self, component_id: str) -> Dict:
+    def component_status_data_by_id(self, component_id: str) -> Optional[ComponentTypedDict]:
         component_state = self.get_status()
         component_info = component_state.get(component_id)
         if component_info:
-            return component_info
+            return ComponentTypedDict(
+                id=component_info['id'],
+                pid=component_info['pid'],
+                component_type=component_info['component_type'],
+                location=component_info['location'],
+                status_endpoint=component_info['status_endpoint'],
+                component_state=component_info['component_state'],
+                metadata=component_info['metadata'],
+                logging_path=component_info['logging_path'],
+                last_updated=component_info['last_updated']
+            )
+
         logger.error("component id not found")
-        return {}
+        return None
 
     def get_component_map(self) -> Dict[str, Path]:
         component_map = {}  # component_name: <component_dir>
@@ -263,7 +277,10 @@ class ComponentStore:
         """
         if not config.selected_component:  # i.e. if --id set
             component_dict = self.component_status_data_by_id(config.component_id)
-            component_name = component_dict["component_type"]
+            if component_dict:
+                component_name = component_dict["component_type"]
+            else:
+                logger.exception("component_name not found")
         else:
             component_name = config.selected_component
 
