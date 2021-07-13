@@ -10,9 +10,10 @@ import subprocess
 import requests
 import sys
 import zipfile
-from typing import Dict
+from typing import Dict, Any, TypedDict
 from urllib.parse import urlparse
 
+from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import get_directory_name, get_sdk_datadir
 
 VERSION = "0.0.1"  # electrumsv/electrumsv-mAPI version
@@ -21,6 +22,7 @@ PFX_PATH = pathlib.Path(MODULE_DIR) / "config/localhost.pfx"
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
+
 
 # The uri is copied from the Github repository release assets list.
 PREBUILT_ENTRIES = {
@@ -45,7 +47,7 @@ PREBUILT_ENTRIES = {
 }
 
 
-def trust_cert(pfx_path):
+def trust_cert(pfx_path: pathlib.Path) -> None:
     if platform.system() in {'Windows'}:
         command1 = f"dotnet dev-certs https --clean"
         process = subprocess.Popen(shlex.split(command1, posix=False))
@@ -65,7 +67,7 @@ def trust_cert(pfx_path):
         process.wait()
 
 
-def _get_pfx_store_location():
+def _get_pfx_store_location() -> pathlib.Path:
     SDK_HOME = get_sdk_datadir()
     MERCHANT_API_DATADIR = SDK_HOME.joinpath("component_datadirs/merchant_api")
     pfx_store_location = MERCHANT_API_DATADIR / "localhost.pfx"
@@ -73,7 +75,7 @@ def _get_pfx_store_location():
     return pfx_store_location
 
 
-def load_pfx_file(config):
+def load_pfx_file(config: Config) -> None:
     """copy the localhost.pfx specified via the --ssl commandline argument to the required
     location"""
     pfx_location = _get_pfx_store_location()
@@ -99,7 +101,7 @@ def load_pfx_file(config):
         trust_cert(pfx_location)
 
 
-def _get_entry() -> Dict:
+def _get_entry() -> Dict[Any, str]:
     system_name = platform.system()
     is_64bit = sys.maxsize > 2**32
     if not is_64bit:
@@ -138,13 +140,13 @@ def download_and_install(install_path: pathlib.Path) -> None:
             z.extractall(install_path)
 
 
-def chmod_exe(install_path: pathlib.Path):
+def chmod_exe(install_path: pathlib.Path) -> None:
     run_path = get_run_path(install_path)
     st = os.stat(run_path)
     os.chmod(run_path, st.st_mode | stat.S_IEXEC)
 
 
-def load_env_vars():
+def load_env_vars() -> None:
     env_vars = {"PYTHONUNBUFFERED": "1"}
     os.environ.update(env_vars)
     from dotenv import load_dotenv, set_key
@@ -152,7 +154,7 @@ def load_env_vars():
 
     pfx_location = _get_pfx_store_location()
     assert os.path.isfile(pfx_location), f"{pfx_location} file not found"
-    set_key(str(env_path), "ASPNETCORE_Kestrel__Certificates__Default__Path", str(pfx_location))
+    set_key(env_path, "ASPNETCORE_Kestrel__Certificates__Default__Path", str(pfx_location))
 
     load_dotenv(dotenv_path=env_path)
 

@@ -4,12 +4,12 @@ import os
 import time
 from pathlib import Path
 import sys
-from typing import Dict, Callable, Tuple, Set
+from typing import Dict, Callable, Tuple, Set, cast, List, Any, Optional
 import requests
 
 from .types import AbstractPlugin, SelectedComponent
 from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR, NETWORKS_LIST
-from .components import ComponentStore, ComponentTypedDict
+from .components import ComponentStore, ComponentTypedDict, ComponentMetadata
 from .utils import port_is_in_use, is_default_component_id, is_remote_repo, checkout_branch, \
     spawn_inline, spawn_new_terminal, spawn_background_supervised
 from .config import Config
@@ -125,11 +125,16 @@ class PluginTools:
 
     def port_clash_check_ok(self) -> bool:
         reserved_ports: Set[int] = set()
+        reserved_ports_list: List[int] = []
         for component_name in self.component_store.component_map:
             try:
                 component_module = self.component_store.import_plugin_module(component_name)
                 # avoids instantiation by accessing RESERVED_PORTS as a class attribute
-                if component_module.Plugin.RESERVED_PORTS in reserved_ports:
+                for port in component_module.Plugin.RESERVED_PORTS:
+                    reserved_ports.add(port)
+                    reserved_ports_list.append(port)
+
+                if len(reserved_ports) != len(reserved_ports_list):
                     self.logger.exception(
                         f"There is a conflict of reserved ports for component_module: "
                         f"{component_module} on ports: {component_module.Plugin.RESERVED_PORTS}. "
@@ -141,7 +146,8 @@ class PluginTools:
                     f"been skipped")
         return True
 
-    def get_component_port(self, default_component_port, component_name, component_id) -> int:
+    def get_component_port(self, default_component_port: int, component_name: str,
+            component_id: str) -> int:
         """ensure that no other plugin uses any of the default ports as they are strictly
         reserved for the default component ids."""
         if not self.port_clash_check_ok():
@@ -163,8 +169,9 @@ class PluginTools:
         return port
 
     def is_component_running_http(self, status_endpoint: str, retries:
-            int=6, duration: float=1.0, timeout: float=0.5, http_method='get',
-            payload: Dict=None, component_name: str=None, verify_ssl=False) -> bool:
+            int=6, duration: float=1.0, timeout: float=0.5, http_method: str='get',
+            payload: Optional[Dict[Any, Any]]=None, component_name: Optional[str]=None,
+            verify_ssl: bool=False) -> bool:
 
         if not component_name and self.plugin.component_info:
             component_name = self.plugin.component_info.component_type
@@ -175,7 +182,7 @@ class PluginTools:
             self.logger.debug(f"Polling {component_name}...")
             try:
                 result = getattr(requests, http_method)(status_endpoint, timeout=timeout,
-                    data=payload, verify=False)
+                    data=payload, verify=verify_ssl)
                 result.raise_for_status()
                 return True
             except Exception as e:
@@ -184,9 +191,11 @@ class PluginTools:
             time.sleep(sleep_time)
         return False
 
-    def spawn_process(self, command: str, env_vars: Dict, id: str, component_name: str,
-            src: Path = None, logfile: Path = None, status_endpoint: str = None,
-            metadata: Dict = None) -> None:
+    def spawn_process(self, command: str, env_vars: Dict[str, str], id: str, component_name: str,
+            src: Optional[Path]=None, logfile: Optional[Path]=None,
+            status_endpoint: Optional[str]=None,
+            metadata: Optional[ComponentMetadata]=None) -> None:
+
         if not env_vars:
             env_vars = {}
 

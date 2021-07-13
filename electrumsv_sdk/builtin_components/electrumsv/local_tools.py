@@ -17,7 +17,7 @@ COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
 if typing.TYPE_CHECKING:
-    from electrumsv_sdk.builtin_components.electrumsv import Plugin
+    from .electrumsv import Plugin
 
 
 class LocalTools(AbstractLocalTools):

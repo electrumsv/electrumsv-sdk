@@ -33,7 +33,7 @@ import os
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Optional, Union, Dict, cast
+from typing import Optional, Union, Dict, cast, Any
 from filelock import FileLock
 
 from .config import Config
@@ -47,12 +47,18 @@ MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 logger = logging.getLogger("component-store")
 
 
-def get_str_datetime():
+def get_str_datetime() -> str:
     return datetime.datetime.now().strftime(TIME_FORMAT)
 
 
 from typing import TypedDict
 
+
+class ComponentMetadata(TypedDict, total=False):
+    rpcport: int
+    rpchost: str
+    datadir: str
+    p2p_port: int
 
 
 class ComponentTypedDict(TypedDict):
@@ -61,8 +67,8 @@ class ComponentTypedDict(TypedDict):
     component_type: str
     location: Union[str, Path]
     status_endpoint: Optional[str]
-    component_state: Optional[ComponentState]
-    metadata: Optional[Dict]
+    component_state: Optional[str]
+    metadata: Optional[ComponentMetadata]
     logging_path: Optional[Union[str, Path]]
     last_updated: Optional[str]
 
@@ -76,7 +82,7 @@ class Component:
         location: Union[str, Path],
         status_endpoint: Optional[str],
         component_state: Optional[str]=None,
-        metadata: Optional[Dict]=None,
+        metadata: Optional[ComponentMetadata]=None,
         logging_path: Optional[Union[str, Path]]=None,
         last_updated: Optional[str]=None
     ):
@@ -127,10 +133,10 @@ class ComponentStore:
     """multiprocess safe read/write access to component_state.json
     (which is basically acting as a stand-in for a database - which would be major overkill)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.file_name = "component_state.json"
         self.lock_path = SDK_HOME_DIR / "component_state.json.lock"
-        self.file_lock = FileLock(self.lock_path, timeout=5)
+        self.file_lock = FileLock(str(self.lock_path), timeout=5)
         self.component_state_path = SDK_HOME_DIR / self.file_name
         if not self.component_state_path.exists():
             open(self.component_state_path, 'w').close()

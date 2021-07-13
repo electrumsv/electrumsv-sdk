@@ -7,14 +7,15 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from typing import List, Dict, Optional, Union, cast
+from typing import List, Dict, Optional, Union, Any
 
 import colorama
 import psutil
 import tailer
 from electrumsv_node import electrumsv_node
-from .components import Component, ComponentStore, ComponentTypedDict
+from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
 from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE
+from .types import SubprocessCallResult
 
 logger = logging.getLogger("utils")
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,7 +35,7 @@ def topup_wallet() -> None:
         logger.debug(f"Generated {nblocks}: {result.json()['result']} to {toaddress}")
 
 
-def cast_str_int_args_to_int(node_args: List) -> List:
+def cast_str_int_args_to_int(node_args: List[Any]) -> List[Any]:
     int_indices = []
     for index, arg in enumerate(node_args):
 
@@ -61,7 +62,7 @@ def read_sdk_version() -> str:
     return version
 
 
-def port_is_in_use(port) -> bool:
+def port_is_in_use(port: int) -> bool:
     netstat_cmd = "netstat -an"
     if sys.platform in {'linux', 'darwin'}:
         netstat_cmd = "netstat -antu"
@@ -183,9 +184,9 @@ def tail(logfile: Path) -> None:
         print(line)
 
 
-def update_status_monitor(pid: int, component_state: Optional[ComponentState], id: str,
+def update_status_monitor(pid: int, component_state: Optional[str], id: str,
         component_name: str, src: Optional[Path]=None, logfile: Optional[Path]=None,
-        status_endpoint: Optional[str]=None, metadata: Optional[Dict]=None) -> None:
+        status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
 
     component_info = Component(id, pid, component_name, str(src),
         status_endpoint=status_endpoint, component_state=component_state,
@@ -196,19 +197,20 @@ def update_status_monitor(pid: int, component_state: Optional[ComponentState], i
     component_store.update_status_file(component_info)
 
 
-def spawn_inline(command: str, env_vars: Dict, id: str, component_name: str,
+def spawn_inline(command: str, env_vars: Dict[str, str], id: str, component_name: str,
         src: Optional[Path]=None, logfile: Optional[Path]=None, status_endpoint: Optional[str]=None,
-        metadata: Optional[Dict]=None) -> None:
+        metadata: Optional[ComponentMetadata]=None) -> None:
     """only for running servers with logging requirements - not for simple commands"""
-    def update_state(process, component_state: Optional[ComponentState]):
+    def update_state(process: SubprocessCallResult,
+            component_state: Optional[str]) -> None:
         update_status_monitor(pid=process.pid, component_state=component_state, id=id,
             component_name=component_name, src=src, logfile=logfile,
             status_endpoint=status_endpoint, metadata=metadata)
 
-    def on_start(process):
+    def on_start(process: SubprocessCallResult) -> None:
         update_state(process, ComponentState.RUNNING)
 
-    def on_exit(process):
+    def on_exit(process: SubprocessCallResult) -> None:
         # on windows signal.CTRL_C_EVENT gives back SUCCESS_EXITCODE (0)
         if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE}:
             update_state(process, ComponentState.STOPPED)
@@ -257,9 +259,9 @@ def spawn_inline(command: str, env_vars: Dict, id: str, component_name: str,
         sys.exit(1)
 
 
-def spawn_background_supervised(command: str, env_vars: Dict, id: str, component_name:
-        str, src: Path=None, logfile: Path=None, status_endpoint: str=None,
-            metadata: Dict=None) -> None:
+def spawn_background_supervised(command: str, env_vars: Dict[str,str], id: str, component_name:
+        str, src: Optional[Path]=None, logfile: Optional[Path]=None,
+        status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
     """spawns a child process that can wait for the process to exit and check the returncode"""
     run_background_script = Path(MODULE_DIR).joinpath("scripts/run_background.py")
     component_info = Component(id, None, component_name, str(src),
@@ -281,23 +283,23 @@ def spawn_background_supervised(command: str, env_vars: Dict, id: str, component
         subprocess.Popen(cmd, env=env)
 
 
-def spawn_background(command: str, env_vars: Dict, id: str, component_name:
-        str, src: Path=None, logfile: Path=None, status_endpoint: str=None,
-            metadata: Dict=None) -> None:
+def spawn_background(command: str, env_vars: Dict[Any, Any], id: str, component_name:
+        str, src: Optional[Path]=None, logfile: Optional[Path]=None,
+        status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
 
     env = os.environ.copy()
     if env_vars:
         env.update(env_vars)
 
-    def update_state(process, component_state: ComponentState):
+    def update_state(process: SubprocessCallResult, component_state: str) -> None:
         update_status_monitor(pid=process.pid, component_state=component_state, id=id,
             component_name=component_name, src=src, logfile=logfile,
             status_endpoint=status_endpoint, metadata=metadata)
 
-    def on_start(process):
+    def on_start(process: SubprocessCallResult) -> None:
         update_state(process, ComponentState.RUNNING)
 
-    def on_exit(process):
+    def on_exit(process: SubprocessCallResult) -> None:
         # on windows signal.CTRL_C_EVENT gives back SUCCESS_EXITCODE (0)
         if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE}:
             update_state(process, ComponentState.STOPPED)
@@ -332,8 +334,8 @@ def wrap_and_escape_text(string: str) -> str:
 
 
 def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, component_name:
-        str, src: Path=None, logfile: Path=None, status_endpoint: str=None,
-            metadata: Dict=None) -> None:
+        str, src: Optional[Path]=None, logfile: Optional[Path]=None,
+        status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
 
     component_info = Component(id=id, pid=None, component_type=component_name, location=str(src),
         status_endpoint=status_endpoint, component_state=None, metadata=metadata,
@@ -417,7 +419,7 @@ def submit_blocks_from_file(node_id: str, filepath: Union[Path, str]) -> None:
         call_any_node_rpc('submitblock', hex_block.rstrip('\n'), node_id=node_id)
 
 
-def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Optional[Dict]:
+def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Optional[Any]:
     rpc_args = cast_str_int_args_to_int(list(args))
     component_store = ComponentStore()
     DEFAULT_RPCHOST = "127.0.0.1"
@@ -446,16 +448,17 @@ def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Optional
     result = electrumsv_node.call_any(method, *rpc_args, rpchost=rpchost, rpcport=rpcport,
         rpcuser="rpcuser", rpcpassword="rpcpassword")
 
-    return result.json()
+    return json.loads(result.content)
 
 
-def set_deterministic_electrumsv_seed(component_type: str, component_id: Optional[str]=None):
+def set_deterministic_electrumsv_seed(component_type: str, component_id: Optional[str]=None) -> \
+        None:
     def raise_for_not_electrumsv_type() -> None:
         stored_component_type = None
         if component_id:
             component_store = ComponentStore()
             component_state = component_store.get_status(component_id=component_id)
-            stored_component_type = component_state.get('component_type')
+            stored_component_type = component_state['component_id'].get('component_type')
 
         if stored_component_type and not stored_component_type == "electrumsv" \
                 and not component_type == 'electrumsv':

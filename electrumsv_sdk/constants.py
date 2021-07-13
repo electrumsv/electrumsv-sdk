@@ -7,10 +7,10 @@ MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 # copied from utils to avoid circular import
-def get_sdk_datadir():
+def get_sdk_datadir() -> Path:
     sdk_home_datadir = None
     if sys.platform == "win32":
-        sdk_home_datadir = Path(os.environ.get("LOCALAPPDATA")) / "ElectrumSV-SDK"
+        sdk_home_datadir = Path(os.environ["LOCALAPPDATA"]) / "ElectrumSV-SDK"
     if sdk_home_datadir is None:
         sdk_home_datadir = Path.home() / ".electrumsv-sdk"
     return sdk_home_datadir
@@ -61,7 +61,7 @@ class ComponentState(str):
     NONE = "None"
 
     @classmethod
-    def from_str(cls, component_state_str: Optional[str]):
+    def from_str(cls, component_state_str: Optional[str]) -> str:
         if component_state_str == "Running":
             return cls.RUNNING
         elif component_state_str == "Stopped":

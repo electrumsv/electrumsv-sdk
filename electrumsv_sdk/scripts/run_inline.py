@@ -21,7 +21,7 @@ def unwrap_and_unescape_text(arg: str) -> str:
     return arg.strip("\'").replace('\\"', '"')
 
 
-def main():
+def main() -> None:
     top_level_parser = argparse.ArgumentParser()
     top_level_parser.add_argument("--command", type=str, default="",
         help="one contiguous string command (to run a server)")

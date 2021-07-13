@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Set
 
 from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
@@ -16,7 +16,7 @@ from . import server_app
 class Plugin(AbstractPlugin):
     SERVER_HOST = server_app.SERVER_HOST
     SERVER_PORT = int(server_app.SERVER_PORT)
-    RESERVED_PORTS = {SERVER_PORT}
+    RESERVED_PORTS: Set[int] = {SERVER_PORT}
     PING_URL = server_app.PING_URL
 
     COMPONENT_NAME = get_directory_name(__file__)

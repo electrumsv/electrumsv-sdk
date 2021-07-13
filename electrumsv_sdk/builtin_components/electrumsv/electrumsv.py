@@ -3,7 +3,7 @@ import os
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Set
 
 from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.components import Component, ComponentTypedDict
@@ -54,7 +54,7 @@ class Plugin(AbstractPlugin):
     RESTAPI_HOST = os.environ.get("RESTAPI_HOST")
 
     DEFAULT_PORT = 9999
-    RESERVED_PORTS = {DEFAULT_PORT}
+    RESERVED_PORTS: Set[int] = {DEFAULT_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
     DEFAULT_REMOTE_REPO = "https://github.com/electrumsv/electrumsv.git"
 
@@ -99,7 +99,7 @@ class Plugin(AbstractPlugin):
 
         logfile = self.plugin_tools.get_logfile_path(self.id)
         metadata = {"config": str(self.datadir.joinpath("regtest/config")),
-            "DATADIR": str(self.datadir)}
+            "datadir": str(self.datadir)}
         status_endpoint = f"http://127.0.0.1:{self.port}"
         os.makedirs(self.datadir.joinpath("regtest/wallets"), exist_ok=True)
         if self.tools.is_offline_cli_mode():
@@ -156,7 +156,7 @@ class Plugin(AbstractPlugin):
                         self.id)
             metadata = component_dict.get('metadata', {})
             assert metadata is not None
-            self.datadir = Path(metadata["DATADIR"])
+            self.datadir = Path(metadata["datadir"])
             self.id = component_dict.get('id')
             self.tools.delete_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
             self.tools.create_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')

@@ -1,7 +1,8 @@
 import logging
 import os
 import sys
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Set
 
 from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
@@ -20,12 +21,12 @@ class Plugin(AbstractPlugin):
 
     # As per woc-explorer/app.js
     RPC_HOST = os.environ.get("RPC_HOST") or "127.0.0.1"
-    RPC_PORT = os.environ.get("RPC_PORT") or 18332
+    RPC_PORT = int(os.environ.get("RPC_PORT") or 18332)
     RPC_USERNAME = os.environ.get("RPC_USERNAME") or "rpcuser"
     RPC_PASSWORD = os.environ.get("RPC_PASSWORD") or "rpcpassword"
 
     DEFAULT_PORT = 3002
-    RESERVED_PORTS = {DEFAULT_PORT}
+    RESERVED_PORTS: Set[int] = {DEFAULT_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
 
     def __init__(self, config: Config):
@@ -40,16 +41,16 @@ class Plugin(AbstractPlugin):
         self.port = None  # N/A
         self.component_info: Optional[Component] = None
 
-    def install(self):
+    def install(self) -> None:
         if not self.config.repo == "":  # default
             self.logger.error("ignoring --repo flag for whatsonchain - not applicable.")
         self.tools.fetch_whatsonchain(url="https://github.com/AustEcon/woc-explorer.git", branch='')
         self.tools.packages_whatsonchain()
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
-    def start(self):
+    def start(self) -> None:
         self.logger.debug(f"Starting whatsonchain explorer...")
-
+        assert self.src is not None
         if not self.src.exists():
             self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
                               f"{self.COMPONENT_NAME}' to install the plugin first")
@@ -81,11 +82,11 @@ class Plugin(AbstractPlugin):
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
             status_endpoint=status_endpoint)
 
-    def stop(self):
+    def stop(self) -> None:
         """some components require graceful shutdown via a REST API or RPC API but most can use the
         generic 'app_state.kill_component()' function to track down the pid and kill the process."""
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
-    def reset(self):
+    def reset(self) -> None:
         self.logger.info("resetting the whatsonchain is not applicable")

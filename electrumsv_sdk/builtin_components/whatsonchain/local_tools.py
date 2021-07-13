@@ -3,6 +3,7 @@ import os
 import subprocess
 
 import typing
+
 from electrumsv_node import electrumsv_node
 
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR
@@ -11,7 +12,7 @@ from electrumsv_sdk.utils import checkout_branch
 
 
 if typing.TYPE_CHECKING:
-    from electrumsv_sdk.builtin_components.whatsonchain import Plugin
+    from .whatsonchain import Plugin
 
 
 class LocalTools(AbstractLocalTools):
@@ -23,8 +24,9 @@ class LocalTools(AbstractLocalTools):
         self.config = plugin.config
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
-    def fetch_whatsonchain(self, url="https://github.com/AustEcon/woc-explorer.git",
-                           branch=''):
+    def fetch_whatsonchain(self, url: str="https://github.com/AustEcon/woc-explorer.git",
+                           branch: str='') -> None:
+        assert self.plugin.src is not None
         if not self.plugin.src.exists():
             os.makedirs(self.plugin.src, exist_ok=True)
             os.chdir(REMOTE_REPOS_DIR)
@@ -33,7 +35,8 @@ class LocalTools(AbstractLocalTools):
             os.chdir(self.plugin.src)
             checkout_branch(branch)
 
-    def packages_whatsonchain(self):
+    def packages_whatsonchain(self) -> None:
+        assert self.plugin.src is not None
         os.chdir(self.plugin.src)
         process = subprocess.Popen("npm install", shell=True)
         process.wait()
@@ -41,7 +44,7 @@ class LocalTools(AbstractLocalTools):
         process.wait()
 
     def check_node_for_woc(self, rpchost: str="127.0.0.1", rpcport: int=18332,
-            rpcuser: str="rpcuser", rpcpassword: str="rpcpassword"):
+            rpcuser: str="rpcuser", rpcpassword: str="rpcpassword") -> bool:
         if not electrumsv_node.is_running(rpcport, rpchost, rpcuser, rpcpassword):
             self.logger.error(f"bitcoin node {rpchost}:{rpcport} must be running")
             return False

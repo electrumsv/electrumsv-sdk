@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 import typing
+from typing import Any, Callable, Dict
 from aiorpcx import timeout_after
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR
 from electrumsv_sdk.utils import checkout_branch
@@ -16,8 +17,10 @@ from electrumsv_sdk.types import AbstractLocalTools
 
 
 if typing.TYPE_CHECKING:
-    from electrumsv_sdk.builtin_components.electrumx import Plugin
+    from .electrumx import Plugin
 
+
+T1 = typing.TypeVar("T1")
 
 
 class LocalTools(AbstractLocalTools):
@@ -29,16 +32,17 @@ class LocalTools(AbstractLocalTools):
         self.config = plugin.config
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
-    def process_cli_args(self):
+    def process_cli_args(self) -> None:
         self.plugin_tools.set_network()
 
-    def fetch_electrumx(self, url, branch):
+    def fetch_electrumx(self, url: str, branch: str) -> None:
         # Todo - make this generic with electrumx
         """3 possibilities:
         (dir doesn't exists) -> install
         (dir exists, url matches)
         (dir exists, url does not match - it's a forked repo)
         """
+        assert self.plugin.src is not None
         if not self.plugin.src.exists():
             self.logger.debug(f"Installing electrumx (url={url})")
             os.chdir(REMOTE_REPOS_DIR)
@@ -72,10 +76,10 @@ class LocalTools(AbstractLocalTools):
                     self.plugin.src.with_suffix(".bak"),
                 )
 
-    def packages_electrumx(self, url, branch):
+    def packages_electrumx(self, url: str, branch: str) -> None:
         """plyvel wheels are not available on windows so it is swapped out for plyvel-win32 to
         make it work"""
-
+        assert self.plugin.src is not None
         os.chdir(self.plugin.src)
 
         checkout_branch(branch)
@@ -106,7 +110,7 @@ class LocalTools(AbstractLocalTools):
             process.wait()
             os.remove(temp_requirements)
 
-    async def stop_electrumx(self, rpcport: int=8000):
+    async def stop_electrumx(self, rpcport: int=8000) -> bool:
         try:
             async with timeout_after(5):
                 async with aiorpcx.connect_rs(host="127.0.0.1", port=rpcport)\
@@ -114,32 +118,37 @@ class LocalTools(AbstractLocalTools):
                     result = await session.send_request("stop")
                     if result:
                         return True
+                    else:
+                        return False
         except Exception as e:
             self.logger.debug(f"Could not connect to ElectrumX: {e}")
             return False
 
-    def run_coroutine_ipython_friendly(self, func, *args, **kwargs):
+    def run_coroutine_ipython_friendly(self, func: Callable[..., typing.Coroutine[Any, Any, T1]],
+            *args: Any, **kwargs: Dict[Any, Any]) -> Any:
         """https://stackoverflow.com/questions/55409641/
         asyncio-run-cannot-be-called-from-a-running-event-loop"""
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
-            loop = None
+            coro = func(*args, **kwargs)
+            result = asyncio.run(coro)
+            return result
         if loop and loop.is_running():
             thread = RunThread(func, args, kwargs)
             thread.start()
             thread.join()
             return thread.result
-        else:
-            return asyncio.run(func(*args, **kwargs))
 
 
 class RunThread(threading.Thread):
-    def __init__(self, func, args, kwargs):
+    def __init__(self, func: Callable[..., typing.Coroutine[Any, Any, T1]], args: Any,
+            kwargs: Dict[Any, Any]) -> None:
         self.func = func
         self.args = args
         self.kwargs = kwargs
         super().__init__()
 
-    def run(self):
+    def run(self) -> None:
         self.result = asyncio.run(self.func(*self.args, **self.kwargs))
+

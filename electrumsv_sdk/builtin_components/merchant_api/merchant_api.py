@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 from argparse import ArgumentParser
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Set
 
 from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
@@ -29,7 +29,7 @@ def extend_install_cli(install_parser: ArgumentParser) -> Tuple[ArgumentParser, 
 class Plugin(AbstractPlugin):
 
     DEFAULT_PORT = 45111
-    RESERVED_PORTS = {DEFAULT_PORT}
+    RESERVED_PORTS: Set[int] = {DEFAULT_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
 
     NODE_HOST = os.environ.get("NODE_HOST") or "127.0.0.1"

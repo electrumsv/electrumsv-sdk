@@ -1,5 +1,7 @@
 import abc
+import builtins
 import logging
+import subprocess
 from argparse import ArgumentParser
 from pathlib import Path
 from types import ModuleType
@@ -11,13 +13,6 @@ if typing.TYPE_CHECKING:
     from electrumsv_sdk.config import Config, ParsedArgs
     from .components import Component
     from .plugin_tools import PluginTools
-
-
-class AbstractLocalTools(abc.ABC):
-    def __init__(self, plugin):
-        self.plugin = plugin
-        self.config = plugin.config
-        self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
 
 class AbstractPlugin(abc.ABC):
@@ -37,17 +32,24 @@ class AbstractPlugin(abc.ABC):
         self.component_info: Optional["Component"] = None
         self.network: Optional[str] = None
 
-    def install(self):
+    def install(self) -> None:
         raise NotImplementedError
 
-    def start(self):
+    def start(self) -> None:
         raise NotImplementedError
 
-    def stop(self):
+    def stop(self) -> None:
         raise NotImplementedError
 
-    def reset(self):
+    def reset(self) -> None:
         raise NotImplementedError
+
+
+class AbstractLocalTools(abc.ABC):
+    def __init__(self, plugin: "AbstractPlugin"):
+        self.plugin = plugin
+        self.config = plugin.config
+        self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
 
 class AbstractModuleType(ModuleType):
@@ -59,3 +61,4 @@ ParserMap = Dict[str, ArgumentParser]
 RawArgsMap = Dict[str, List[str]]
 SubcommandParsedArgsMap = Dict[str, "ParsedArgs"]
 SelectedComponent = str
+SubprocessCallResult = subprocess.Popen[builtins.bytes]

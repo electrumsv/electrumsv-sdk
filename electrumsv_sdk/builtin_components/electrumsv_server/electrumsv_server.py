@@ -3,7 +3,7 @@ import os
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Set
 import shutil
 
 from electrumsv_sdk.types import AbstractPlugin
@@ -43,7 +43,7 @@ def extend_start_cli(start_parser: ArgumentParser) -> Tuple[ArgumentParser, List
 class Plugin(AbstractPlugin):
     SERVER_HOST = "127.0.0.1"
     SERVER_PORT = 24242
-    RESERVED_PORTS = {SERVER_PORT}
+    RESERVED_PORTS: Set[int] = {SERVER_PORT}
 
     COMPONENT_NAME = get_directory_name(__file__)
     COMPONENT_PATH = Path(os.path.dirname(os.path.abspath(__file__)))

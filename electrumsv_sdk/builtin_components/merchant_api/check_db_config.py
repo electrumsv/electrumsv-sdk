@@ -24,7 +24,7 @@ COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
 
-async def pg_connect():
+async def pg_connect() -> asyncpg.connection.Connection:
     pg_conn = await asyncpg.connect(
         user="mapimaster",  # usually would be 'postgres'
         host="127.0.0.1",
@@ -35,7 +35,7 @@ async def pg_connect():
     return pg_conn
 
 
-async def create_user_if_not_exists(pg_conn: asyncpg.Connection):
+async def create_user_if_not_exists(pg_conn: asyncpg.Connection) -> None:
     result = await pg_conn.fetchrow(
         """SELECT * FROM pg_catalog.pg_roles WHERE rolname = 'merchant';""")
     if not result:
@@ -49,7 +49,7 @@ async def create_user_if_not_exists(pg_conn: asyncpg.Connection):
             """)
 
 
-async def create_db_if_not_exists(pg_conn: asyncpg.Connection):
+async def create_db_if_not_exists(pg_conn: asyncpg.Connection) -> None:
     result = await pg_conn.fetchrow(
         """SELECT * FROM pg_database WHERE datname = 'merchant_gateway'"""
     )
@@ -65,7 +65,7 @@ async def create_db_if_not_exists(pg_conn: asyncpg.Connection):
         )
 
 
-async def main_task():
+async def main_task() -> None:
     pg_conn = None
     try:
         pg_conn = await pg_connect()
@@ -80,5 +80,5 @@ async def main_task():
             await pg_conn.close()
 
 
-def check_postgres_db():
+def check_postgres_db() -> None:
     asyncio.run(main_task())

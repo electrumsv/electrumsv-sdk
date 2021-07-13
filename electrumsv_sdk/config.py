@@ -1,5 +1,5 @@
 from argparse import Namespace
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 import attr
 
@@ -19,7 +19,7 @@ class ParsedArgs(Namespace):
     inline_flag: bool = False
     new_terminal_flag: bool = False
     component_id: str = ""
-    cli_extension_args: dict = {}
+    cli_extension_args: Dict[str, Any] = {}
 
 
 @attr.s(auto_attribs=True, frozen=False)
@@ -41,4 +41,4 @@ class Config(object):
     inline_flag: bool = False
     new_terminal_flag: bool = False
     component_id: str = ""
-    cli_extension_args: dict = {}
+    cli_extension_args: Dict[str, Any] = {}
