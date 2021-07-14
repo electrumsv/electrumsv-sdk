@@ -2,7 +2,6 @@ import logging
 
 import typing
 
-from electrumsv_sdk.types import AbstractLocalTools
 from electrumsv_sdk.utils import get_directory_name
 
 
@@ -13,7 +12,7 @@ if typing.TYPE_CHECKING:
     from .electrumsv_server import Plugin
 
 
-class LocalTools(AbstractLocalTools):
+class LocalTools:
     """helper for operating on plugin-specific state (like source dir, port, datadir etc.)"""
 
     def __init__(self, plugin: 'Plugin'):
@@ -21,7 +20,7 @@ class LocalTools(AbstractLocalTools):
         self.config = plugin.config
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
-    def get_network_choice(self):
+    def get_network_choice(self) -> str:
         network_options = [
             self.config.cli_extension_args['regtest'],
             self.config.cli_extension_args['testnet'],

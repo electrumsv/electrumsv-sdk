@@ -5,7 +5,7 @@ from pathlib import Path
 import shutil
 import stat
 import sys
-from typing import List
+from typing import List, Callable, Any
 
 from electrumsv_node import electrumsv_node
 
@@ -46,7 +46,7 @@ class AppState:
         self.controller = Controller(self)
 
     def purge_prev_installs_if_exist(self) -> None:
-        def remove_readonly(func, path, excinfo):  # .git is read-only
+        def remove_readonly(func: Callable[[Path], None], path: Path, excinfo: Any) -> None:
             os.chmod(path, stat.S_IWRITE)
             func(path)
 

@@ -13,7 +13,6 @@ from aiorpcx import timeout_after
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR
 from electrumsv_sdk.utils import checkout_branch
 
-from electrumsv_sdk.types import AbstractLocalTools
 
 
 if typing.TYPE_CHECKING:
@@ -23,7 +22,7 @@ if typing.TYPE_CHECKING:
 T1 = typing.TypeVar("T1")
 
 
-class LocalTools(AbstractLocalTools):
+class LocalTools:
     """helper for operating on plugin-specific state (like source dir, port, datadir etc.)"""
 
     def __init__(self, plugin: 'Plugin'):
@@ -42,7 +41,7 @@ class LocalTools(AbstractLocalTools):
         (dir exists, url matches)
         (dir exists, url does not match - it's a forked repo)
         """
-        assert self.plugin.src is not None
+        assert self.plugin.src is not None  # typing bug
         if not self.plugin.src.exists():
             self.logger.debug(f"Installing electrumx (url={url})")
             os.chdir(REMOTE_REPOS_DIR)
@@ -79,7 +78,7 @@ class LocalTools(AbstractLocalTools):
     def packages_electrumx(self, url: str, branch: str) -> None:
         """plyvel wheels are not available on windows so it is swapped out for plyvel-win32 to
         make it work"""
-        assert self.plugin.src is not None
+        assert self.plugin.src is not None  # typing bug
         os.chdir(self.plugin.src)
 
         checkout_branch(branch)

@@ -1,6 +1,4 @@
-import abc
 import builtins
-import logging
 import subprocess
 from argparse import ArgumentParser
 from pathlib import Path
@@ -15,7 +13,7 @@ if typing.TYPE_CHECKING:
     from .plugin_tools import PluginTools
 
 
-class AbstractPlugin(abc.ABC):
+class AbstractPlugin:
 
     DEFAULT_PORT: int = 54321
     RESERVED_PORTS: Set[int] = {DEFAULT_PORT}
@@ -43,13 +41,6 @@ class AbstractPlugin(abc.ABC):
 
     def reset(self) -> None:
         raise NotImplementedError
-
-
-class AbstractLocalTools(abc.ABC):
-    def __init__(self, plugin: "AbstractPlugin"):
-        self.plugin = plugin
-        self.config = plugin.config
-        self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
 
 class AbstractModuleType(ModuleType):

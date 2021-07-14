@@ -4,7 +4,7 @@ import os
 import time
 from pathlib import Path
 import sys
-from typing import Dict, Callable, Tuple, Set, cast, List, Any, Optional
+from typing import Dict, Callable, Tuple, Set, List, Any, Optional
 import requests
 
 from .types import AbstractPlugin, SelectedComponent
@@ -25,7 +25,7 @@ class PluginTools:
         self.logger = logging.getLogger("plugin-tools")
 
     def allocate_port(self) -> int:
-        assert self.plugin.id is not None
+        assert self.plugin.id is not None  # typing bug
         component_port = self.get_component_port(self.plugin.DEFAULT_PORT,
             self.plugin.COMPONENT_NAME, self.plugin.id)
         return component_port

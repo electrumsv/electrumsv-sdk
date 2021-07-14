@@ -4,14 +4,13 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Optional
+import typing
+from typing import Optional, Dict
 
 import stringcase
-import typing
 
 from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR, NETWORKS
-from electrumsv_sdk.types import AbstractLocalTools
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -20,7 +19,7 @@ if typing.TYPE_CHECKING:
     from .electrumsv import Plugin
 
 
-class LocalTools(AbstractLocalTools):
+class LocalTools:
     """helper for operating on plugin-specific state (like source dir, port, datadir etc.)"""
 
     def __init__(self, plugin: 'Plugin'):
@@ -52,20 +51,24 @@ class LocalTools(AbstractLocalTools):
         return False
 
     def wallet_db_exists(self) -> bool:
-        if os.path.exists(self.get_wallet_path_for_network(self.plugin.datadir)):
+        assert self.plugin.datadir is not None  # typing bug
+        datadir = self.get_wallet_path_for_network(self.plugin.datadir)
+        assert datadir is not None  # typing bug
+        if os.path.exists(datadir):
             return True
         time.sleep(3)  # takes a short time for .sqlite file to become visible
-        if os.path.exists(self.get_wallet_path_for_network(self.plugin.datadir)):
+        if os.path.exists(datadir):
             return True
         return False
 
-    def fetch_electrumsv(self, url, branch):
+    def fetch_electrumsv(self, url: str, branch: str) -> None:
         # Todo - make this generic with electrumx
         """3 possibilities:
         (dir doesn't exists) -> install
         (dir exists, url matches)
         (dir exists, url does not match - it's a forked repo)
         """
+        assert self.plugin.src is not None  # typing bug
         if not self.plugin.src.exists():
             logger.debug(f"Installing electrumsv (url={url})")
             os.chdir(REMOTE_REPOS_DIR)
@@ -95,7 +98,8 @@ class LocalTools(AbstractLocalTools):
                     self.plugin.src.with_suffix(".bak"),
                 )
 
-    def packages_electrumsv(self, url, branch):
+    def packages_electrumsv(self, url: str, branch: str) -> None:
+        assert self.plugin.src is not None  # typing bug
         os.chdir(self.plugin.src)
         checkout_branch(branch)
 
@@ -123,7 +127,7 @@ class LocalTools(AbstractLocalTools):
         process2 = subprocess.Popen(cmd2, shell=True)
         process2.wait()
 
-    def normalize_wallet_name(self, wallet_name: Optional[str]):
+    def normalize_wallet_name(self, wallet_name: Optional[str]) -> str:
         if wallet_name is not None:
             if not wallet_name.endswith(".sqlite"):
                 wallet_name += ".sqlite"
@@ -131,7 +135,8 @@ class LocalTools(AbstractLocalTools):
             wallet_name = "worker1.sqlite"
         return wallet_name
 
-    def feed_commands_to_esv(self, command_string):
+    def feed_commands_to_esv(self, command_string: str) -> str:
+        assert self.plugin.src is not None  # typing bug
         esv_launcher = str(self.plugin.src.joinpath("electrum-sv"))
         component_args = split_command(command_string)
         if component_args:
@@ -141,23 +146,27 @@ class LocalTools(AbstractLocalTools):
                 line += " " + f"--dir {self.plugin.datadir}"
         return line
 
-    def get_wallet_path_for_network(self, datadir: Path, wallet_name: Optional[str]=None):
+    def get_wallet_path_for_network(self, datadir: Path, wallet_name: Optional[str]=None) -> \
+            Optional[Path]:
         wallet_name = self.normalize_wallet_name(wallet_name)
         if self.plugin.network == NETWORKS.REGTEST:
             return datadir.joinpath(f"regtest/wallets/{wallet_name}")
         elif self.plugin.network == NETWORKS.TESTNET:
             return datadir.joinpath(f"testnet/wallets/{wallet_name}")
+        else:
+            return None
         # elif self.plugin.network == NETWORKS.SCALINGTESTNET:
         #     return datadir.joinpath(f"scalingtestnet/wallets/{wallet_name}")
-        elif self.plugin.network == 'mainnet':
-            logger.error(f"mainnet is not supported at this time")
-            sys.exit(1)
+        # elif self.plugin.network == 'mainnet':
+        #     logger.error(f"mainnet is not supported at this time")
+        #     sys.exit(1)
 
-    def create_wallet(self, datadir: Path, wallet_name: str = None):
+    def create_wallet(self, datadir: Path, wallet_name: str) -> None:
         try:
             logger.debug("Creating wallet...")
             wallet_name = self.normalize_wallet_name(wallet_name)
             wallet_path = self.get_wallet_path_for_network(datadir, wallet_name)
+            assert wallet_path is not None  # typing bug
             os.makedirs(os.path.dirname(wallet_path), exist_ok=True)
             password = "test"
 
@@ -183,7 +192,7 @@ class LocalTools(AbstractLocalTools):
             logger.exception("unexpected problem creating new wallet")
             raise
 
-    def delete_wallet(self, datadir: Path, wallet_name: str = None):
+    def delete_wallet(self, datadir: Path) -> None:
         esv_wallet_db_directory = datadir.joinpath("regtest/wallets")
         os.makedirs(esv_wallet_db_directory, exist_ok=True)
 
@@ -205,7 +214,7 @@ class LocalTools(AbstractLocalTools):
             logger.exception(e)
             raise
 
-    def generate_command(self):
+    def generate_command(self) -> typing.Tuple[str, Dict[str, str]]:
         """
         The electrumsv component type can be executed in 1 of 3 ways:
          1) custom script (if args are supplied to the right-hand-side of <component_name>)
@@ -214,7 +223,9 @@ class LocalTools(AbstractLocalTools):
 
         NOTE: This is about as complex as it gets!
         """
-        def get_default_electrumx():
+
+        assert self.plugin.src is not None
+        def get_default_electrumx() -> str:
             if self.plugin.network == NETWORKS.REGTEST:
                 return "127.0.0.1:51001:t"
             elif self.plugin.network == NETWORKS.TESTNET:
@@ -222,11 +233,11 @@ class LocalTools(AbstractLocalTools):
             else:
                 raise NotImplementedError("scaling-testnet and mainnet not yet supported")
 
-        def set_electrumx_server(command):
-            if not self.plugin.ELECTRUMX_CONNECTION_STRING:
+        def set_electrumx_server(command: str, connection_string: Optional[str]) -> str:
+            if not connection_string:
                 command += f"--server={get_default_electrumx()} "
-            elif self.plugin.ELECTRUMX_CONNECTION_STRING is not None:
-                command += f"--server={self.plugin.ELECTRUMX_CONNECTION_STRING} "
+            elif connection_string is not None:
+                command += f"--server={connection_string} "
             return command
 
         network_string = stringcase.spinalcase(self.plugin.network)  # need kebab-case
@@ -258,7 +269,8 @@ class LocalTools(AbstractLocalTools):
                 f"--file-logging "
                 f"--restapi --restapi-port={port} --restapi-user rpcuser --restapi-password= "
             )
-            command = set_electrumx_server(command)
+            connection_string = self.plugin.ELECTRUMX_CONNECTION_STRING
+            command = set_electrumx_server(command, connection_string)
 
         # GUI script
         else:
@@ -266,7 +278,8 @@ class LocalTools(AbstractLocalTools):
                 f"{sys.executable} {esv_launcher} gui --{network_string} --restapi "
                 f"--restapi-port={port} --v=debug --file-logging --dir {self.plugin.datadir} "
             )
-            command = set_electrumx_server(command)
+            command = set_electrumx_server(command,
+                connection_string=self.plugin.ELECTRUMX_CONNECTION_STRING)
 
         return command, env_vars
 

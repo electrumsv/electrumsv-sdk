@@ -50,7 +50,7 @@ class Plugin(AbstractPlugin):
     ELECTRUMSV_SERVER_MODULE_PATH = Path(MODULE_DIR).parent.parent.parent.joinpath(
         "electrumsv-server")
 
-    def __init__(self, config: Config):
+    def __init__(self, config: Config) -> None:
         self.config = config
         self.plugin_tools = PluginTools(self, self.config)
         self.tools = LocalTools(self)
@@ -93,9 +93,9 @@ class Plugin(AbstractPlugin):
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
 
     def reset(self) -> None:
-        def reset_server(component_dict: ComponentTypedDict):
+        def reset_server(component_dict: ComponentTypedDict) -> None:
             metadata = component_dict.get("metadata", {})
-            assert metadata is not None
+            assert metadata is not None  # typing bug
             datadir: Path = Path(metadata["datadir"])
             if datadir.exists():
                 shutil.rmtree(datadir)

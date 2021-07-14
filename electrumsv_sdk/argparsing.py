@@ -23,13 +23,14 @@ logger = logging.getLogger("argparsing")
 
 
 class ArgParser:
-    def __init__(self):
+    def __init__(self) -> None:
         self.component_store = ComponentStore()
 
         # globals that are packed into Config after argparsing
         self.namespace: str = ""  # 'start', 'stop', 'reset', 'node', or 'status'
         self.selected_component: SelectedComponent = ""
-        self.component_args = []  # e.g. store arguments to pass to the electrumsv's cli interface
+        self.component_args: List[str] = []  # e.g. store arguments to pass to the electrumsv's cli
+        # interface
         self.node_args: Optional[List[str]] = None
 
         # data types for storing intermediate steps of argparsing
@@ -40,7 +41,7 @@ class ArgParser:
         self.parser_raw_args_map: RawArgsMap = {}
         # {namespace: parsed_args}
         self.subcmd_parsed_args_map: SubcommandParsedArgsMap = {}
-        self.config = None
+        self.config: Optional[Config] = None
 
         self.new_cli_options: List[str] = []  # used for dynamic, plugin-specific extensions to cli
         self.setup_argparser()
@@ -48,6 +49,8 @@ class ArgParser:
     def validate_cli_args(self) -> None:
         """calls the appropriate handler for the argparsing.NameSpace"""
         # Node RPC args are treated differently
+        assert self.config is not None  # typing bug
+        assert self.config.namespace is not None  # typing bug
         if self.config.namespace == NameSpace.NODE:
             return
         handlers = ValidateCliArgs(self.config)
@@ -200,7 +203,7 @@ class ArgParser:
     def generate_config(self) -> Config:
         # Node RPC args are treated differently to the rest
         if self.namespace == NameSpace.NODE:
-            assert self.node_args is not None
+            assert self.node_args is not None  # typing bug
             self.config = Config(
                 namespace=self.namespace,
                 node_args=self.node_args,
@@ -259,6 +262,7 @@ class ArgParser:
             )
 
         # CLI extensions via the plugin
+        assert self.config is not None
         if self.new_cli_options:
             for varname in self.new_cli_options:
                 value = getattr(self.subcmd_parsed_args_map[self.namespace], varname)
@@ -286,7 +290,8 @@ class ArgParser:
                 ))
                 self.subcmd_parsed_args_map[cmd_name] = parsed_args
 
-    def add_install_argparser(self, namespaces: _SubParsersAction) -> Tuple[ArgumentParser, List[ArgumentParser]]:
+    def add_install_argparser(self, namespaces: _SubParsersAction) \
+            -> Tuple[ArgumentParser, List[ArgumentParser]]:
         start_parser = namespaces.add_parser("help", help="specify which servers to run")
         start_parser.add_argument("--background", action="store_true", help="")
         start_parser.add_argument("--id", type=str, default="", help="human-readable identifier "
@@ -306,7 +311,8 @@ class ArgParser:
 
         return start_parser, start_namespace_subcommands
 
-    def add_start_argparser(self, namespaces: _SubParsersAction) -> Tuple[ArgumentParser, List[ArgumentParser]]:
+    def add_start_argparser(self, namespaces: _SubParsersAction) -> \
+            Tuple[ArgumentParser, List[ArgumentParser]]:
         start_parser = namespaces.add_parser("start", help="specify which servers to run")
         start_parser.add_argument("--new", action="store_true",
             help="run a new instance with unique 'id'")
@@ -331,7 +337,8 @@ class ArgParser:
             start_namespace_subcommands.append(component_parser)
         return start_parser, start_namespace_subcommands
 
-    def add_stop_argparser(self, namespaces: _SubParsersAction) -> Tuple[ArgumentParser, List[ArgumentParser]]:
+    def add_stop_argparser(self, namespaces: _SubParsersAction) -> \
+            Tuple[ArgumentParser, List[ArgumentParser]]:
         stop_parser = namespaces.add_parser("stop", help="stop all spawned processes")
         stop_parser.add_argument("--id", type=str, default="", help="human-readable identifier "
             "for component (e.g. 'electrumsv1')")
@@ -345,7 +352,8 @@ class ArgParser:
 
         return stop_parser, stop_namespace_subcommands
 
-    def add_reset_argparser(self, namespaces: _SubParsersAction) -> Tuple[ArgumentParser, List[ArgumentParser]]:
+    def add_reset_argparser(self, namespaces: _SubParsersAction) -> \
+            Tuple[ArgumentParser, List[ArgumentParser]]:
         """only relevant for component types with a DATADIR (e.g. node, electrumx, electrumsv)"""
         reset_parser = namespaces.add_parser("reset", help="reset state of relevant servers to "
             "genesis")
@@ -432,7 +440,8 @@ class ArgParser:
             cli_extender = getattr(main_module, "extend_" + namespace + "_cli")
             new_parser, new_options = cli_extender(parser)
             self.parser_map[namespace] = new_parser
-            return new_options
+            new_options_list: List[str] = new_options  # mypy workaround
+            return new_options_list
         except AttributeError:
             # no 'extend_start_cli' method present for this plugin
             return []

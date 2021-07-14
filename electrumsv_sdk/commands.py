@@ -1,8 +1,8 @@
 """This defines a set of exposed public methods for using the SDK as a library"""
 import logging
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple, Any
 
-from .components import ComponentStore
+from .components import ComponentStore, ComponentTypedDict
 from .app_state import AppState
 from .constants import NameSpace
 from .controller import Controller
@@ -120,7 +120,7 @@ def reset(component_type: Optional[str]=None, component_id: str = "", repo: str 
     controller.reset(app_state.config)
 
 
-def node(method: str, *args: str, node_id: str = 'node1') -> Dict:
+def node(method: str, *args: str, node_id: str = 'node1') -> Any:
     result = call_any_node_rpc(method, *args, node_id=node_id)
     if result:
         return result
@@ -128,7 +128,7 @@ def node(method: str, *args: str, node_id: str = 'node1') -> Dict:
         return {}
 
 
-def status(component_type: str = "", component_id: str = "") -> Dict:
+def status(component_type: str = "", component_id: str = "") -> Dict[str, ComponentTypedDict]:
     component_store = ComponentStore()
     status = component_store.get_status(component_type, component_id)
     return status

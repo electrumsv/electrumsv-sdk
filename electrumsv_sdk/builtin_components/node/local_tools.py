@@ -4,14 +4,12 @@ import sys
 
 import typing
 
-from electrumsv_sdk.types import AbstractLocalTools
-
 
 if typing.TYPE_CHECKING:
     from .node import Plugin
 
 
-class LocalTools(AbstractLocalTools):
+class LocalTools:
     """helper for operating on plugin-specific state (like source dir, port, datadir etc.)"""
 
 

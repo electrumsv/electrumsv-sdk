@@ -9,7 +9,7 @@ import queue
 import threading
 import time
 from random import random
-from typing import Dict, Set, Any, Optional
+from typing import Dict, Set
 
 import aiohttp
 

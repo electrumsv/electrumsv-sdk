@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, Tuple, List, Set
 
 from electrumsv_sdk.types import AbstractPlugin
-from electrumsv_sdk.components import Component, ComponentTypedDict
+from electrumsv_sdk.components import Component, ComponentTypedDict, ComponentMetadata
 from electrumsv_sdk.utils import is_remote_repo, kill_process, get_directory_name, \
     set_deterministic_electrumsv_seed
 from electrumsv_sdk.plugin_tools import PluginTools
@@ -72,7 +72,7 @@ class Plugin(AbstractPlugin):
 
         self.network = self.BITCOIN_NETWORK
 
-    def install(self):
+    def install(self) -> None:
         """required state: source_dir  - which are derivable from 'repo' and 'branch' flags"""
         repo = self.config.repo
         if self.config.repo == "":
@@ -83,9 +83,10 @@ class Plugin(AbstractPlugin):
         self.tools.packages_electrumsv(repo, self.config.branch)
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
-    def start(self):
+    def start(self) -> None:
         """plugin datadir, id, port are allocated dynamically"""
         self.logger.debug(f"Starting RegTest electrumsv daemon...")
+        assert self.src is not None
         if not self.src.exists():
             self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
                               f"{self.COMPONENT_NAME}' to install the plugin first")
@@ -98,8 +99,10 @@ class Plugin(AbstractPlugin):
         self.port = self.plugin_tools.allocate_port()
 
         logfile = self.plugin_tools.get_logfile_path(self.id)
-        metadata = {"config": str(self.datadir.joinpath("regtest/config")),
-            "datadir": str(self.datadir)}
+        metadata = ComponentMetadata(
+            config_path=str(self.datadir.joinpath("regtest/config")),
+            datadir=str(self.datadir)
+        )
         status_endpoint = f"http://127.0.0.1:{self.port}"
         os.makedirs(self.datadir.joinpath("regtest/wallets"), exist_ok=True)
         if self.tools.is_offline_cli_mode():
@@ -122,7 +125,7 @@ class Plugin(AbstractPlugin):
                 set_deterministic_electrumsv_seed(self.config.selected_component,
                     self.config.component_id)
             # reset wallet
-            self.tools.delete_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
+            self.tools.delete_wallet(datadir=self.datadir)
             self.tools.create_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
             if not self.tools.wallet_db_exists():
                 self.logger.exception("wallet db creation failed unexpectedly")
@@ -132,20 +135,20 @@ class Plugin(AbstractPlugin):
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
             status_endpoint=status_endpoint, metadata=metadata)
 
-    def stop(self):
+    def stop(self) -> None:
         """some components require graceful shutdown via a REST API or RPC API but most can use the
         generic 'plugin_tools.kill_component()' function."""
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
-    def reset(self):
+    def reset(self) -> None:
         """
         reset_electrumsv will be called many times for different component ids if applicable.
         - the reset entrypoint is only relevant for RegTest
         """
         self.tools.reinstall_conflicting_dependencies()
 
-        def reset_electrumsv(component_dict: ComponentTypedDict):
+        def reset_electrumsv(component_dict: ComponentTypedDict) -> None:
             self.logger.debug("Resetting state of RegTest electrumsv server...")
 
             # reset is sometimes used with no args and so the --deterministic-seed extension
@@ -155,10 +158,10 @@ class Plugin(AbstractPlugin):
                     set_deterministic_electrumsv_seed(self.config.selected_component,
                         self.id)
             metadata = component_dict.get('metadata', {})
-            assert metadata is not None
+            assert metadata is not None  # typing bug
             self.datadir = Path(metadata["datadir"])
             self.id = component_dict.get('id')
-            self.tools.delete_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
+            self.tools.delete_wallet(datadir=self.datadir)
             self.tools.create_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
 
         self.plugin_tools.call_for_component_id_or_type(

@@ -74,6 +74,7 @@ class Plugin(AbstractPlugin):
     def start(self) -> None:
         """plugin datadir, id, port are allocated dynamically"""
         self.logger.debug(f"Starting RegTest electrumx daemon...")
+        assert self.src is not None  # typing bug
         if not self.src.exists():
             self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
                               f"{self.COMPONENT_NAME}' to install the plugin first")
@@ -107,7 +108,7 @@ class Plugin(AbstractPlugin):
     def stop(self) -> None:
         """some components require graceful shutdown via a REST API or RPC API but most can use the
         generic 'app_state.kill_component()' function to track down the pid and kill the process."""
-        def stop_electrumx(component_dict: ComponentTypedDict):
+        def stop_electrumx(component_dict: ComponentTypedDict) -> None:
             metadata = component_dict.get("metadata", {})
             assert metadata is not None  # typing bug
             rpcport = metadata.get("rpcport")

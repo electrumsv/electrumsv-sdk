@@ -1,7 +1,6 @@
 import logging
 import os
 import sys
-from pathlib import Path
 from typing import Optional, Set
 
 from electrumsv_sdk.types import AbstractPlugin
@@ -50,7 +49,7 @@ class Plugin(AbstractPlugin):
 
     def start(self) -> None:
         self.logger.debug(f"Starting whatsonchain explorer...")
-        assert self.src is not None
+        assert self.src is not None  # typing bug
         if not self.src.exists():
             self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
                               f"{self.COMPONENT_NAME}' to install the plugin first")

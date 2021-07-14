@@ -33,7 +33,7 @@ import os
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Optional, Union, Dict, cast, Any
+from typing import Optional, Union, Dict, cast
 from filelock import FileLock
 
 from .config import Config
@@ -59,6 +59,7 @@ class ComponentMetadata(TypedDict, total=False):
     rpchost: str
     datadir: str
     p2p_port: int
+    config_path: str  # path for electrumsv wallets (depending on which network)
 
 
 class ComponentTypedDict(TypedDict):

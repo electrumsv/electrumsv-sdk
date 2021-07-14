@@ -6,11 +6,10 @@ import shlex
 import shutil
 import stat
 import subprocess
-
 import requests
 import sys
 import zipfile
-from typing import Dict, Any, TypedDict
+from typing import Dict, Any
 from urllib.parse import urlparse
 
 from electrumsv_sdk.config import Config

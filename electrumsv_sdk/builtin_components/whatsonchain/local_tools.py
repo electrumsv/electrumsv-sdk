@@ -7,7 +7,6 @@ import typing
 from electrumsv_node import electrumsv_node
 
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR
-from electrumsv_sdk.types import AbstractLocalTools
 from electrumsv_sdk.utils import checkout_branch
 
 
@@ -15,7 +14,7 @@ if typing.TYPE_CHECKING:
     from .whatsonchain import Plugin
 
 
-class LocalTools(AbstractLocalTools):
+class LocalTools:
     """helper for operating on plugin-specific state (like source dir, port, datadir etc.)"""
 
     def __init__(self, plugin: 'Plugin'):
@@ -26,7 +25,7 @@ class LocalTools(AbstractLocalTools):
 
     def fetch_whatsonchain(self, url: str="https://github.com/AustEcon/woc-explorer.git",
                            branch: str='') -> None:
-        assert self.plugin.src is not None
+        assert self.plugin.src is not None  # typing bug
         if not self.plugin.src.exists():
             os.makedirs(self.plugin.src, exist_ok=True)
             os.chdir(REMOTE_REPOS_DIR)
@@ -36,7 +35,7 @@ class LocalTools(AbstractLocalTools):
             checkout_branch(branch)
 
     def packages_whatsonchain(self) -> None:
-        assert self.plugin.src is not None
+        assert self.plugin.src is not None  # typing bug
         os.chdir(self.plugin.src)
         process = subprocess.Popen("npm install", shell=True)
         process.wait()
