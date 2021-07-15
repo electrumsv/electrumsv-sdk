@@ -9,13 +9,15 @@ import queue
 import threading
 import time
 from random import random
-from typing import Dict
+from typing import Dict, Set
 
 import aiohttp
 
 from aiohttp import web
+from aiohttp.web_ws import WebSocketResponse
 from filelock import FileLock
 
+from electrumsv_sdk.components import ComponentTypedDict
 from electrumsv_sdk.utils import get_directory_name, get_sdk_datadir
 
 # might be running this as __main__
@@ -39,38 +41,38 @@ aiohttp_logger.setLevel(logging.WARNING)
 
 class ApplicationState(object):
 
-    def __init__(self, loop):
-        self.file_lock = FileLock(FILE_LOCK_PATH, timeout=5)
-        self.previous_state: Dict = self.read_state()  # compare at regularly to detect change
-        self.websockets: set = set()
-        self.websockets_lock = threading.Lock()
+    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+        self.file_lock = FileLock(str(FILE_LOCK_PATH), timeout=5)
+        self.previous_state = self.read_state()  # compare at regularly to detect change
+        self.websockets: Set[WebSocketResponse] = set()
+        self.websockets_lock: threading.Lock = threading.Lock()
         self.loop = loop
 
         self.update_thread = threading.Thread(target=self.update_status_thread,
             name='status_thread', daemon=True)
         self.update_thread.start()
 
-        self.push_notification_queue = queue.Queue()
+        self.push_notification_queue: queue.Queue[ComponentTypedDict] = queue.Queue()
         self.update_thread = threading.Thread(target=self.push_notifications_thread,
             name='status_thread', daemon=True)
         self.update_thread.start()
         self.pong_event = asyncio.Event()
 
-    def get_websockets(self):
+    def get_websockets(self) -> Set[web.WebSocketResponse]:
         with self.websockets_lock:
             return self.websockets
 
-    def remove_websockets(self, ws):
+    def remove_websockets(self, ws: web.WebSocketResponse) -> None:
         with self.websockets_lock:
-            return self.websockets.remove(ws)
+            self.websockets.remove(ws)
 
-    def update_status_thread(self):
+    def update_status_thread(self) -> None:
         """periodically checks every REFRESH_INTERVAL seconds the component_state.json file (
         protected by a file lock for multiprocess access). If there are changes in any
         components, it will detect this and push the relevant components to the
         push_notification_queue (and therefore all websockets) and log the change."""
 
-        def log_and_push_change(current_component_state):
+        def log_and_push_change(current_component_state: ComponentTypedDict) -> None:
             logger.debug(
                 f"Status change for: "
                 f"Component(id={current_component_state['id']}, "
@@ -88,8 +90,8 @@ class ApplicationState(object):
 
             # status change from previous
             for id in current_state.keys():
-                current_component_state = current_state.get(id)
-                prev_component_state = self.previous_state.get(id)
+                current_component_state: ComponentTypedDict = current_state[id]
+                prev_component_state = self.previous_state[id]
 
                 # new component (new id)
                 if not prev_component_state:
@@ -105,7 +107,7 @@ class ApplicationState(object):
             self.previous_state = current_state
             time.sleep(REFRESH_INTERVAL)
 
-    def push_notifications_thread(self):
+    def push_notifications_thread(self) -> None:
         """emits the status notification (from the queue) to all connected websockets."""
         while True:
             component = self.push_notification_queue.get()
@@ -120,17 +122,17 @@ class ApplicationState(object):
                 # last checking, I think this will swallow the exception which is fine by me...
                 asyncio.run_coroutine_threadsafe(ws.send_str(json.dumps(component)), self.loop)
 
-    def read_state(self) -> Dict:
+    def read_state(self) -> Dict[str, ComponentTypedDict]:
         with self.file_lock:
             with open(COMPONENT_STATE_PATH, 'r') as f:
                 data = f.read()
                 if data:
-                    component_state = json.loads(data)
+                    component_state: Dict[str, ComponentTypedDict] = json.loads(data)
                     return component_state
                 else:
                     return {}
 
-    async def manual_heartbeat(self, ws):
+    async def manual_heartbeat(self, ws: WebSocketResponse, ws_id: int) -> None:
         """It seems that aiohttp's built-in heartbeat functionality has bugs
         https://github.com/aio-libs/aiohttp/issues/2309 - resorting to manual ping/pong
         between client / server...
@@ -146,14 +148,14 @@ class ApplicationState(object):
                 if not self.pong_event.is_set():
                     raise ConnectionResetError
             except Exception as e:
-                logger.info(f"closing websocket id: {ws._id}")
+                logger.info(f"closing websocket id: {ws_id}")
                 self.remove_websockets(ws)
                 break
             finally:
                 await asyncio.sleep(HEARTBEAT_INTERVAL)
         raise ConnectionResetError
 
-    async def listen_for_close(self, ws):
+    async def listen_for_close(self, ws: WebSocketResponse) -> None:
         async for msg in ws:
             if msg.type == aiohttp.WSMsgType.TEXT:
                 if msg.data == 'close':
@@ -179,12 +181,12 @@ class ApplicationState(object):
             payload = {"status": None, "error": str(e)}
             return web.Response(text=json.dumps(payload), status=500)
 
-    async def websocket_handler(self, request: web.Request):
+    async def websocket_handler(self, request: web.Request) -> WebSocketResponse:
         """Client must respond to all 'ping' messages with a 'pong' within <= 2 seconds to stay
         connected."""
         ws = web.WebSocketResponse()
-        ws._id = int(random() * 1_000_000_000_000)
-        logger.info(f"new websocket connection with allocated id: {ws._id}")
+        ws_id = int(random() * 1_000_000_000_000)
+        logger.info(f"new websocket connection with allocated id: {ws_id}")
         try:
             await ws.prepare(request)
             self.websockets.add(ws)
@@ -194,11 +196,12 @@ class ApplicationState(object):
             await ws.send_json(component_state)
             await asyncio.gather(
                 self.listen_for_close(ws),
-                self.manual_heartbeat(ws),
+                self.manual_heartbeat(ws, ws_id),
             )
             return ws
         except ConnectionResetError:
             await ws.close()
+            return ws
 
 
 def run_server() -> None:
@@ -207,13 +210,13 @@ def run_server() -> None:
     app_state = ApplicationState(loop)
 
     web_app = web.Application()
-    web_app.app_state = app_state
+    web_app['app_state'] = app_state
     web_app.add_routes([
-        web.get("/", web_app.app_state.ping),
-        web.get("/api/get_status", web_app.app_state.get_status),
-        web.get("/ws", web_app.app_state.websocket_handler),
+        web.get("/", web_app['app_state'].ping),
+        web.get("/api/get_status", web_app['app_state'].get_status),
+        web.get("/ws", web_app['app_state'].websocket_handler),
     ])
-    web.run_app(web_app, host=SERVER_HOST, port=SERVER_PORT)  # type: ignore
+    web.run_app(web_app, host=SERVER_HOST, port=SERVER_PORT)
 
 
 if __name__ == "__main__":

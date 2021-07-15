@@ -5,12 +5,11 @@ from pathlib import Path
 import shutil
 import stat
 import sys
-from typing import List
+from typing import List, Callable, Any
 
 from electrumsv_node import electrumsv_node
 
 from .argparsing import ArgParser
-from .config import Config
 from .constants import SDK_HOME_DIR, REMOTE_REPOS_DIR, DATADIR, LOGS_DIR, \
     USER_PLUGINS_DIR, CONFIG_PATH
 from .controller import Controller
@@ -42,12 +41,12 @@ class AppState:
 
         self.argparser = ArgParser()
         self.argparser.manual_argparsing(arguments)  # allows library to inject args (vs sys.argv)
-        self.config: Config = self.argparser.generate_config()
+        self.config = self.argparser.generate_config()
         self.argparser.validate_cli_args()
         self.controller = Controller(self)
 
     def purge_prev_installs_if_exist(self) -> None:
-        def remove_readonly(func, path, excinfo):  # .git is read-only
+        def remove_readonly(func: Callable[[Path], None], path: Path, excinfo: Any) -> None:
             os.chmod(path, stat.S_IWRITE)
             func(path)
 

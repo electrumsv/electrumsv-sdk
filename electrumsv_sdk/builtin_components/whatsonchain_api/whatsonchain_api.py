@@ -2,9 +2,9 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Set
 
-from electrumsv_sdk.abstract_plugin import AbstractPlugin
+from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
@@ -15,8 +15,8 @@ from . import server_app
 
 class Plugin(AbstractPlugin):
     SERVER_HOST = server_app.SERVER_HOST
-    SERVER_PORT = server_app.SERVER_PORT
-    RESERVED_PORTS = {SERVER_PORT}
+    SERVER_PORT = int(server_app.SERVER_PORT)
+    RESERVED_PORTS: Set[int] = {SERVER_PORT}
     PING_URL = server_app.PING_URL
 
     COMPONENT_NAME = get_directory_name(__file__)
@@ -44,8 +44,7 @@ class Plugin(AbstractPlugin):
         env_vars = {"PYTHONUNBUFFERED": "1"}
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
-            status_endpoint=self.PING_URL
-        )
+            status_endpoint=self.PING_URL)
 
     def stop(self) -> None:
         self.logger.debug("Attempting to kill the process if it is even running")

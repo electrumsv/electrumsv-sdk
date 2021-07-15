@@ -4,18 +4,18 @@ import shutil
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Tuple, List, Set
 
-from electrumsv_sdk.abstract_plugin import AbstractPlugin
+from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
-from electrumsv_sdk.components import Component
+from electrumsv_sdk.components import Component, ComponentTypedDict
 from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
 from .local_tools import LocalTools
 
 
-def extend_start_cli(start_parser: ArgumentParser):
+def extend_start_cli(start_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
     """if this method is present it allows extension of the start argparser only.
     This occurs dynamically and adds the new cli options as attributes of the Config object"""
     start_parser.add_argument("--regtest", action="store_true", help="run on regtest")
@@ -43,11 +43,11 @@ class Plugin(AbstractPlugin):
     ALLOW_ROOT = os.environ.get("ALLOW_ROOT") or 1
 
     DEFAULT_PORT = 51001
-    RESERVED_PORTS = {DEFAULT_PORT}
+    RESERVED_PORTS: Set[int] = {DEFAULT_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
     DEFAULT_REMOTE_REPO = "https://github.com/kyuupichan/electrumx.git"
 
-    def __init__(self, config: Config):
+    def __init__(self, config: Config) -> None:
         self.config = config
         self.plugin_tools = PluginTools(self, self.config)
         self.tools = LocalTools(self)
@@ -61,7 +61,7 @@ class Plugin(AbstractPlugin):
 
         self.network = self.BITCOIN_NETWORK
 
-    def install(self):
+    def install(self) -> None:
         """required state: source_dir  - which are derivable from 'repo' and 'branch' flags"""
         repo = self.config.repo
         if self.config.repo == "":
@@ -71,9 +71,10 @@ class Plugin(AbstractPlugin):
 
         self.tools.packages_electrumx(repo, self.config.branch)
 
-    def start(self):
+    def start(self) -> None:
         """plugin datadir, id, port are allocated dynamically"""
         self.logger.debug(f"Starting RegTest electrumx daemon...")
+        assert self.src is not None  # typing bug
         if not self.src.exists():
             self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
                               f"{self.COMPONENT_NAME}' to install the plugin first")
@@ -102,14 +103,15 @@ class Plugin(AbstractPlugin):
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
             status_endpoint=f"http://127.0.0.1:{self.port}",
-            metadata={"DATADIR": str(self.datadir), "rpcport": 8000}
-        )
+            metadata={"datadir": str(self.datadir), "rpcport": 8000})
 
-    def stop(self):
+    def stop(self) -> None:
         """some components require graceful shutdown via a REST API or RPC API but most can use the
         generic 'app_state.kill_component()' function to track down the pid and kill the process."""
-        def stop_electrumx(component_dict: Dict):
-            rpcport = component_dict.get("metadata").get("rpcport")
+        def stop_electrumx(component_dict: ComponentTypedDict) -> None:
+            metadata = component_dict.get("metadata", {})
+            assert metadata is not None  # typing bug
+            rpcport = metadata.get("rpcport")
             if not rpcport:
                 raise Exception("rpcport data not found")
             was_successful = self.tools.run_coroutine_ipython_friendly(self.tools.stop_electrumx)
@@ -121,10 +123,12 @@ class Plugin(AbstractPlugin):
             callable=stop_electrumx)
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
-    def reset(self):
-        def reset_electrumx(component_dict: Dict):
+    def reset(self) -> None:
+        def reset_electrumx(component_dict: ComponentTypedDict) -> None:
             self.logger.debug("Resetting state of RegTest electrumx server...")
-            datadir = Path(component_dict.get('metadata').get("DATADIR"))
+            metadata = component_dict.get('metadata', {})
+            assert metadata is not None  # typing bug
+            datadir = Path(metadata["datadir"])
             if datadir.exists():
                 shutil.rmtree(datadir)
                 os.mkdir(datadir)

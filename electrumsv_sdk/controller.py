@@ -2,30 +2,38 @@ import pprint
 import logging
 import signal
 import sys
-from typing import List
+import typing
+from typing import List, Optional
 
 from .constants import NameSpace
 from .config import Config
-from .components import ComponentStore
+from .components import ComponentStore, ComponentTypedDict
+from .types import SelectedComponent
 from .utils import cast_str_int_args_to_int, call_any_node_rpc
 
 logger = logging.getLogger("runners")
 
+if typing.TYPE_CHECKING:
+    from .app_state import AppState
 
 if sys.platform in ('linux', 'darwin'):
     # https://stackoverflow.com/questions/3234569/python-popen-waitpid-returns-errno-10-no-child-processes
-    signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+    if sys.platform == "win32":
+        signal.signal(signal.SIGBREAK, signal.SIG_DFL)
+    else:
+        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
 
 
 class Controller:
     """Five main execution pathways (corresponding to 5 cli commands)"""
 
-    def __init__(self, app_state: "ApplicationState"):
+    def __init__(self, app_state: "AppState"):
         self.app_state = app_state
         self.component_store = ComponentStore()
-        self.component_info = None
+        self.component_info: Optional[ComponentTypedDict] = None
 
-    def get_relevant_components(self, selected_component: str) -> List[dict]:
+    def get_relevant_components(self, selected_component: SelectedComponent) \
+            -> List[ComponentTypedDict]:
         relevant_components = []
         component_state = self.component_store.get_status()
         for component_dict in component_state.values():
@@ -75,7 +83,7 @@ class Controller:
             if relevant_components:
                 # dynamic imports of plugin
                 for component_dict in relevant_components:
-                    component_name = component_dict.get("component_type")
+                    component_name = component_dict.get("component_type", "")
                     new_config = Config(
                         selected_component=component_name,
                         background_flag=config.background_flag,
@@ -112,8 +120,8 @@ class Controller:
         """Essentially bitcoin-cli interface to RPC API that works 'out of the box' with minimal
         config."""
         node_argparser = self.app_state.argparser.parser_map[NameSpace.NODE]
-        cli_options = [arg for arg in config.node_args if arg.startswith("--")]
-        rpc_args = [arg for arg in config.node_args if not arg.startswith("--")]
+        cli_options = [str(arg) for arg in config.node_args if arg.startswith("--")]
+        rpc_args = [str(arg) for arg in config.node_args if not arg.startswith("--")]
         rpc_args = cast_str_int_args_to_int(rpc_args)
 
         parsed_node_options = node_argparser.parse_args(cli_options)
@@ -127,8 +135,9 @@ class Controller:
             exit(1)
 
         result = call_any_node_rpc(rpc_args[0], *rpc_args[1:], node_id=component_id)
-        logger.info(result["result"])
+        if result:
+            logger.info(result["result"])
 
-    def status(self, config: Config):
+    def status(self, config: Config) -> None:
         status = self.component_store.get_status(config.selected_component, config.component_id)
         pprint.pprint(status, indent=4)

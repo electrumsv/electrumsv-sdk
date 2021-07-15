@@ -7,25 +7,26 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from typing import List, Dict, Optional, Sequence, Union
+from typing import List, Dict, Optional, Union, Any
 
 import colorama
 import psutil
 import tailer
 from electrumsv_node import electrumsv_node
-from .components import Component, ComponentStore
+from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
 from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE
+from .types import SubprocessCallResult
 
 logger = logging.getLogger("utils")
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def checkout_branch(branch: str):
+def checkout_branch(branch: str) -> None:
     if branch != "":
         subprocess.run(f"git checkout {branch}", shell=True, check=True)
 
 
-def topup_wallet():
+def topup_wallet() -> None:
     logger.debug("Topping up wallet...")
     nblocks = 1
     toaddress = "mwv1WZTsrtKf3S9mRQABEeMaNefLbQbKpg"
@@ -34,7 +35,7 @@ def topup_wallet():
         logger.debug(f"Generated {nblocks}: {result.json()['result']} to {toaddress}")
 
 
-def cast_str_int_args_to_int(node_args: Sequence[str]) -> List[str]:
+def cast_str_int_args_to_int(node_args: List[Any]) -> List[Any]:
     int_indices = []
     for index, arg in enumerate(node_args):
 
@@ -48,11 +49,11 @@ def cast_str_int_args_to_int(node_args: Sequence[str]) -> List[str]:
     return node_args
 
 
-def is_remote_repo(repo: str):
+def is_remote_repo(repo: str) -> bool:
     return repo == "" or repo.startswith("https://")
 
 
-def read_sdk_version():
+def read_sdk_version() -> str:
     with open(Path(MODULE_DIR).joinpath('__init__.py'), 'r') as f:
         for line in f:
             if line.startswith('__version__'):
@@ -61,7 +62,7 @@ def read_sdk_version():
     return version
 
 
-def port_is_in_use(port) -> bool:
+def port_is_in_use(port: int) -> bool:
     netstat_cmd = "netstat -an"
     if sys.platform in {'linux', 'darwin'}:
         netstat_cmd = "netstat -antu"
@@ -76,13 +77,13 @@ def port_is_in_use(port) -> bool:
     return False
 
 
-def get_directory_name(component__file__):
+def get_directory_name(component__file__: str) -> str:
     MODULE_DIR = os.path.dirname(os.path.abspath(component__file__))
     component_name = os.path.basename(MODULE_DIR)
     return component_name
 
 
-def get_parent_and_child_pids(parent_pid):
+def get_parent_and_child_pids(parent_pid: int) -> Optional[List[int]]:
     try:
         pids = []
         parent = psutil.Process(parent_pid)
@@ -91,10 +92,10 @@ def get_parent_and_child_pids(parent_pid):
             pids.append(child.pid)
         return pids
     except psutil.NoSuchProcess:
-        pass
+        return None
 
 
-def sigint(pid):
+def sigint(pid: int) -> None:
     """attempt graceful shutdown via sigint"""
     if sys.platform in ("linux", "darwin"):
         try:
@@ -109,7 +110,7 @@ def sigint(pid):
             pass
 
 
-def sigkill(parent_pid):
+def sigkill(parent_pid: int) -> None:
     """kill process if sigint failed"""
     pids = get_parent_and_child_pids(parent_pid)
     if pids:
@@ -122,10 +123,12 @@ def sigkill(parent_pid):
                     subprocess.run(f"taskkill.exe /PID {pid} /T /F")
 
 
-def kill_by_pid(pid: id):
+def kill_by_pid(pid: Optional[int]) -> None:
     """kills parent and all children"""
     # todo - it may make sense to add an optional timeout for waiting on a graceful shutdown
     #  via sigint before escalating to sigkill/sigterm - this would be specified for each plugin
+    if not pid:
+        return
     pids = get_parent_and_child_pids(parent_pid=pid)
     if pids:
         for pid in pids:
@@ -135,26 +138,26 @@ def kill_by_pid(pid: id):
             sigkill(parent_pid=pid)
 
 
-def kill_process(component_dict: Dict):
-    pid = component_dict.get('pid')
+def kill_process(component_dict: ComponentTypedDict) -> None:
+    pid = component_dict['pid']
     kill_by_pid(pid)
 
 
-def is_default_component_id(component_name, component_id):
+def is_default_component_id(component_name: str, component_id: str) -> bool:
     return component_name + str(1) == component_id
 
 
 def split_command(command: str) -> List[str]:
     if sys.platform == 'win32':
-        split_command = shlex.split(command, posix=0)
+        split_command = shlex.split(command, posix=False)
     elif sys.platform in {'darwin', 'linux'}:
-        split_command = shlex.split(command, posix=1)
+        split_command = shlex.split(command, posix=True)
     else:
         raise NotImplementedError("OS not supported")
     return split_command
 
 
-def is_docker():
+def is_docker() -> bool:
     path = '/proc/self/cgroup'
     return (
         os.path.exists('/.dockerenv') or
@@ -162,16 +165,16 @@ def is_docker():
     )
 
 
-def get_sdk_datadir():
+def get_sdk_datadir() -> Path:
     sdk_home_datadir = None
     if sys.platform == "win32":
-        sdk_home_datadir = Path(os.environ.get("LOCALAPPDATA")) / "ElectrumSV-SDK"
+        sdk_home_datadir = Path(os.environ["LOCALAPPDATA"]) / "ElectrumSV-SDK"
     if sdk_home_datadir is None:
         sdk_home_datadir = Path.home() / ".electrumsv-sdk"
     return sdk_home_datadir
 
 
-def tail(logfile):
+def tail(logfile: Path) -> None:
     colorama.init()
     for line in tailer.follow(open(logfile), delay=0.3):
         # "https://www.devdungeon.com/content/colorize-terminal-output-python"
@@ -181,8 +184,9 @@ def tail(logfile):
         print(line)
 
 
-def update_status_monitor(pid: int, component_state: str, id: str=None, component_name: str=None,
-        src: Path=None, logfile: Path=None, status_endpoint: str=None, metadata: Dict=None) -> None:
+def update_status_monitor(pid: int, component_state: Optional[str], id: str,
+        component_name: str, src: Optional[Path]=None, logfile: Optional[Path]=None,
+        status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
 
     component_info = Component(id, pid, component_name, str(src),
         status_endpoint=status_endpoint, component_state=component_state,
@@ -193,19 +197,20 @@ def update_status_monitor(pid: int, component_state: str, id: str=None, componen
     component_store.update_status_file(component_info)
 
 
-def spawn_inline(command: str, env_vars: Dict=None, id: str=None, component_name:
-        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
-            metadata: Dict=None) -> None:
+def spawn_inline(command: str, env_vars: Dict[str, str], id: str, component_name: str,
+        src: Optional[Path]=None, logfile: Optional[Path]=None, status_endpoint: Optional[str]=None,
+        metadata: Optional[ComponentMetadata]=None) -> None:
     """only for running servers with logging requirements - not for simple commands"""
-    def update_state(process, component_state: str):
+    def update_state(process: SubprocessCallResult,
+            component_state: Optional[str]) -> None:
         update_status_monitor(pid=process.pid, component_state=component_state, id=id,
             component_name=component_name, src=src, logfile=logfile,
             status_endpoint=status_endpoint, metadata=metadata)
 
-    def on_start(process):
+    def on_start(process: SubprocessCallResult) -> None:
         update_state(process, ComponentState.RUNNING)
 
-    def on_exit(process):
+    def on_exit(process: SubprocessCallResult) -> None:
         # on windows signal.CTRL_C_EVENT gives back SUCCESS_EXITCODE (0)
         if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE}:
             update_state(process, ComponentState.STOPPED)
@@ -254,9 +259,9 @@ def spawn_inline(command: str, env_vars: Dict=None, id: str=None, component_name
         sys.exit(1)
 
 
-def spawn_background_supervised(command: str, env_vars: Dict, id: str=None, component_name:
-        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
-            metadata: Dict=None) -> None:
+def spawn_background_supervised(command: str, env_vars: Dict[str,str], id: str, component_name:
+        str, src: Optional[Path]=None, logfile: Optional[Path]=None,
+        status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
     """spawns a child process that can wait for the process to exit and check the returncode"""
     run_background_script = Path(MODULE_DIR).joinpath("scripts/run_background.py")
     component_info = Component(id, None, component_name, str(src),
@@ -278,23 +283,23 @@ def spawn_background_supervised(command: str, env_vars: Dict, id: str=None, comp
         subprocess.Popen(cmd, env=env)
 
 
-def spawn_background(command: str, env_vars: Dict, id: str=None, component_name:
-        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
-            metadata: Dict=None) -> None:
+def spawn_background(command: str, env_vars: Dict[Any, Any], id: str, component_name:
+        str, src: Optional[Path]=None, logfile: Optional[Path]=None,
+        status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
 
     env = os.environ.copy()
     if env_vars:
         env.update(env_vars)
 
-    def update_state(process, component_state: str):
+    def update_state(process: SubprocessCallResult, component_state: str) -> None:
         update_status_monitor(pid=process.pid, component_state=component_state, id=id,
             component_name=component_name, src=src, logfile=logfile,
             status_endpoint=status_endpoint, metadata=metadata)
 
-    def on_start(process):
+    def on_start(process: SubprocessCallResult) -> None:
         update_state(process, ComponentState.RUNNING)
 
-    def on_exit(process):
+    def on_exit(process: SubprocessCallResult) -> None:
         # on windows signal.CTRL_C_EVENT gives back SUCCESS_EXITCODE (0)
         if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE}:
             update_state(process, ComponentState.STOPPED)
@@ -308,7 +313,7 @@ def spawn_background(command: str, env_vars: Dict, id: str=None, component_name:
                 process = subprocess.Popen(command, stdout=logfile_handle, stderr=logfile_handle,
                     env=env, creationflags=subprocess.DETACHED_PROCESS)
             else:
-                process = subprocess.Popen(shlex.split(command, posix=1), stdout=logfile_handle,
+                process = subprocess.Popen(shlex.split(command, posix=True), stdout=logfile_handle,
                     stderr=logfile_handle, env=env)
     else:
         # no logging
@@ -323,14 +328,14 @@ def spawn_background(command: str, env_vars: Dict, id: str=None, component_name:
     on_exit(process)
 
 
-def wrap_and_escape_text(string: str):
+def wrap_and_escape_text(string: str) -> str:
     assert isinstance(string, str), "string type required"
     return "\'" + string.replace('"', '\\"') + "\'"
 
 
-def spawn_new_terminal(command: str, env_vars: Dict, id: str=None, component_name:
-        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
-            metadata: Dict=None) -> None:
+def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, component_name:
+        str, src: Optional[Path]=None, logfile: Optional[Path]=None,
+        status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
 
     component_info = Component(id=id, pid=None, component_type=component_name, location=str(src),
         status_endpoint=status_endpoint, component_state=None, metadata=metadata,
@@ -345,7 +350,7 @@ def spawn_new_terminal(command: str, env_vars: Dict, id: str=None, component_nam
     command += f" --component_info {wrap_and_escape_text(component_json)}"
 
     if sys.platform in 'linux':
-        split_command = shlex.split(f"xterm -fa 'Monospace' -fs 10 -e {command}", posix=1)
+        split_command = shlex.split(f"xterm -fa 'Monospace' -fs 10 -e {command}", posix=True)
         subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE)
 
@@ -356,16 +361,19 @@ def spawn_new_terminal(command: str, env_vars: Dict, id: str=None, component_nam
             stdin=subprocess.PIPE)
 
     elif sys.platform == 'win32':
-        split_command = shlex.split(f"cmd /c {command}", posix=0)
+        split_command = shlex.split(f"cmd /c {command}", posix=False)
         subprocess.Popen(split_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 
 def write_raw_blocks_to_file(filepath: Union[Path, str], node_id: str,
-        from_height: Optional[int]=None, to_height: Optional[int]=None):
+        from_height: Optional[int]=None, to_height: Optional[int]=None) -> None:
 
     if not to_height:
         result = call_any_node_rpc('getinfo', node_id=node_id)
-        to_height = result['result']['blocks']
+        if result:
+            to_height = int(result['result']['blocks'])
+        else:
+            return
 
     if not from_height:
         from_height = 0
@@ -373,8 +381,9 @@ def write_raw_blocks_to_file(filepath: Union[Path, str], node_id: str,
     raw_hex_blocks = []
     for height in range(from_height, to_height+1):
         result = call_any_node_rpc('getblockbyheight', str(height), str(0), node_id=node_id)
-        raw_hex_block = result['result']
-        raw_hex_blocks.append(raw_hex_block)
+        if result:
+            raw_hex_block = result['result']
+            raw_hex_blocks.append(raw_hex_block)
 
     if not os.path.exists(filepath):
         open(filepath, 'w').close()
@@ -384,7 +393,7 @@ def write_raw_blocks_to_file(filepath: Union[Path, str], node_id: str,
             f.write(line + "\n")
 
 
-def read_raw_blocks_from_file(filepath: Path):
+def read_raw_blocks_from_file(filepath: Path) -> List[str]:
     if not os.path.exists(filepath):
         raise FileNotFoundError
 
@@ -392,14 +401,14 @@ def read_raw_blocks_from_file(filepath: Path):
         return f.readlines()
 
 
-def delete_raw_blocks_file(filepath: Union[Path, str]):
+def delete_raw_blocks_file(filepath: Union[Path, str]) -> None:
     if not os.path.exists(filepath):
         raise FileNotFoundError
 
     os.remove(filepath)
 
 
-def submit_blocks_from_file(node_id: str, filepath: Union[Path, str]):
+def submit_blocks_from_file(node_id: str, filepath: Union[Path, str]) -> None:
     if not os.path.exists(filepath):
         raise FileNotFoundError
 
@@ -410,16 +419,23 @@ def submit_blocks_from_file(node_id: str, filepath: Union[Path, str]):
         call_any_node_rpc('submitblock', hex_block.rstrip('\n'), node_id=node_id)
 
 
-def call_any_node_rpc(method: str, *args: Union[str, int], node_id: str='node1') -> Dict:
+def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Optional[Any]:
     rpc_args = cast_str_int_args_to_int(list(args))
     component_store = ComponentStore()
     DEFAULT_RPCHOST = "127.0.0.1"
     DEFAULT_RPCPORT = 18332
-    component_dict = component_store.component_status_data_by_id(node_id)
-    if component_dict:
-        rpchost = DEFAULT_RPCHOST
-        rpcport = component_dict.get("metadata").get("rpcport")
-    else:
+    component_dict: Optional[ComponentTypedDict] = \
+        component_store.component_status_data_by_id(node_id)
+    rpchost = DEFAULT_RPCHOST
+    if component_dict is None:
+        logger.error(f"node component: '{node_id}' not found")
+        return None
+
+    assert component_dict is not None  # typing bug
+    metadata = component_dict["metadata"]
+    assert metadata is not None  # typing bug
+    rpcport = metadata.get("rpcport")
+    if not metadata:
         logger.error(f"could not locate metadata for node instance: {node_id}, "
                      f"using default of 18332")
         rpchost = DEFAULT_RPCHOST
@@ -432,16 +448,17 @@ def call_any_node_rpc(method: str, *args: Union[str, int], node_id: str='node1')
     result = electrumsv_node.call_any(method, *rpc_args, rpchost=rpchost, rpcport=rpcport,
         rpcuser="rpcuser", rpcpassword="rpcpassword")
 
-    return result.json()
+    return json.loads(result.content)
 
 
-def set_deterministic_electrumsv_seed(component_type: str, component_id: Optional[str]=None):
-    def raise_for_not_electrumsv_type():
+def set_deterministic_electrumsv_seed(component_type: str, component_id: Optional[str]=None) -> \
+        None:
+    def raise_for_not_electrumsv_type() -> None:
         stored_component_type = None
         if component_id:
             component_store = ComponentStore()
             component_state = component_store.get_status(component_id=component_id)
-            stored_component_type = component_state.get('component_type')
+            stored_component_type = component_state['component_id'].get('component_type')
 
         if stored_component_type and not stored_component_type == "electrumsv" \
                 and not component_type == 'electrumsv':

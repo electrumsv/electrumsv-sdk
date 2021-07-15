@@ -33,12 +33,11 @@ import os
 import sys
 from importlib import import_module
 from pathlib import Path
-from types import ModuleType
-from typing import Optional, Union, Dict
+from typing import Optional, Union, Dict, cast
 from filelock import FileLock
 
 from .config import Config
-from .abstract_plugin import AbstractPlugin
+from .types import AbstractPlugin, AbstractModuleType
 from .constants import SDK_HOME_DIR, LOCAL_PLUGINS_DIR, USER_PLUGINS_DIR, BUILTIN_COMPONENTS_DIR, \
     LOCAL_PLUGINS_DIRNAME, ComponentState, BUILTIN_PLUGINS_DIRNAME, USER_PLUGINS_DIRNAME
 
@@ -48,8 +47,31 @@ MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 logger = logging.getLogger("component-store")
 
 
-def get_str_datetime():
+def get_str_datetime() -> str:
     return datetime.datetime.now().strftime(TIME_FORMAT)
+
+
+from typing import TypedDict
+
+
+class ComponentMetadata(TypedDict, total=False):
+    rpcport: int
+    rpchost: str
+    datadir: str
+    p2p_port: int
+    config_path: str  # path for electrumsv wallets (depending on which network)
+
+
+class ComponentTypedDict(TypedDict):
+    id: str
+    pid: Optional[int]
+    component_type: str
+    location: Union[str, Path]
+    status_endpoint: Optional[str]
+    component_state: Optional[str]
+    metadata: Optional[ComponentMetadata]
+    logging_path: Optional[Union[str, Path]]
+    last_updated: Optional[str]
 
 
 class Component:
@@ -60,22 +82,24 @@ class Component:
         component_type: str,
         location: Union[str, Path],
         status_endpoint: Optional[str],
-        component_state:
-            Union[ComponentState.RUNNING, ComponentState.STOPPED, ComponentState.FAILED] = None,
-        metadata: Optional[dict] = None,
-        logging_path: Optional[Union[str, Path]] = None,
+        component_state: Optional[str]=None,
+        metadata: Optional[ComponentMetadata]=None,
+        logging_path: Optional[Union[str, Path]]=None,
+        last_updated: Optional[str]=None
     ):
         self.id = id  # human-readable identifier for instance
         self.pid = pid
         self.component_type = str(component_type)
         self.status_endpoint = status_endpoint
-        self.component_state = str(component_state)
+        self.component_state = ComponentState.from_str(str(component_state))
         self.location = str(location)
         self.metadata = metadata
         self.logging_path = str(logging_path)
-        self.last_updated = get_str_datetime()
+        self.last_updated = last_updated
+        if not last_updated:
+            self.last_updated = get_str_datetime()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"Component(id={self.id}, pid={self.pid}, "
             f"component_type={self.component_type}, "
@@ -86,15 +110,23 @@ class Component:
             f"last_updated={self.last_updated})"
         )
 
-    def to_dict(self):
-        config_dict = {}
-        for key, val in self.__dict__.items():
-            config_dict[key] = val
+    def to_dict(self) -> ComponentTypedDict:
+        config_dict = ComponentTypedDict(
+            id=self.id,
+            pid=self.pid,
+            component_type=self.component_type,
+            location=self.location,
+            status_endpoint=self.status_endpoint,
+            component_state=self.component_state,
+            metadata=self.metadata,
+            logging_path=self.logging_path,
+            last_updated=self.last_updated
+        )
         return config_dict
 
     @classmethod
-    def from_dict(cls, component_dict: Dict):
-        component_dict.pop('last_updated')
+    def from_dict(cls, component_dict: ComponentTypedDict) -> "Component":
+        component_dict['last_updated'] = get_str_datetime()
         return cls(**component_dict)
 
 
@@ -102,17 +134,17 @@ class ComponentStore:
     """multiprocess safe read/write access to component_state.json
     (which is basically acting as a stand-in for a database - which would be major overkill)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.file_name = "component_state.json"
         self.lock_path = SDK_HOME_DIR / "component_state.json.lock"
-        self.file_lock = FileLock(self.lock_path, timeout=5)
+        self.file_lock = FileLock(str(self.lock_path), timeout=5)
         self.component_state_path = SDK_HOME_DIR / self.file_name
         if not self.component_state_path.exists():
             open(self.component_state_path, 'w').close()
         self.component_map = self.get_component_map()
 
     def get_status(self, component_type: Optional[str]=None,
-            component_id: Optional[str]=None) -> Dict:
+            component_id: Optional[str]=None) -> Dict[str, ComponentTypedDict]:
         filelock_logger = logging.getLogger("filelock")
         filelock_logger.setLevel(logging.WARNING)
 
@@ -120,6 +152,7 @@ class ComponentStore:
             if self.component_state_path.exists():
                 with open(self.component_state_path, "r") as f:
                     data = f.read()
+                    component_state: Dict[str, ComponentTypedDict]
                     if data:
                         component_state = json.loads(data)
                     else:
@@ -130,23 +163,25 @@ class ComponentStore:
                         "Please choose one or the other.")
 
                 if component_type:
-                    filtered_result = {}
+                    filtered_result: Dict[str, ComponentTypedDict] = {}
+                    # Only save / modify the relevant component types
                     for key, val in component_state.items():
                         if val['component_type'] == component_type:
                             filtered_result[key] = val
+
                     return filtered_result
 
                 if component_id:
                     result = component_state.get(component_id)
                     if result:
-                        return result
+                        return {component_id: result}
                     raise ValueError(f"Component id: '{component_id}' not found in store.")
 
                 return component_state
             else:
                 return {}
 
-    def update_status_file(self, new_component_info: Component):
+    def update_status_file(self, new_component_info: Component) -> None:
         """updates to the *file* (component.json) - does *not* update the server"""
 
         component_state = {}
@@ -166,13 +201,24 @@ class ComponentStore:
             f.flush()
         logger.debug(f"updated status: {new_component_info}")
 
-    def component_status_data_by_id(self, component_id: str) -> Dict:
+    def component_status_data_by_id(self, component_id: str) -> Optional[ComponentTypedDict]:
         component_state = self.get_status()
         component_info = component_state.get(component_id)
         if component_info:
-            return component_info
+            return ComponentTypedDict(
+                id=component_info['id'],
+                pid=component_info['pid'],
+                component_type=component_info['component_type'],
+                location=component_info['location'],
+                status_endpoint=component_info['status_endpoint'],
+                component_state=component_info['component_state'],
+                metadata=component_info['metadata'],
+                logging_path=component_info['logging_path'],
+                last_updated=component_info['last_updated']
+            )
+
         logger.error("component id not found")
-        return {}
+        return None
 
     def get_component_map(self) -> Dict[str, Path]:
         component_map = {}  # component_name: <component_dir>
@@ -208,7 +254,7 @@ class ComponentStore:
 
         return component_map
 
-    def import_plugin_module(self, component_name: str) -> ModuleType:
+    def import_plugin_module(self, component_name: str) -> AbstractModuleType:
         plugin_dir = self.component_map.get(component_name)
         if not plugin_dir:
             logger.error(f"plugin for {component_name} not found")
@@ -228,16 +274,20 @@ class ComponentStore:
             # do absolute import
             component_module = import_module(f'{basename}.{component_name}')
 
+        component_module = cast(AbstractModuleType, component_module)
         return component_module
 
-    def instantiate_plugin(self, config: Config) -> Optional[AbstractPlugin]:
+    def instantiate_plugin(self, config: Config) -> AbstractPlugin:
         """
         Each plugin must have a 'Plugin' class that is instantiated and has the main entrypoints:
         (install, start, stop, reset, status_check) as instance methods.
         """
         if not config.selected_component:  # i.e. if --id set
             component_dict = self.component_status_data_by_id(config.component_id)
-            component_name = component_dict.get("component_type")
+            if component_dict:
+                component_name = component_dict["component_type"]
+            else:
+                logger.exception("component_name not found")
         else:
             component_name = config.selected_component
 

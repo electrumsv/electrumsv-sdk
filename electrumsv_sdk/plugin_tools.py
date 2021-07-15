@@ -4,13 +4,12 @@ import os
 import time
 from pathlib import Path
 import sys
-from typing import Dict, Optional, Callable, Tuple
+from typing import Dict, Callable, Tuple, Set, List, Any, Optional
 import requests
 
-
-from .abstract_plugin import AbstractPlugin
-from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR
-from .components import ComponentStore
+from .types import AbstractPlugin, SelectedComponent
+from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR, NETWORKS_LIST
+from .components import ComponentStore, ComponentTypedDict, ComponentMetadata
 from .utils import port_is_in_use, is_default_component_id, is_remote_repo, checkout_branch, \
     spawn_inline, spawn_new_terminal, spawn_background_supervised
 from .config import Config
@@ -25,13 +24,13 @@ class PluginTools:
         self.component_store = ComponentStore()
         self.logger = logging.getLogger("plugin-tools")
 
-    def allocate_port(self):
-        assert self.plugin.id is not None
+    def allocate_port(self) -> int:
+        assert self.plugin.id is not None  # typing bug
         component_port = self.get_component_port(self.plugin.DEFAULT_PORT,
             self.plugin.COMPONENT_NAME, self.plugin.id)
         return component_port
 
-    def allocate_datadir_and_id(self):
+    def allocate_datadir_and_id(self) -> Tuple[Path, str]:
         component_datadir, component_id = \
             self.get_component_datadir(self.plugin.COMPONENT_NAME)
         return component_datadir, component_id
@@ -50,7 +49,8 @@ class PluginTools:
             self.plugin.src = Path(self.config.repo)
         return self.plugin.src
 
-    def call_for_component_id_or_type(self, component_name: str, callable: Callable):
+    def call_for_component_id_or_type(self, component_name: SelectedComponent,
+            callable: Callable[[ComponentTypedDict], None]) -> None:
         """Used to either kill/stop/reset components by --id or <component_type>)
         - callable is called with one argument: component_dict with all relevant info about the
         component of interest - if there are many components of a particular type then the
@@ -73,7 +73,7 @@ class PluginTools:
                     callable(component_dict)
                     self.logger.debug(f"terminated: {component_dict.get('id')}")
 
-    def get_component_datadir(self, component_name: str) -> Tuple[Path, Optional[str]]:
+    def get_component_datadir(self, component_name: str) -> Tuple[Path, str]:
         """Used for multi-instance components"""
         def is_new_and_no_id(id: str, new: bool) -> bool:
             return id == "" and new
@@ -124,13 +124,17 @@ class PluginTools:
         return new_dir, id
 
     def port_clash_check_ok(self) -> bool:
-        reserved_ports = set()
+        reserved_ports: Set[int] = set()
+        reserved_ports_list: List[int] = []
         for component_name in self.component_store.component_map:
             try:
                 component_module = self.component_store.import_plugin_module(component_name)
-                component_module.Plugin: AbstractPlugin
                 # avoids instantiation by accessing RESERVED_PORTS as a class attribute
-                if component_module.Plugin.RESERVED_PORTS in reserved_ports:
+                for port in component_module.Plugin.RESERVED_PORTS:
+                    reserved_ports.add(port)
+                    reserved_ports_list.append(port)
+
+                if len(reserved_ports) != len(reserved_ports_list):
                     self.logger.exception(
                         f"There is a conflict of reserved ports for component_module: "
                         f"{component_module} on ports: {component_module.Plugin.RESERVED_PORTS}. "
@@ -142,7 +146,8 @@ class PluginTools:
                     f"been skipped")
         return True
 
-    def get_component_port(self, default_component_port, component_name, component_id) -> int:
+    def get_component_port(self, default_component_port: int, component_name: str,
+            component_id: str) -> int:
         """ensure that no other plugin uses any of the default ports as they are strictly
         reserved for the default component ids."""
         if not self.port_clash_check_ok():
@@ -164,8 +169,9 @@ class PluginTools:
         return port
 
     def is_component_running_http(self, status_endpoint: str, retries:
-            int=6, duration: float=1.0, timeout: float=0.5, http_method='get',
-            payload: Dict=None, component_name: str=None, verify_ssl=False) -> bool:
+            int=6, duration: float=1.0, timeout: float=0.5, http_method: str='get',
+            payload: Optional[Dict[Any, Any]]=None, component_name: Optional[str]=None,
+            verify_ssl: bool=False) -> bool:
 
         if not component_name and self.plugin.component_info:
             component_name = self.plugin.component_info.component_type
@@ -176,7 +182,7 @@ class PluginTools:
             self.logger.debug(f"Polling {component_name}...")
             try:
                 result = getattr(requests, http_method)(status_endpoint, timeout=timeout,
-                    data=payload, verify=False)
+                    data=payload, verify=verify_ssl)
                 result.raise_for_status()
                 return True
             except Exception as e:
@@ -185,9 +191,11 @@ class PluginTools:
             time.sleep(sleep_time)
         return False
 
-    def spawn_process(self, command: str, env_vars: Dict=None, id: str=None, component_name:
-        str=None, src: Path=None, logfile: Path=None, status_endpoint: str=None,
-            metadata: Dict=None) -> None:
+    def spawn_process(self, command: str, env_vars: Dict[str, str], id: str, component_name: str,
+            src: Optional[Path]=None, logfile: Optional[Path]=None,
+            status_endpoint: Optional[str]=None,
+            metadata: Optional[ComponentMetadata]=None) -> None:
+
         if not env_vars:
             env_vars = {}
 
@@ -218,11 +226,8 @@ class PluginTools:
         if not id and not new:  # Default component id (and port + DATADIR)
             return self.get_default_id(component_name)
 
-        elif id:
+        else:
             return id
-
-        elif new:
-            self.logger.error("The --new flag is only for multi-instance conponents")
 
     def get_logfile_path(self, id: str) -> Path:
         """deterministic / standardised location for logging to file"""
@@ -233,3 +238,18 @@ class PluginTools:
         os.makedirs(logpath, exist_ok=True)
         logfile = logpath.joinpath(f"{logfile_name}")
         return logfile
+
+    def set_network(self) -> None:
+        # make sure that only one network is set on cli
+        count_networks_selected = len([self.config.cli_extension_args[network] for network in
+            NETWORKS_LIST if self.config.cli_extension_args[network] is True])
+        if count_networks_selected > 1:
+            self.logger.error("you must only select a single network")
+            sys.exit(1)
+
+        if count_networks_selected == 0:
+            self.plugin.network = self.plugin.network
+        if count_networks_selected == 1:
+            for network in NETWORKS_LIST:
+                if self.config.cli_extension_args[network]:
+                    self.plugin.network = network

@@ -1,15 +1,16 @@
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 # copied from utils to avoid circular import
-def get_sdk_datadir():
+def get_sdk_datadir() -> Path:
     sdk_home_datadir = None
     if sys.platform == "win32":
-        sdk_home_datadir = Path(os.environ.get("LOCALAPPDATA")) / "ElectrumSV-SDK"
+        sdk_home_datadir = Path(os.environ["LOCALAPPDATA"]) / "ElectrumSV-SDK"
     if sdk_home_datadir is None:
         sdk_home_datadir = Path.home() / ".electrumsv-sdk"
     return sdk_home_datadir
@@ -51,13 +52,36 @@ class ComponentOptions:
     BRANCH = "branch"
 
 
-class ComponentState:
+class ComponentState(str):
     """If the user terminates an application without using the SDK, it will be registered as
     'Failed' status."""
     RUNNING = "Running"
     STOPPED = "Stopped"
     FAILED = "Failed"
+    NONE = "None"
+
+    @classmethod
+    def from_str(cls, component_state_str: Optional[str]) -> str:
+        if component_state_str == "Running":
+            return cls.RUNNING
+        elif component_state_str == "Stopped":
+            return cls.STOPPED
+        elif component_state_str == "Failed":
+            return cls.FAILED
+        elif component_state_str == 'None':
+            return cls.NONE
+        else:
+            raise ValueError(f"ComponentState {component_state_str}, not recognised")
 
 SUCCESS_EXITCODE = 0
 SIGINT_EXITCODE = 130  # (2 + 128)
 SIGKILL_EXITCODE = 137  # (9 + 128)
+
+
+class NETWORKS:
+    # do not change these names - must match cli args
+    REGTEST = 'regtest'
+    TESTNET = 'testnet'
+
+
+NETWORKS_LIST = [NETWORKS.REGTEST, NETWORKS.TESTNET]

@@ -3,12 +3,12 @@ import os
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Tuple, List, Set
 import shutil
 
-from electrumsv_sdk.abstract_plugin import AbstractPlugin
+from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
-from electrumsv_sdk.components import Component
+from electrumsv_sdk.components import Component, ComponentTypedDict
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
@@ -18,7 +18,7 @@ from .local_tools import LocalTools
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def extend_start_cli(start_parser: ArgumentParser):
+def extend_start_cli(start_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
     """if this method is present it allows extension of the start argparser only.
     This occurs dynamically and adds the new cli options as attributes of the Config object"""
     start_parser.add_argument("--mapi-broadcast", action="store_true",
@@ -43,14 +43,14 @@ def extend_start_cli(start_parser: ArgumentParser):
 class Plugin(AbstractPlugin):
     SERVER_HOST = "127.0.0.1"
     SERVER_PORT = 24242
-    RESERVED_PORTS = {SERVER_PORT}
+    RESERVED_PORTS: Set[int] = {SERVER_PORT}
 
     COMPONENT_NAME = get_directory_name(__file__)
     COMPONENT_PATH = Path(os.path.dirname(os.path.abspath(__file__)))
     ELECTRUMSV_SERVER_MODULE_PATH = Path(MODULE_DIR).parent.parent.parent.joinpath(
         "electrumsv-server")
 
-    def __init__(self, config: Config):
+    def __init__(self, config: Config) -> None:
         self.config = config
         self.plugin_tools = PluginTools(self, self.config)
         self.tools = LocalTools(self)
@@ -77,22 +77,26 @@ class Plugin(AbstractPlugin):
         network_choice = self.tools.get_network_choice()
         command += f"--{network_choice}"
 
-        if self.config.mapi_broadcast:  # extension cli option
-            command += f" --mapi-broadcast --mapi-host={self.config.mapi_host} " \
-                  f"--mapi-port={self.config.mapi_port}"
+        # These mapi attributes are added to config as extension cli options
+        # (see: extend_start_cli() above)
+        if self.config.cli_extension_args['mapi_broadcast']:
+            command += (f" --mapi-broadcast "
+                        f"--mapi-host={self.config.cli_extension_args['mapi_host']} "
+                        f"--mapi-port={self.config.cli_extension_args['mapi_port']}")
 
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
-            component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile, metadata={
-            "datadir": str(self.datadir)}
-        )
+            component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
+            metadata={"datadir": str(self.datadir)})
 
     def stop(self) -> None:
         self.logger.debug("Attempting to kill the process if it is even running")
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
 
     def reset(self) -> None:
-        def reset_server(component_dict: Dict):
-            datadir = Path(component_dict.get("metadata").get("datadir"))
+        def reset_server(component_dict: ComponentTypedDict) -> None:
+            metadata = component_dict.get("metadata", {})
+            assert metadata is not None  # typing bug
+            datadir: Path = Path(metadata["datadir"])
             if datadir.exists():
                 shutil.rmtree(datadir)
                 os.mkdir(datadir)

@@ -69,6 +69,13 @@ jobs:
       displayName: 'pylint'
 
     - script: |
+        python3 -m pip install mypy
+        yes | python3 -m mypy --install-types
+        python3 -m mypy --config-file mypy.ini
+      continueOnError: true
+      displayName: 'mypy static analysis'
+
+    - script: |
         set -e
         sudo apt-get update
         sudo apt install npm nodejs node-gyp

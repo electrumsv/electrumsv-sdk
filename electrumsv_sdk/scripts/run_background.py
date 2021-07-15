@@ -13,13 +13,13 @@ from electrumsv_sdk.utils import spawn_background
 logger = logging.getLogger("run-background-script")
 
 
-def unwrap_and_unescape_text(arg: str):
+def unwrap_and_unescape_text(arg: str) -> str:
     return arg.strip("\'").replace('\\"', '"')
 
 
-def main():
-    command = unwrap_and_unescape_text(os.environ.get("SCRIPT_COMMAND"))
-    component_info = json.loads(unwrap_and_unescape_text(os.environ.get("SCRIPT_COMPONENT_INFO")))
+def main() -> None:
+    command = unwrap_and_unescape_text(os.environ["SCRIPT_COMMAND"])
+    component_info = json.loads(unwrap_and_unescape_text(os.environ["SCRIPT_COMPONENT_INFO"]))
     component_info = Component.from_dict(component_info)
     env_vars = os.environ.copy()
 
