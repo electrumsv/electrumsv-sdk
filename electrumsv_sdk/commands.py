@@ -1,6 +1,6 @@
 """This defines a set of exposed public methods for using the SDK as a library"""
 import logging
-from typing import Dict, Optional, Tuple, Any
+from typing import Dict, Optional, Tuple, Any, List
 
 from .components import ComponentStore, ComponentTypedDict
 from .app_state import AppState
@@ -40,7 +40,7 @@ def _validate_network(network: str, component_type: str) -> None:
         raise ValueError(f"The only supported networks are: {valid_networks}")
 
 
-def start(component_type: str, component_args: Tuple[str] = ("",), repo: str = "",
+def start(component_type: str, component_args: Optional[Tuple[str]]=None, repo: str = "",
         branch: str = "", new_instance: bool = False, gui: bool = False,
         mode: str="new-terminal", component_id: str = "", network: str="",
         deterministic_seed: bool=False) -> None:
