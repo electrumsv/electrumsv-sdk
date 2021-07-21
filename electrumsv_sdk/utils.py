@@ -49,6 +49,24 @@ def cast_str_int_args_to_int(node_args: List[Any]) -> List[Any]:
     return node_args
 
 
+def cast_str_bool_args_to_bool(node_args: List[Any]) -> List[Any]:
+    false_indices = []
+    for index, arg in enumerate(node_args):
+        if isinstance(arg, str) and arg in {'false', "False"}:
+            false_indices.append(index)
+    for i in false_indices:
+        node_args[i] = False
+
+    true_indices = []
+    for index, arg in enumerate(node_args):
+        if isinstance(arg, str) and arg in {'true', "True"}:
+            true_indices.append(index)
+    for i in true_indices:
+        node_args[i] = True
+
+    return node_args
+
+
 def is_remote_repo(repo: str) -> bool:
     return repo == "" or repo.startswith("https://")
 
@@ -421,6 +439,7 @@ def submit_blocks_from_file(node_id: str, filepath: Union[Path, str]) -> None:
 
 def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Optional[Any]:
     rpc_args = cast_str_int_args_to_int(list(args))
+    rpc_args = cast_str_bool_args_to_bool(rpc_args)
     component_store = ComponentStore()
     DEFAULT_RPCHOST = "127.0.0.1"
     DEFAULT_RPCPORT = 18332
