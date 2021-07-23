@@ -11,8 +11,8 @@ from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
-from .install import download_and_install, load_env_vars, get_run_path, load_pfx_file, chmod_exe
-from .check_db_config import check_postgres_db
+from .install import download_and_install, load_env_vars, get_run_path, chmod_exe
+from .check_db_config import check_postgres_db, drop_db_on_install
 
 
 def extend_install_cli(install_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
@@ -55,8 +55,8 @@ class Plugin(AbstractPlugin):
     def install(self) -> None:
         assert self.src is not None  # typing bug
         download_and_install(self.src)
+        drop_db_on_install()
         check_postgres_db()
-        load_pfx_file(self.config)
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self) -> None:
