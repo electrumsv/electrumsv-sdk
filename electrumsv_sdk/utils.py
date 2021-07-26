@@ -135,7 +135,11 @@ def sigint(pid: int, is_new_terminal: bool=False) -> None:
             control_c_script_path = Path(MODULE_DIR) / "scripts" / "windows_control_c.py"
             subprocess.check_call([sys.executable, control_c_script_path, str(pid)])
         else:
-            os.kill(pid, signal.CTRL_C_EVENT)
+            try:
+                os.kill(pid, signal.CTRL_C_EVENT)
+            except SystemError:
+                print("ENVIRON", list(os.environ.keys()))
+                raise
 
 
 def sigkill(parent_pid: int) -> None:
