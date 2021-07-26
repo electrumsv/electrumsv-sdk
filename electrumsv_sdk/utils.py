@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import os
@@ -9,12 +10,13 @@ import threading
 from pathlib import Path
 from typing import List, Dict, Optional, Union, Any
 
+import bitcoinx
 import colorama
 import psutil
 import tailer
 from electrumsv_node import electrumsv_node
 from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
-from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE
+from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE, DATADIR
 from .types import SubprocessCallResult
 
 logger = logging.getLogger("utils")
@@ -355,6 +357,17 @@ def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, componen
         str, src: Optional[Path]=None, logfile: Optional[Path]=None,
         status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
 
+    def write_env_vars_to_temp_file():
+        """encrypted for security in case it is not cleaned up as expected"""
+        env_vars_json = json.dumps(dict(env_vars))
+        secret = os.urandom(32)
+        key = bitcoinx.PrivateKey(secret)
+        encrypted_message = key.public_key.encrypt_message_to_base64(env_vars_json)
+        temp_outfile = DATADIR / component_name / "encrypted.env"
+        with open(temp_outfile, 'w') as f:
+            f.write(encrypted_message)
+        return secret
+
     component_info = Component(id=id, pid=None, component_type=component_name, location=str(src),
         status_endpoint=status_endpoint, component_state=None, metadata=metadata,
         logging_path=logfile)
@@ -364,8 +377,11 @@ def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, componen
     command = f"{sys.executable} {run_inline_script} " \
               f"--command {wrap_and_escape_text(command)}"
 
-    command += f" --env_vars {wrap_and_escape_text(json.dumps(env_vars))}"
-    command += f" --component_info {wrap_and_escape_text(component_json)}"
+    secret = write_env_vars_to_temp_file()
+    command += f" --env_vars_encryption_key {secret.hex()}"
+
+    b64_component_json = base64.b64encode(component_json.encode('utf-8')).decode()
+    command += f" --component_info {b64_component_json}"
 
     if sys.platform in 'linux':
         split_command = shlex.split(f"xterm -fa 'Monospace' -fs 10 -e {command}", posix=True)

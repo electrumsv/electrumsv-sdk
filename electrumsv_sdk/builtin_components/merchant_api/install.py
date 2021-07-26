@@ -2,20 +2,17 @@ import logging
 import os
 import pathlib
 import platform
-import shlex
-import shutil
 import stat
-import subprocess
 import requests
 import sys
 import zipfile
 from typing import Dict, Any
 from urllib.parse import urlparse
 
-from electrumsv_sdk.config import Config
-from electrumsv_sdk.utils import get_directory_name, get_sdk_datadir
+from electrumsv_sdk.utils import get_directory_name
 
-VERSION = "0.0.1"  # electrumsv/electrumsv-mAPI version
+VERSION = "0.0.2"  # electrumsv/electrumsv-mAPI version
+MERCHANT_API_VERSION = "1.3.0"
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 PFX_PATH = pathlib.Path(MODULE_DIR) / "config/localhost.pfx"
 
@@ -46,60 +43,6 @@ PREBUILT_ENTRIES = {
 }
 
 
-def trust_cert(pfx_path: pathlib.Path) -> None:
-    if platform.system() in {'Windows'}:
-        command1 = f"dotnet dev-certs https --clean"
-        process = subprocess.Popen(shlex.split(command1, posix=False))
-        process.wait()
-
-        command2 = f"dotnet dev-certs https --export-path {pfx_path}"
-        process = subprocess.Popen(shlex.split(command2, posix=False))
-        process.wait()
-
-    elif platform.system() in {'Darwin'}:
-        command1 = f"dotnet dev-certs https --clean"
-        process = subprocess.Popen(shlex.split(command1, posix=True))
-        process.wait()
-
-        command2 = f"dotnet dev-certs https --export-path {pfx_path}"
-        process = subprocess.Popen(shlex.split(command2, posix=True))
-        process.wait()
-
-
-def _get_pfx_store_location() -> pathlib.Path:
-    SDK_HOME = get_sdk_datadir()
-    MERCHANT_API_DATADIR = SDK_HOME.joinpath("component_datadirs/merchant_api")
-    pfx_store_location = MERCHANT_API_DATADIR / "localhost.pfx"
-    os.makedirs(MERCHANT_API_DATADIR, exist_ok=True)
-    return pfx_store_location
-
-
-def load_pfx_file(config: Config) -> None:
-    """copy the localhost.pfx specified via the --ssl commandline argument to the required
-    location"""
-    pfx_location = _get_pfx_store_location()
-
-    ssl_cert_path = config.cli_extension_args.get('ssl')
-    if ssl_cert_path:
-        if os.path.isfile(ssl_cert_path):
-            src = ssl_cert_path
-            logger.debug(f"Copying .pfx file to {pfx_location}")
-            os.makedirs(os.path.dirname(pfx_location), exist_ok=True)
-            shutil.copy(src, pfx_location)
-        else:
-            logger.error(f"Could not locate localhost.pfx file - did you mistype the path?")
-            sys.exit(1)
-    elif not os.path.isfile(pfx_location):
-        logger.error(f"Self-signed 'localhost.pfx' server certificate for merchant API has not "
-                     f"been loaded - please generate one and load it via "
-                     f"'electrumsv-sdk install --ssl=<path/to/localhost.pfx> merchant_api")
-        sys.exit(1)
-
-    if os.path.isfile(pfx_location):
-        logger.debug("Found localhost.pfx")
-        trust_cert(pfx_location)
-
-
 def _get_entry() -> Dict[Any, str]:
     system_name = platform.system()
     is_64bit = sys.maxsize > 2**32
@@ -124,7 +67,8 @@ def download_and_install(install_path: pathlib.Path) -> None:
     uri = urlparse(entry["uri"])
     logger.debug(f"downloading mAPI executable from: {uri.path}")
     filename = os.path.basename(uri.path)
-    download_path = install_path / filename
+    os.makedirs(install_path / MERCHANT_API_VERSION, exist_ok=True)
+    download_path = install_path / MERCHANT_API_VERSION / filename
 
     if not download_path.exists():
         # Download the build.
@@ -133,10 +77,10 @@ def download_and_install(install_path: pathlib.Path) -> None:
             f.write(r.content)
 
     # Extract the build.
-    output_path = install_path / entry['dirname']
+    output_path = install_path / MERCHANT_API_VERSION / entry['dirname']
     if not output_path.exists():
         with zipfile.ZipFile(download_path, 'r') as z:
-            z.extractall(install_path)
+            z.extractall(install_path / MERCHANT_API_VERSION)
 
 
 def chmod_exe(install_path: pathlib.Path) -> None:
@@ -146,15 +90,12 @@ def chmod_exe(install_path: pathlib.Path) -> None:
 
 
 def load_env_vars() -> None:
-    env_vars = {"PYTHONUNBUFFERED": "1"}
+    env_vars = {
+        "PYTHONUNBUFFERED": "1"
+    }
     os.environ.update(env_vars)
-    from dotenv import load_dotenv, set_key
+    from dotenv import load_dotenv
     env_path = pathlib.Path(MODULE_DIR) / 'exe-config/.env'
-
-    pfx_location = _get_pfx_store_location()
-    assert os.path.isfile(pfx_location), f"{pfx_location} file not found"
-    set_key(env_path, "ASPNETCORE_Kestrel__Certificates__Default__Path", str(pfx_location))
-
     load_dotenv(dotenv_path=env_path)
 
 
@@ -163,7 +104,7 @@ def get_run_path(install_path: pathlib.Path) -> pathlib.Path:
     Work out where the executable is located for the given platform/architecture.
     """
     entry = _get_entry()
-    return install_path / entry["exe"]
+    return install_path / MERCHANT_API_VERSION / entry["exe"]
 
 
 if __name__ == "__main__":
