@@ -16,8 +16,8 @@ resources:
     ports:
       - 5432:5432
     env:
-      POSTGRES_USER: mapimaster
-      POSTGRES_PASSWORD: mapimasterpass
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
 
   - container: pg12-win32
@@ -25,8 +25,8 @@ resources:
     ports:
       - 5432:5432
     env:
-      POSTGRES_USER: mapimaster
-      POSTGRES_PASSWORD: mapimasterpass
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
 
 jobs:
@@ -56,6 +56,12 @@ jobs:
         python3 -m pip install pytest pytest-cov
       displayName: 'install electrumsv-sdk'
 
+    - bash: |
+        cd $(Build.Repository.LocalPath)/contrib/azure
+        python3 -m pip install asyncpg
+        python3 ./mapi_db_config.py
+      displayName: 'prepare postgres'
+
     - script: |
         set -e
         python3 -m pip install -U pylint
@@ -82,20 +88,13 @@ jobs:
       displayName: 'prepare node.js'
       continueOnError: true
 
-    # Download a secure file to the agent machine
-    - task: DownloadSecureFile@1
-      name: pfxCertificate
-      displayName: 'Download CA certificate'
-      inputs:
-        secureFile: 'localhost.pfx'
-
     - script: |
         set -e
         electrumsv-sdk install node
         electrumsv-sdk install electrumx
         electrumsv-sdk install electrumsv
         electrumsv-sdk install whatsonchain
-        electrumsv-sdk install --ssl=$(pfxCertificate.secureFilePath) merchant_api
+        electrumsv-sdk install merchant_api
       displayName: 'install all components'
 
     - script: |
@@ -162,7 +161,8 @@ jobs:
         mkdir /usr/local/var/postgres
         chmod 0700 /usr/local/var/postgres
 
-        initdb --username=postgres /usr/local/var/postgres
+        echo postgres > pwfile.txt
+        initdb --username=postgres --pwfile=pwfile.txt /usr/local/var/postgres
         echo 'export PATH="/usr/local/opt/postgresql/bin:$PATH"' >> /Users/runner/.bash_profile
         export PKG_CONFIG_PATH="/usr/local/opt/postgresql/lib/pkgconfig"
 
@@ -170,7 +170,7 @@ jobs:
         psql -U postgres --list
         psql -U postgres -c "\du"
 
-        cd $(Build.Repository.LocalPath)/contrib/azure/macos
+        cd $(Build.Repository.LocalPath)/contrib/azure
         python3 -m pip install asyncpg
         python3 ./mapi_db_config.py
       displayName: 'install postgres'
@@ -190,13 +190,6 @@ jobs:
         python3 -m pip install pytest pytest-cov
       displayName: 'install electrumsv-sdk'
 
-    # Download a secure file to the agent machine
-    - task: DownloadSecureFile@1
-      name: pfxCertificate
-      displayName: 'Download CA certificate'
-      inputs:
-        secureFile: 'localhost.pfx'
-
     - script: |
         set -e
         brew install node
@@ -208,7 +201,7 @@ jobs:
         electrumsv-sdk install electrumx
         electrumsv-sdk install electrumsv
         electrumsv-sdk install whatsonchain
-        electrumsv-sdk install --ssl=$(pfxCertificate.secureFilePath) merchant_api
+        electrumsv-sdk install merchant_api
       displayName: 'install all components'
 
     - script: |
@@ -285,19 +278,18 @@ jobs:
         py -3.9 -m pip install pytest pytest-cov
       displayName: 'install electrumsv-sdk'
 
-    # Download a secure file to the agent machine
-    - task: DownloadSecureFile@1
-      name: pfxCertificate
-      displayName: 'Download CA certificate'
-      inputs:
-        secureFile: 'localhost.pfx'
+    - script: |
+        cd $(Build.Repository.LocalPath)/contrib/azure
+        python3 -m pip install asyncpg
+        python3 ./mapi_db_config.py
+      displayName: 'prepare postgres'
 
     - script: |
         electrumsv-sdk install node
         electrumsv-sdk install electrumx
         electrumsv-sdk install electrumsv
         electrumsv-sdk install whatsonchain
-        electrumsv-sdk install --ssl=$(pfxCertificate.secureFilePath) merchant_api
+        electrumsv-sdk install merchant_api
       displayName: 'install all components'
 
     - script: |
