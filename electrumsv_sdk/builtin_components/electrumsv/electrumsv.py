@@ -1,3 +1,4 @@
+from functools import partial
 import logging
 import os
 import sys
@@ -138,7 +139,9 @@ class Plugin(AbstractPlugin):
     def stop(self) -> None:
         """some components require graceful shutdown via a REST API or RPC API but most can use the
         generic 'plugin_tools.kill_component()' function."""
-        self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
+        is_new_terminal = not (self.config.inline_flag or self.config.background_flag)
+        self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME,
+            callable=partial(kill_process, is_new_terminal))
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self) -> None:

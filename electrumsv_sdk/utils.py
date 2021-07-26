@@ -6,8 +6,9 @@ import signal
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
-from typing import List, Dict, Optional, Union, Any
+from typing import List, Dict, Optional, Union, Any, TYPE_CHECKING
 
 import colorama
 import psutil
@@ -16,6 +17,10 @@ from electrumsv_node import electrumsv_node
 from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
 from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE
 from .types import SubprocessCallResult
+
+if TYPE_CHECKING:
+    from .config import Config
+
 
 logger = logging.getLogger("utils")
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -113,7 +118,7 @@ def get_parent_and_child_pids(parent_pid: int) -> Optional[List[int]]:
         return None
 
 
-def sigint(pid: int) -> None:
+def sigint(pid: int, is_new_terminal: bool=False) -> None:
     """attempt graceful shutdown via sigint"""
     if sys.platform in ("linux", "darwin"):
         try:
@@ -122,10 +127,13 @@ def sigint(pid: int) -> None:
             pass
 
     elif sys.platform == "win32":
-        try:
+        if is_new_terminal:
+            # When we use CREATE_NEW_CONSOLE the CTRL-C kills the wrapping `cmd` window not the
+            # Python process (which is immediately terminated).
+            control_c_script_path = Path(MODULE_DIR) / "scripts" / "windows_control_c.py"
+            subprocess.check_call([sys.executable, control_c_script_path, str(pid)])
+        else:
             os.kill(pid, signal.CTRL_C_EVENT)
-        except (SystemError, OSError):
-            pass
 
 
 def sigkill(parent_pid: int) -> None:
@@ -141,7 +149,8 @@ def sigkill(parent_pid: int) -> None:
                     subprocess.run(f"taskkill.exe /PID {pid} /T /F")
 
 
-def kill_by_pid(pid: Optional[int]) -> None:
+def kill_by_pid(pid: Optional[int], graceful_wait_period: float=5.0,
+        is_new_terminal: bool=False) -> None:
     """kills parent and all children"""
     # todo - it may make sense to add an optional timeout for waiting on a graceful shutdown
     #  via sigint before escalating to sigkill/sigterm - this would be specified for each plugin
@@ -150,15 +159,21 @@ def kill_by_pid(pid: Optional[int]) -> None:
     pids = get_parent_and_child_pids(parent_pid=pid)
     if pids:
         for pid in pids:
-            sigint(pid)
+            sigint(pid, is_new_terminal)
+
+        t0 = time.time()
+        while time.time() - t0 < graceful_wait_period:
+            if not any(psutil.pid_exists(pid) for pid in pids):
+                return
+            time.sleep(0.2)
 
         if psutil.pid_exists(pid):
             sigkill(parent_pid=pid)
 
 
-def kill_process(component_dict: ComponentTypedDict) -> None:
+def kill_process(is_new_terminal: bool, component_dict: ComponentTypedDict) -> None:
     pid = component_dict['pid']
-    kill_by_pid(pid)
+    kill_by_pid(pid, is_new_terminal=is_new_terminal)
 
 
 def is_default_component_id(component_name: str, component_id: str) -> bool:
@@ -329,7 +344,7 @@ def spawn_background(command: str, env_vars: Dict[Any, Any], id: str, component_
             # direct stdout and stderr to file
             if sys.platform == "win32":
                 process = subprocess.Popen(command, stdout=logfile_handle, stderr=logfile_handle,
-                    env=env, creationflags=subprocess.DETACHED_PROCESS)
+                    env=env, creationflags=subprocess.CREATE_NO_WINDOW)
             else:
                 process = subprocess.Popen(shlex.split(command, posix=True), stdout=logfile_handle,
                     stderr=logfile_handle, env=env)
@@ -337,7 +352,7 @@ def spawn_background(command: str, env_vars: Dict[Any, Any], id: str, component_
         # no logging
         if sys.platform == "win32":
             process = subprocess.Popen(command, env=env,
-                creationflags=subprocess.DETACHED_PROCESS)
+                creationflags=subprocess.CREATE_NO_WINDOW)
         else:
             process = subprocess.Popen(shlex.split(command), env=env)
 
