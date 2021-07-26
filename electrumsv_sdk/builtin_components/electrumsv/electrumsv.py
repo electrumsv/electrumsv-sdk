@@ -141,7 +141,8 @@ class Plugin(AbstractPlugin):
         generic 'plugin_tools.kill_component()' function."""
         is_new_terminal = not (self.config.inline_flag or self.config.background_flag)
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME,
-            callable=partial(kill_process, is_new_terminal=is_new_terminal))
+            callable=partial(kill_process, graceful_wait_period=5.0,
+                is_new_terminal=is_new_terminal))
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self) -> None:

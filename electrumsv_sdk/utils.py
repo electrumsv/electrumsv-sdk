@@ -138,8 +138,9 @@ def sigint(pid: int, is_new_terminal: bool=False) -> None:
             try:
                 os.kill(pid, signal.CTRL_C_EVENT)
             except SystemError:
-                print("ENVIRON", list(os.environ.keys()))
-                raise
+                # TODO(Python-3.10) ? https://bugs.python.org/issue42962
+                # - Appears to be the result of a misported change from Python 2.
+                pass
 
 
 def sigkill(parent_pid: int) -> None:
@@ -155,31 +156,33 @@ def sigkill(parent_pid: int) -> None:
                     subprocess.run(f"taskkill.exe /PID {pid} /T /F")
 
 
-def kill_by_pid(pid: Optional[int], graceful_wait_period: float=5.0,
+def kill_by_pid(parent_pid: Optional[int], graceful_wait_period: float=0.0,
         is_new_terminal: bool=False) -> None:
     """kills parent and all children"""
-    # todo - it may make sense to add an optional timeout for waiting on a graceful shutdown
-    #  via sigint before escalating to sigkill/sigterm - this would be specified for each plugin
-    if not pid:
+    if not parent_pid:
         return
-    pids = get_parent_and_child_pids(parent_pid=pid)
-    if pids:
-        for pid in pids:
-            sigint(pid, is_new_terminal)
+    pid_list = get_parent_and_child_pids(parent_pid=parent_pid)
+    if not pid_list:
+        return
 
+    for pid in pid_list:
+        sigint(pid, is_new_terminal)
+
+    if graceful_wait_period:
         t0 = time.time()
         while time.time() - t0 < graceful_wait_period:
-            if not any(psutil.pid_exists(pid) for pid in pids):
+            if not any(psutil.pid_exists(pid) for pid in pid_list):
                 return
             time.sleep(0.2)
 
-        if psutil.pid_exists(pid):
-            sigkill(parent_pid=pid)
+    if psutil.pid_exists(pid):
+        sigkill(parent_pid=pid)
 
 
-def kill_process(component_dict: ComponentTypedDict, is_new_terminal: bool=False) -> None:
+def kill_process(component_dict: ComponentTypedDict, graceful_wait_period: float=0.0,
+        is_new_terminal: bool=False) -> None:
     pid = component_dict['pid']
-    kill_by_pid(pid, is_new_terminal=is_new_terminal)
+    kill_by_pid(pid, graceful_wait_period=graceful_wait_period, is_new_terminal=is_new_terminal)
 
 
 def is_default_component_id(component_name: str, component_id: str) -> bool:
