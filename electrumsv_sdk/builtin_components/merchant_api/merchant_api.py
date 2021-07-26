@@ -1,9 +1,8 @@
 import logging
 import os
 import sys
-from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, Tuple, List, Set
+from typing import Optional, Set
 
 from electrumsv_sdk.types import AbstractPlugin
 from electrumsv_sdk.config import Config
@@ -13,18 +12,6 @@ from electrumsv_sdk.plugin_tools import PluginTools
 
 from .install import download_and_install, load_env_vars, get_run_path, chmod_exe
 from .check_db_config import check_postgres_db, drop_db_on_install
-
-
-def extend_install_cli(install_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
-    """if this method is present it allows extension of the start argparser only.
-    This occurs dynamically and adds the new cli options as attributes of the Config object
-    """
-    install_parser.add_argument("--ssl", type=str,
-        help="path to localhost.pfx server side certificate")
-
-    # variable names to be pulled from the start_parser
-    new_options = ['ssl']  # access variable via Plugin.config.ssl
-    return install_parser, new_options
 
 
 class Plugin(AbstractPlugin):

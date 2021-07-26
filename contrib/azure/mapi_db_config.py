@@ -15,7 +15,7 @@ async def pg_connect():
         user="postgres",
         host="127.0.0.1",
         port=5432,
-        password=None,
+        password='postgres',
         database="postgres",
     )
     return pg_conn
