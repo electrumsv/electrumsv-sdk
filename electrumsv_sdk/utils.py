@@ -89,8 +89,11 @@ def read_sdk_version() -> str:
 
 def port_is_in_use(port: int) -> bool:
     netstat_cmd = "netstat -an"
+    skip_match: str = ""
     if sys.platform in {'linux', 'darwin'}:
         netstat_cmd = "netstat -antu"
+    else:
+        skip_match = "TIME_WAIT"
 
     filter_set = {f'127.0.0.1:{port}', f'0.0.0.0:{port}', f'[::]:{port}', f'[::1]:{port}'}
     result = subprocess.run(netstat_cmd, shell=True, check=True,
@@ -98,6 +101,8 @@ def port_is_in_use(port: int) -> bool:
     for line in str(result.stdout).split(r'\r\n'):
         columns = line.split()
         if len(columns) > 1 and columns[1] in filter_set:
+            if skip_match and skip_match in columns:
+                continue
             return True
     return False
 
