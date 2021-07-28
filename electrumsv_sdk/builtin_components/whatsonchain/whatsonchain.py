@@ -3,7 +3,7 @@ import os
 import sys
 from typing import Optional, Set
 
-from electrumsv_sdk.types import AbstractPlugin
+from electrumsv_sdk.sdk_types import AbstractPlugin
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.plugin_tools import PluginTools
 from electrumsv_sdk.components import Component

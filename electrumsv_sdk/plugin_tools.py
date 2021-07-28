@@ -7,7 +7,7 @@ import sys
 from typing import Dict, Callable, Tuple, Set, List, Any, Optional
 import requests
 
-from .types import AbstractPlugin, SelectedComponent
+from .sdk_types import AbstractPlugin, SelectedComponent
 from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR, NETWORKS_LIST
 from .components import ComponentStore, ComponentTypedDict, ComponentMetadata
 from .utils import port_is_in_use, is_default_component_id, is_remote_repo, checkout_branch, \

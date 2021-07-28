@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from typing import Optional, Set
 
-from electrumsv_sdk.types import AbstractPlugin
+from electrumsv_sdk.sdk_types import AbstractPlugin
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process

@@ -8,7 +8,7 @@ from typing import List, Optional
 from .constants import NameSpace
 from .config import Config
 from .components import ComponentStore, ComponentTypedDict
-from .types import SelectedComponent
+from .sdk_types import SelectedComponent
 from .utils import cast_str_int_args_to_int, call_any_node_rpc
 
 logger = logging.getLogger("runners")

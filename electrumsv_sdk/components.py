@@ -37,7 +37,7 @@ from typing import Optional, Union, Dict, cast
 from filelock import FileLock
 
 from .config import Config
-from .types import AbstractPlugin, AbstractModuleType
+from .sdk_types import AbstractPlugin, AbstractModuleType
 from .constants import SDK_HOME_DIR, LOCAL_PLUGINS_DIR, USER_PLUGINS_DIR, BUILTIN_COMPONENTS_DIR, \
     LOCAL_PLUGINS_DIRNAME, ComponentState, BUILTIN_PLUGINS_DIRNAME, USER_PLUGINS_DIRNAME
 

@@ -3,7 +3,7 @@ from typing import List, Optional, Dict, Any
 
 import attr
 
-from electrumsv_sdk.types import SelectedComponent
+from electrumsv_sdk.sdk_types import SelectedComponent
 
 
 class ParsedArgs(Namespace):

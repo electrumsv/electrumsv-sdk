@@ -18,7 +18,7 @@ import tailer
 from electrumsv_node import electrumsv_node
 from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
 from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE, DATADIR
-from .types import SubprocessCallResult
+from .sdk_types import SubprocessCallResult
 
 if TYPE_CHECKING:
     from .config import Config
@@ -248,6 +248,7 @@ def spawn_inline(command: str, env_vars: Dict[str, str], id: str, component_name
         src: Optional[Path]=None, logfile: Optional[Path]=None, status_endpoint: Optional[str]=None,
         metadata: Optional[ComponentMetadata]=None) -> None:
     """only for running servers with logging requirements - not for simple commands"""
+
     def update_state(process: SubprocessCallResult,
             component_state: Optional[str]) -> None:
         update_status_monitor(pid=process.pid, component_state=component_state, id=id,

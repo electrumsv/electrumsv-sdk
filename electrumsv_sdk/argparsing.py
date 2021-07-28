@@ -14,7 +14,7 @@ from typing import Dict, List, Tuple, cast, Optional
 
 from .constants import NameSpace
 from .config import Config, ParsedArgs
-from .types import SubcommandIndicesType, ParserMap, RawArgsMap, SubcommandParsedArgsMap, \
+from .sdk_types import SubcommandIndicesType, ParserMap, RawArgsMap, SubcommandParsedArgsMap, \
     SelectedComponent
 from .validate_cli_args import ValidateCliArgs
 from .components import ComponentStore
