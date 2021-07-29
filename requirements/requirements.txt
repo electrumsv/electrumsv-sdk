@@ -14,3 +14,4 @@ colorama
 python-dotenv
 asyncpg
 pylru
+pytest
