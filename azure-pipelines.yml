@@ -56,6 +56,11 @@ jobs:
         python3 -m pip install pytest pytest-cov
       displayName: 'install electrumsv-sdk'
 
+    - script: |
+        set -e
+        electrumsv-sdk config --sdk-home-dir=$(Agent.HomeDirectory)/my_portable_sdk_datadir
+      displayName: 'configure for portable sdk-home-dir'
+
     - bash: |
         cd $(Build.Repository.LocalPath)/contrib/azure
         python3 -m pip install asyncpg
@@ -192,6 +197,11 @@ jobs:
 
     - script: |
         set -e
+        electrumsv-sdk config --sdk-home-dir=$(Agent.HomeDirectory)/my_portable_sdk_datadir
+      displayName: 'configure for portable sdk-home-dir'
+
+    - script: |
+        set -e
         brew install node
       displayName: 'prepare node.js'
 
@@ -277,6 +287,11 @@ jobs:
         py -3.9 -m pip install -e .
         py -3.9 -m pip install pytest pytest-cov
       displayName: 'install electrumsv-sdk'
+
+    - script: |
+        set -e
+        electrumsv-sdk config --sdk-home-dir=$(Agent.HomeDirectory)/my_portable_sdk_datadir
+      displayName: 'configure for portable sdk-home-dir'
 
     - script: |
         cd $(Build.Repository.LocalPath)/contrib/azure
