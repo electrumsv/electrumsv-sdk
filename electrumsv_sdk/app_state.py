@@ -13,6 +13,7 @@ from .argparsing import ArgParser
 from .constants import SDK_HOME_DIR, REMOTE_REPOS_DIR, DATADIR, LOGS_DIR, \
     USER_PLUGINS_DIR, CONFIG_PATH
 from .controller import Controller
+from .utils import read_config_json, write_to_config_json
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -76,3 +77,13 @@ class AppState:
                 f.write(json.dumps(config, indent=4))
 
             electrumsv_node.reset()
+
+    def maybe_update_sdk_home_dir(self) -> None:
+        SDK_HOME_DIR = self.config.sdk_home_dir
+        if SDK_HOME_DIR:
+            config = read_config_json()
+            config['sdk_home_dir'] = SDK_HOME_DIR
+            write_to_config_json(config)
+
+            print(f"new config json:")
+            print(json.dumps(read_config_json(), indent=4))

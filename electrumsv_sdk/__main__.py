@@ -26,6 +26,8 @@ def main() -> None:
     """
     app_state = AppState(sys.argv)
     app_state.handle_first_ever_run()
+    if app_state.config.sdk_home_dir:
+        app_state.maybe_update_sdk_home_dir()
 
     # Call relevant entrypoint
     if app_state.config.namespace == NameSpace.INSTALL:

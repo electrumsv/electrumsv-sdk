@@ -61,7 +61,7 @@ class ArgParser:
     def parse_first_arg(self, arg: str, cur_cmd_name: str,
             subcommand_indices: SubcommandIndicesType) -> Tuple[str, Dict[str, List[int]]]:
         if arg in {NameSpace.INSTALL, NameSpace.START, NameSpace.STOP, NameSpace.RESET,
-                NameSpace.NODE, NameSpace.STATUS}:
+                NameSpace.NODE, NameSpace.STATUS, NameSpace.CONFIG}:
             cur_cmd_name = arg
             self.namespace = arg
             subcommand_indices[arg] = []
@@ -71,7 +71,7 @@ class ArgParser:
             subcommand_indices[NameSpace.TOP_LEVEL].append(0)
         else:
             logger.error("First argument must be one of: "
-                "[start, stop, reset, node, status, --help, --version]")
+                "[start, stop, reset, node, status, config, --help, --version]")
             sys.exit(1)
 
         return cur_cmd_name, subcommand_indices
@@ -183,6 +183,12 @@ class ArgParser:
                     component_selected = True
                     continue
 
+            elif self.namespace == NameSpace.CONFIG:
+                # <status options>
+                if arg.startswith("--") and not component_selected:
+                    subcommand_indices[cur_cmd_name].append(index)
+                    continue
+
             # print(f"subcommand_indices={subcommand_indices}, index={index}, arg={arg}")
 
         if self.namespace in {NameSpace.START, NameSpace.INSTALL, NameSpace.RESET, NameSpace.STOP}:
@@ -255,6 +261,11 @@ class ArgParser:
                 namespace=self.namespace,
                 selected_component=self.selected_component,
                 component_id=parsed_args.id,
+            )
+        elif self.namespace == NameSpace.CONFIG:
+            self.config = Config(
+                namespace=self.namespace,
+                sdk_home_dir=parsed_args.sdk_home_dir,
             )
         elif self.namespace == NameSpace.TOP_LEVEL:
             self.config = Config(
@@ -391,14 +402,15 @@ class ArgParser:
         )
         status_parser.add_argument("--id", type=str, default="", help="human-readable identifier "
             "for component (e.g. 'electrumsv1')")
-
-        # add <component_types> from plugins
-        subparsers = status_parser.add_subparsers(help="subcommand", required=False)
-        reset_namespace_subcommands = []
-        for component_type in self.component_store.component_map:
-            component_parser = subparsers.add_parser(component_type, help=f"reset {component_type}")
-            reset_namespace_subcommands.append(component_parser)
         return status_parser
+
+    def add_config_argparser(self, namespaces: _SubParsersAction) -> ArgumentParser:
+        config_parser = namespaces.add_parser(
+            "config", help="alter the configuration for the SDK"
+        )
+        config_parser.add_argument("--sdk-home-dir", type=str, default="", help="The location to "
+            "store the component data")
+        return config_parser
 
     def add_global_flags(self, top_level_parser: ArgumentParser) -> None:
         top_level_parser.add_argument(
@@ -417,6 +429,7 @@ class ArgParser:
         reset_parser, reset_namespace_subcommands = self.add_reset_argparser(namespaces)
         node_parser = self.add_node_argparser(namespaces)
         status_parser = self.add_status_argparser(namespaces)
+        config_parser = self.add_config_argparser(namespaces)
 
         # register top-level ArgumentParsers
         self.parser_map[NameSpace.TOP_LEVEL] = top_level_parser
@@ -426,6 +439,7 @@ class ArgParser:
         self.parser_map[NameSpace.RESET] = reset_parser
         self.parser_map[NameSpace.NODE] = node_parser
         self.parser_map[NameSpace.STATUS] = status_parser
+        self.parser_map[NameSpace.CONFIG] = config_parser
 
         # prepare raw_args
         for namespace in self.parser_map.keys():
