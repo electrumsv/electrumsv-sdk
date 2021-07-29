@@ -20,6 +20,7 @@ class ParsedArgs(Namespace):
     new_terminal_flag: bool = False
     component_id: str = ""
     cli_extension_args: Dict[str, Any] = {}
+    sdk_home_dir: str = ""
 
 
 @attr.s(auto_attribs=True, frozen=False)
@@ -42,3 +43,4 @@ class Config(object):
     new_terminal_flag: bool = False
     component_id: str = ""
     cli_extension_args: Dict[str, Any] = {}
+    sdk_home_dir: str = ""

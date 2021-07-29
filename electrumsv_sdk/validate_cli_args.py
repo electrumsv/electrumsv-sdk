@@ -3,10 +3,11 @@ logging information"""
 
 import logging
 import platform
+import json
 
 from .constants import NameSpace
 from .config import Config, ParsedArgs
-from .utils import read_sdk_version
+from .utils import read_sdk_version, read_config_json
 
 logger = logging.getLogger("validate-cli-args")
 
@@ -76,4 +77,7 @@ class ValidateCliArgs:
             logger.debug(f"repo flag={parsed_args.repo}")
 
     def handle_status_args(self, _parsed_args: ParsedArgs) -> None:
+        return
+
+    def handle_config_args(self, _parsed_args: ParsedArgs) -> None:
         return

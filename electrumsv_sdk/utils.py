@@ -17,7 +17,8 @@ import psutil
 import tailer
 from electrumsv_node import electrumsv_node
 from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
-from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE, DATADIR
+from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE, DATADIR, \
+    CONFIG_PATH
 from .sdk_types import SubprocessCallResult
 
 if TYPE_CHECKING:
@@ -392,6 +393,7 @@ def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, componen
         key = bitcoinx.PrivateKey(secret)
         encrypted_message = key.public_key.encrypt_message_to_base64(env_vars_json)
         temp_outfile = DATADIR / component_name / "encrypted.env"
+        os.makedirs(DATADIR / component_name, exist_ok=True)
         with open(temp_outfile, 'w') as f:
             f.write(encrypted_message)
         return secret
@@ -532,3 +534,22 @@ def set_deterministic_electrumsv_seed(component_type: str, component_id: Optiona
     os.environ['ELECTRUMSV_ACCOUNT_XPRV'] = "tprv8ZgxMBicQKsPd4wsdaJ11eH84eq4hHLX1K6Mx" \
                                             "8EQQhJzq8jr25WH1m8hgGkCqnksJDCZPZbDoMbQ6Q" \
                                             "troyCyn5ZckCmsLeiHDb1MAxhNUHN"
+
+
+def read_config_json() -> Dict:
+    if CONFIG_PATH.exists():
+        with open(CONFIG_PATH, "r") as f:
+            data = f.read()
+            if data.strip():
+                config = json.loads(data)
+            else:
+                config = {}
+
+        return config
+    else:
+        return {}
+
+
+def write_to_config_json(config: Dict) -> None:
+    with open(CONFIG_PATH, 'w') as f:
+        f.write(json.dumps(config))
