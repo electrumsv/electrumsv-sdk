@@ -63,6 +63,8 @@ class Plugin(AbstractPlugin):
 
     def install(self) -> None:
         """required state: source_dir  - which are derivable from 'repo' and 'branch' flags"""
+        self.plugin_tools.modify_pythonpath_for_portability(self.src)
+
         repo = self.config.repo
         if self.config.repo == "":
             repo = self.DEFAULT_REMOTE_REPO
@@ -80,6 +82,7 @@ class Plugin(AbstractPlugin):
                               f"{self.COMPONENT_NAME}' to install the plugin first")
             sys.exit(1)
 
+        self.plugin_tools.modify_pythonpath_for_portability(self.src)
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.port = self.plugin_tools.allocate_port()
         self.tools.process_cli_args()  # cli args may override network in env vars

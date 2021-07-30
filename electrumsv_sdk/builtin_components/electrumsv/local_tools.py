@@ -6,10 +6,10 @@ import time
 from pathlib import Path
 import typing
 from typing import Optional, Dict
-
 import stringcase
 
-from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command
+from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command, \
+    append_to_pythonpath
 from electrumsv_sdk.constants import REMOTE_REPOS_DIR, NETWORKS
 
 COMPONENT_NAME = get_directory_name(__file__)
@@ -261,7 +261,7 @@ class LocalTools:
         # daemon script
         elif not self.config.gui_flag:
             path_to_example_dapps = self.plugin.src.joinpath("examples/applications")
-            env_vars.update({"PYTHONPATH": f"{path_to_example_dapps}"})
+            append_to_pythonpath([path_to_example_dapps])
 
             command = (
                 f"{sys.executable} {esv_launcher} --portable --dir {self.plugin.datadir} "

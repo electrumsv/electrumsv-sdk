@@ -84,6 +84,3 @@ class AppState:
             config = read_config_json()
             config['sdk_home_dir'] = SDK_HOME_DIR
             write_to_config_json(config)
-
-            print(f"new config json:")
-            print(json.dumps(read_config_json(), indent=4))

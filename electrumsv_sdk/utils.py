@@ -553,3 +553,17 @@ def read_config_json() -> Dict:
 def write_to_config_json(config: Dict) -> None:
     with open(CONFIG_PATH, 'w') as f:
         f.write(json.dumps(config))
+
+
+def append_to_pythonpath(paths: List[Path]) -> None:
+    existing_pythonpath = os.environ.get('PYTHONPATH', "")
+    new_pythonpath = ";".join([existing_pythonpath] + [str(path) for path in paths])
+    new_pythonpath.lstrip(";")
+    os.environ.update({"PYTHONPATH": new_pythonpath})
+
+
+def prepend_to_pythonpath(paths: List[Path]) -> None:
+    existing_pythonpath = os.environ.get('PYTHONPATH', "")
+    new_pythonpath = ";".join([str(path) for path in paths] + [existing_pythonpath])
+    new_pythonpath.lstrip(";")
+    os.environ.update({"PYTHONPATH": new_pythonpath})

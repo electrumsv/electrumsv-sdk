@@ -75,6 +75,8 @@ class Plugin(AbstractPlugin):
 
     def install(self) -> None:
         """required state: source_dir  - which are derivable from 'repo' and 'branch' flags"""
+        self.plugin_tools.modify_pythonpath_for_portability(self.src)
+
         repo = self.config.repo
         if self.config.repo == "":
             repo = self.DEFAULT_REMOTE_REPO
@@ -86,6 +88,8 @@ class Plugin(AbstractPlugin):
 
     def start(self) -> None:
         """plugin datadir, id, port are allocated dynamically"""
+        self.plugin_tools.modify_pythonpath_for_portability(self.src)
+
         self.logger.debug(f"Starting RegTest electrumsv daemon...")
         assert self.src is not None
         if not self.src.exists():
@@ -150,6 +154,7 @@ class Plugin(AbstractPlugin):
         reset_electrumsv will be called many times for different component ids if applicable.
         - the reset entrypoint is only relevant for RegTest
         """
+        self.plugin_tools.modify_pythonpath_for_portability(self.src)
         self.tools.reinstall_conflicting_dependencies()
 
         def reset_electrumsv(component_dict: ComponentTypedDict) -> None:

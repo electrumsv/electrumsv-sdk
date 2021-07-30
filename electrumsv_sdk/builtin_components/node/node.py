@@ -64,10 +64,14 @@ class Plugin(AbstractPlugin):
     def install(self) -> None:
         """The node component has a pip installer at https://pypi.org/project/electrumsv-node/ and
         only official releases from pypi are supported"""
+        self.plugin_tools.modify_pythonpath_for_portability(self.src)
+
         self.tools.fetch_node()
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self) -> None:
+        self.plugin_tools.modify_pythonpath_for_portability(self.src)
+
         # env vars take precedence for port and dbdir
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.tools.process_cli_args()  # cli args may override network in env vars
