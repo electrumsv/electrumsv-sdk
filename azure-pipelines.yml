@@ -37,6 +37,10 @@ jobs:
   services:
     postgres: pg12
 
+  variables:
+    MODIFIED_SDK_HOME_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir
+    NEW_LOG_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
+
   steps:
     - task: UsePythonVersion@0
       inputs:
@@ -58,7 +62,7 @@ jobs:
 
     - script: |
         set -e
-        electrumsv-sdk config --sdk-home-dir=$(Agent.HomeDirectory)/my_portable_sdk_datadir
+        electrumsv-sdk config --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
       displayName: 'configure for portable sdk-home-dir'
 
     - bash: |
@@ -147,7 +151,7 @@ jobs:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        pathToPublish: '/home/vsts/.electrumsv-sdk/logs/'
+        pathToPublish: $(NEW_LOG_DIR)
         artifactName: 'LinuxLogs'
       displayName: 'Publish logs'
 
@@ -156,6 +160,10 @@ jobs:
 
   pool:
     vmImage: 'macOS-latest'
+
+  variables:
+    MODIFIED_SDK_HOME_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir
+    NEW_LOG_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
 
   steps:
     # https://stackoverflow.com/questions/27700596/homebrew-postgres-broken
@@ -197,7 +205,7 @@ jobs:
 
     - script: |
         set -e
-        electrumsv-sdk config --sdk-home-dir=$(Agent.HomeDirectory)/my_portable_sdk_datadir
+        electrumsv-sdk config --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
       displayName: 'configure for portable sdk-home-dir'
 
     - script: |
@@ -259,7 +267,7 @@ jobs:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        pathToPublish: '/Users/runner/.electrumsv-sdk/logs/'
+        pathToPublish: $(NEW_LOG_DIR)
         artifactName: 'MacOSXLogs'
       displayName: 'Publish logs'
 
@@ -270,6 +278,10 @@ jobs:
 
   services:
     postgres: pg12-win32
+
+  variables:
+    MODIFIED_SDK_HOME_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir
+    NEW_LOG_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
 
   steps:
     - task: UsePythonVersion@0
@@ -290,7 +302,7 @@ jobs:
 
     - script: |
         set -e
-        electrumsv-sdk config --sdk-home-dir=$(Agent.HomeDirectory)/my_portable_sdk_datadir
+        electrumsv-sdk config --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
       displayName: 'configure for portable sdk-home-dir'
 
     - script: |
@@ -348,7 +360,7 @@ jobs:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        pathToPublish: 'C:\Users\VssAdministrator\AppData\Local\ElectrumSV-SDK\logs'
+        pathToPublish: $(NEW_LOG_DIR)
         artifactName: 'WindowsLogs'
       displayName: 'Publish logs'
 
