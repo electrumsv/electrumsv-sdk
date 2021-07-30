@@ -3,10 +3,10 @@ import sys
 import json
 
 from electrumsv_sdk.app_state import AppState  # pylint: disable=E0401
-from electrumsv_sdk.constants import NameSpace, read_config_json
+from electrumsv_sdk.constants import NameSpace, read_config_json, LOG_LEVEL
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s',
-    level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
+    level=LOG_LEVEL, datefmt='%Y-%m-%d %H:%M:%S')
 
 logger = logging.getLogger("main")
 logger_requests = logging.getLogger("urllib3")

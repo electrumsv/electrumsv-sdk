@@ -40,6 +40,7 @@ jobs:
   variables:
     MODIFIED_SDK_HOME_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir
     NEW_LOG_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
+    SDK_LOG_LEVEL: "INFO"
 
   steps:
     - task: UsePythonVersion@0
@@ -116,6 +117,7 @@ jobs:
         electrumsv-sdk start --background whatsonchain
         electrumsv-sdk start --background merchant_api
         electrumsv-sdk status
+        python3 ./contrib/check_all_started.py
       displayName: 'start all components'
       continueOnError: true
 
@@ -128,6 +130,7 @@ jobs:
         electrumsv-sdk stop status_monitor
         electrumsv-sdk stop merchant_api
         electrumsv-sdk status
+        python3 ./contrib/check_all_stopped.py
       displayName: 'stop all components'
       continueOnError: true
 
@@ -155,6 +158,7 @@ jobs:
         artifactName: 'LinuxLogs'
       displayName: 'Publish logs'
 
+
 - job: TestMacOS
   timeoutInMinutes: 15
 
@@ -164,6 +168,7 @@ jobs:
   variables:
     MODIFIED_SDK_HOME_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir
     NEW_LOG_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
+    SDK_LOG_LEVEL: "INFO"
 
   steps:
     # https://stackoverflow.com/questions/27700596/homebrew-postgres-broken
@@ -232,6 +237,7 @@ jobs:
         electrumsv-sdk start --background whatsonchain
         electrumsv-sdk start --background merchant_api
         electrumsv-sdk status
+        python3 ./contrib/check_all_started.py
       displayName: 'start all components'
       continueOnError: true
 
@@ -244,6 +250,7 @@ jobs:
         electrumsv-sdk stop status_monitor
         electrumsv-sdk stop merchant_api
         electrumsv-sdk status
+        python3 ./contrib/check_all_stopped.py
       displayName: 'stop all components'
       continueOnError: true
 
@@ -282,6 +289,7 @@ jobs:
   variables:
     MODIFIED_SDK_HOME_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir
     NEW_LOG_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
+    SDK_LOG_LEVEL: "INFO"
 
   steps:
     - task: UsePythonVersion@0
@@ -328,6 +336,7 @@ jobs:
         electrumsv-sdk start --background whatsonchain
         electrumsv-sdk start --background merchant_api
         electrumsv-sdk status
+        python3 ./contrib/check_all_started.py
       displayName: 'start all components'
       continueOnError: true
 
@@ -339,6 +348,7 @@ jobs:
         electrumsv-sdk stop status_monitor
         electrumsv-sdk stop merchant_api
         electrumsv-sdk status
+        python3 ./contrib/check_all_stopped.py
       displayName: 'stop all components'
       continueOnError: true
 

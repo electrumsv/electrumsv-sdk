@@ -17,8 +17,8 @@ import psutil
 import tailer
 from electrumsv_node import electrumsv_node
 from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
-from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE, DATADIR, \
-    CONFIG_PATH
+from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE, \
+    DATADIR, CONFIG_PATH
 from .sdk_types import SubprocessCallResult
 
 if TYPE_CHECKING:
@@ -557,13 +557,13 @@ def write_to_config_json(config: Dict) -> None:
 
 def append_to_pythonpath(paths: List[Path]) -> None:
     existing_pythonpath = os.environ.get('PYTHONPATH', "")
-    new_pythonpath = ";".join([existing_pythonpath] + [str(path) for path in paths])
-    new_pythonpath.lstrip(";")
+    new_pythonpath = os.pathsep.join([existing_pythonpath] + [str(path) for path in paths])
+    new_pythonpath.lstrip(os.pathsep)
     os.environ.update({"PYTHONPATH": new_pythonpath})
 
 
 def prepend_to_pythonpath(paths: List[Path]) -> None:
     existing_pythonpath = os.environ.get('PYTHONPATH', "")
-    new_pythonpath = ";".join([str(path) for path in paths] + [existing_pythonpath])
-    new_pythonpath.lstrip(";")
+    new_pythonpath = os.pathsep.join([str(path) for path in paths] + [existing_pythonpath])
+    new_pythonpath.lstrip(os.pathsep)
     os.environ.update({"PYTHONPATH": new_pythonpath})
