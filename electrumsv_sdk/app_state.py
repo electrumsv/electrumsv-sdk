@@ -10,8 +10,8 @@ from typing import List, Callable, Any
 from electrumsv_node import electrumsv_node
 
 from .argparsing import ArgParser
-from .constants import SDK_HOME_DIR, REMOTE_REPOS_DIR, DATADIR, LOGS_DIR, \
-    USER_PLUGINS_DIR, CONFIG_PATH
+from .constants import SDK_HOME_DIR, REMOTE_REPOS_DIR, DATADIR, LOGS_DIR, USER_PLUGINS_DIR, \
+    CONFIG_PATH, PYTHON_LIB_DIR
 from .controller import Controller
 from .utils import read_config_json, write_to_config_json
 
@@ -29,6 +29,7 @@ class AppState:
 
     def __init__(self, arguments: List[str]):
         os.makedirs(REMOTE_REPOS_DIR, exist_ok=True)
+        os.makedirs(PYTHON_LIB_DIR, exist_ok=True)
         os.makedirs(DATADIR, exist_ok=True)
         os.makedirs(LOGS_DIR, exist_ok=True)
         os.makedirs(USER_PLUGINS_DIR, exist_ok=True)

@@ -97,8 +97,6 @@ class Plugin(AbstractPlugin):
                               f"{self.COMPONENT_NAME}' to install the plugin first")
             sys.exit(1)
 
-        self.tools.reinstall_conflicting_dependencies()
-
         self.tools.process_cli_args()
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.port = self.plugin_tools.allocate_port()
@@ -155,7 +153,6 @@ class Plugin(AbstractPlugin):
         - the reset entrypoint is only relevant for RegTest
         """
         self.plugin_tools.modify_pythonpath_for_portability(self.src)
-        self.tools.reinstall_conflicting_dependencies()
 
         def reset_electrumsv(component_dict: ComponentTypedDict) -> None:
             self.logger.debug("Resetting state of RegTest electrumsv server...")

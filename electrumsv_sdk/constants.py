@@ -50,6 +50,7 @@ SDK_HOME_DIR: Path = get_dynamic_datadir()
 REMOTE_REPOS_DIR: Path = SDK_HOME_DIR.joinpath("remote_repos")
 DATADIR: Path = SDK_HOME_DIR.joinpath("component_datadirs")
 LOGS_DIR: Path = SDK_HOME_DIR.joinpath("logs")
+PYTHON_LIB_DIR: Path = SDK_HOME_DIR.joinpath("python_libs")
 
 # Three plugin locations
 BUILTIN_PLUGINS_DIRNAME = 'builtin_components'

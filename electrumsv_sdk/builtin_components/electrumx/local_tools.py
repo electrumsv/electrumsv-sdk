@@ -10,7 +10,7 @@ import sys
 import typing
 from typing import Any, Callable, Dict
 from aiorpcx import timeout_after
-from electrumsv_sdk.constants import REMOTE_REPOS_DIR
+from electrumsv_sdk.constants import REMOTE_REPOS_DIR, PYTHON_LIB_DIR
 from electrumsv_sdk.utils import checkout_branch
 
 
@@ -78,23 +78,9 @@ class LocalTools:
     def packages_electrumx(self, url: str, branch: str) -> None:
         """plyvel wheels are not available on windows so it is swapped out for plyvel-win32 to
         make it work"""
-        assert self.plugin.src is not None  # typing bug
-        os.chdir(self.plugin.src)
 
-        checkout_branch(branch)
-        requirements_path = self.plugin.src.joinpath('requirements.txt')
-
-        if sys.platform in ['linux', 'darwin']:
-            if sys.platform == 'darwin':
-                # so that plyvel dependency can build wheel
-                process = subprocess.Popen(["brew", "install", "leveldb"])
-                process.wait()
-            process = subprocess.Popen(
-                f"{sys.executable} -m pip install -r {requirements_path}", shell=True)
-            process.wait()
-
-        elif sys.platform == 'win32':
-            temp_requirements = self.plugin.src.joinpath('requirements-temp.txt')
+        def modify_requirements_for_windows(temp_requirements):
+            """replaces plyvel with plyvel-win32"""
             packages = []
             with open(requirements_path, 'r') as f:
                 for line in f.readlines():
@@ -104,8 +90,30 @@ class LocalTools:
             packages.append('plyvel-win32')
             with open(temp_requirements, 'w') as f:
                 f.writelines(packages)
+
+        assert self.plugin.src is not None  # typing bug
+        os.chdir(self.plugin.src)
+
+        checkout_branch(branch)
+        requirements_path = self.plugin.src.joinpath('requirements.txt')
+        electrumx_libs_path = PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
+
+        if sys.platform in ['linux', 'darwin']:
+            if sys.platform == 'darwin':
+                # so that plyvel dependency can build wheel
+                process = subprocess.Popen(["brew", "install", "leveldb"])
+                process.wait()
             process = subprocess.Popen(
-                f"{sys.executable} -m pip install --user -r {temp_requirements}", shell=True)
+                f"{sys.executable} -m pip install --target {electrumx_libs_path} "
+                f"-r {requirements_path} --upgrade", shell=True)
+            process.wait()
+
+        elif sys.platform == 'win32':
+            temp_requirements = self.plugin.src.joinpath('requirements-temp.txt')
+            modify_requirements_for_windows(temp_requirements)
+            process = subprocess.Popen(
+                f"{sys.executable} -m pip install --target {electrumx_libs_path} "
+                f"-r {temp_requirements} --upgrade", shell=True)
             process.wait()
             os.remove(temp_requirements)
 
