@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import json
@@ -5,6 +6,18 @@ from pathlib import Path
 from typing import Optional, Dict
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+sdk_log_level = os.environ.get("SDK_LOG_LEVEL", 'INFO')
+if sdk_log_level.upper() == 'DEBUG':
+    LOG_LEVEL = logging.DEBUG
+if sdk_log_level.upper() == 'INFO':
+    LOG_LEVEL = logging.INFO
+if sdk_log_level.upper() == 'WARNING':
+    LOG_LEVEL = logging.WARNING
+if sdk_log_level.upper() == 'ERROR':
+    LOG_LEVEL = logging.ERROR
+if sdk_log_level.upper() == 'CRITICAL':
+    LOG_LEVEL = logging.CRITICAL
 
 
 # copied from utils to avoid circular import
@@ -50,6 +63,7 @@ SDK_HOME_DIR: Path = get_dynamic_datadir()
 REMOTE_REPOS_DIR: Path = SDK_HOME_DIR.joinpath("remote_repos")
 DATADIR: Path = SDK_HOME_DIR.joinpath("component_datadirs")
 LOGS_DIR: Path = SDK_HOME_DIR.joinpath("logs")
+PYTHON_LIB_DIR: Path = SDK_HOME_DIR.joinpath("python_libs")
 
 # Three plugin locations
 BUILTIN_PLUGINS_DIRNAME = 'builtin_components'

@@ -6,11 +6,11 @@ import time
 from pathlib import Path
 import typing
 from typing import Optional, Dict
-
 import stringcase
 
-from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command
-from electrumsv_sdk.constants import REMOTE_REPOS_DIR, NETWORKS
+from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command, \
+    append_to_pythonpath
+from electrumsv_sdk.constants import REMOTE_REPOS_DIR, NETWORKS, PYTHON_LIB_DIR
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -30,19 +30,6 @@ class LocalTools:
 
     def process_cli_args(self) -> None:
         self.plugin_tools.set_network()
-
-    def reinstall_conflicting_dependencies(self) -> None:
-        cmd1 = f"{sys.executable} -m pip freeze"
-        output = subprocess.check_output(cmd1, shell=True)
-        for line in output.decode('utf-8').splitlines():
-            if 'chardet' in line:
-                if int(line.split("==")[1][0]) >= 4:
-                    cmd1 = f"{sys.executable} -m pip uninstall -y chardet"
-                    process1 = subprocess.Popen(cmd1, shell=True)
-                    process1.wait()
-                    cmd2 = f"{sys.executable} -m pip install 'chardet<4.0'"
-                    process2 = subprocess.Popen(cmd2, shell=True)
-                    process2.wait()
 
     def is_offline_cli_mode(self) -> bool:
         if len(self.config.component_args) != 0:
@@ -111,17 +98,11 @@ class LocalTools:
                 "contrib/deterministic-build/requirements-binaries.txt")
         )
 
-        if sys.platform == 'win32':
-            cmd1 = f"{sys.executable} -m pip install --user --upgrade -r " \
-                   f"{electrumsv_requirements_path}"
-            cmd2 = f"{sys.executable} -m pip install --user --upgrade -r " \
-                   f"{electrumsv_binary_requirements_path}"
-        elif sys.platform in ['linux', 'darwin']:
-            cmd1 = f"{sys.executable} -m pip install --upgrade -r " \
-                   f"{electrumsv_requirements_path}"
-            cmd2 = f"{sys.executable} -m pip install --upgrade -r " \
-                   f"{electrumsv_binary_requirements_path}"
-
+        electrumsv_libs_path = PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
+        cmd1 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
+               f"-r {electrumsv_requirements_path}"
+        cmd2 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
+               f"-r {electrumsv_binary_requirements_path}"
         process1 = subprocess.Popen(cmd1, shell=True)
         process1.wait()
         process2 = subprocess.Popen(cmd2, shell=True)
@@ -261,7 +242,7 @@ class LocalTools:
         # daemon script
         elif not self.config.gui_flag:
             path_to_example_dapps = self.plugin.src.joinpath("examples/applications")
-            env_vars.update({"PYTHONPATH": f"{path_to_example_dapps}"})
+            append_to_pythonpath([path_to_example_dapps])
 
             command = (
                 f"{sys.executable} {esv_launcher} --portable --dir {self.plugin.datadir} "

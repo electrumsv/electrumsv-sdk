@@ -70,7 +70,7 @@ async def create_user_if_not_exists(pg_conn: asyncpg.Connection) -> None:
         """SELECT * FROM pg_catalog.pg_roles WHERE rolname = 'mapi_crud';""")
     if not result:
         logger.debug("creating user: 'mapi_crud'")
-        await pg_conn.execute("""           
+        await pg_conn.execute("""
                 CREATE ROLE "mapi_crud" LOGIN
                     PASSWORD 'merchant'
                     NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;

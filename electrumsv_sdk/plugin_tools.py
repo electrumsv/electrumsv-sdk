@@ -8,10 +8,10 @@ from typing import Dict, Callable, Tuple, Set, List, Any, Optional
 import requests
 
 from .sdk_types import AbstractPlugin, SelectedComponent
-from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR, NETWORKS_LIST
+from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR, NETWORKS_LIST, PYTHON_LIB_DIR
 from .components import ComponentStore, ComponentTypedDict, ComponentMetadata
 from .utils import port_is_in_use, is_default_component_id, is_remote_repo, checkout_branch, \
-    spawn_inline, spawn_new_terminal, spawn_background_supervised
+    spawn_inline, spawn_new_terminal, spawn_background_supervised, prepend_to_pythonpath
 from .config import Config
 
 
@@ -253,3 +253,15 @@ class PluginTools:
             for network in NETWORKS_LIST:
                 if self.config.cli_extension_args[network]:
                     self.plugin.network = network
+
+    def modify_pythonpath_for_portability(self, component_source_dir: Optional[Path]) -> None:
+        """This is only necessary as a workaround to get the SDK working with a portable / bundled
+        version of python"""
+        additions = []
+        if component_source_dir:
+            additions = [Path(component_source_dir)]
+        additions += [
+            PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME,
+            REMOTE_REPOS_DIR,
+        ]
+        prepend_to_pythonpath(additions)

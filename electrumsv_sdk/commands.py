@@ -1,6 +1,6 @@
 """This defines a set of exposed public methods for using the SDK as a library"""
 import logging
-from typing import Dict, Optional, Tuple, Any, List
+from typing import Dict, Optional, Tuple, Any
 
 from .components import ComponentStore, ComponentTypedDict
 from .app_state import AppState

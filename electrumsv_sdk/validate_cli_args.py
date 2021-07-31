@@ -3,11 +3,10 @@ logging information"""
 
 import logging
 import platform
-import json
 
 from .constants import NameSpace
 from .config import Config, ParsedArgs
-from .utils import read_sdk_version, read_config_json
+from .utils import read_sdk_version
 
 logger = logging.getLogger("validate-cli-args")
 
