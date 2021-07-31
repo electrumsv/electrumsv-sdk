@@ -386,6 +386,8 @@ def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, componen
         str, src: Optional[Path]=None, logfile: Optional[Path]=None,
         status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
 
+    env_vars.update(os.environ)
+
     def write_env_vars_to_temp_file():
         """encrypted for security in case it is not cleaned up as expected"""
         env_vars_json = json.dumps(dict(env_vars))
@@ -558,12 +560,12 @@ def write_to_config_json(config: Dict) -> None:
 def append_to_pythonpath(paths: List[Path]) -> None:
     existing_pythonpath = os.environ.get('PYTHONPATH', "")
     new_pythonpath = os.pathsep.join([existing_pythonpath] + [str(path) for path in paths])
-    new_pythonpath.lstrip(os.pathsep)
+    new_pythonpath.strip(os.pathsep)
     os.environ.update({"PYTHONPATH": new_pythonpath})
 
 
 def prepend_to_pythonpath(paths: List[Path]) -> None:
     existing_pythonpath = os.environ.get('PYTHONPATH', "")
     new_pythonpath = os.pathsep.join([str(path) for path in paths] + [existing_pythonpath])
-    new_pythonpath.lstrip(os.pathsep)
+    new_pythonpath.strip(os.pathsep)
     os.environ.update({"PYTHONPATH": new_pythonpath})
