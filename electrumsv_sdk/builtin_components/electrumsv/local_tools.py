@@ -99,20 +99,10 @@ class LocalTools:
         )
 
         electrumsv_libs_path = PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
-        if sys.platform == 'win32':
-            cmd1 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
-                   f"-r {electrumsv_requirements_path}"
-            cmd2 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
-                   f"-r {electrumsv_binary_requirements_path}"
-        elif sys.platform in ['linux', 'darwin']:
-            cmd1 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
-                   f"-r {electrumsv_requirements_path}"
-            cmd2 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
-                   f"-r {electrumsv_binary_requirements_path}"
-        else:
-            cmd1 = f"echo platform: {sys.platform} unsupported"
-            cmd2 = f"echo ''"
-
+        cmd1 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
+               f"-r {electrumsv_requirements_path}"
+        cmd2 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
+               f"-r {electrumsv_binary_requirements_path}"
         process1 = subprocess.Popen(cmd1, shell=True)
         process1.wait()
         process2 = subprocess.Popen(cmd2, shell=True)

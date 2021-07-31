@@ -79,15 +79,15 @@ class LocalTools:
         """plyvel wheels are not available on windows so it is swapped out for plyvel-win32 to
         make it work"""
 
-        def modify_requirements_for_windows(temp_requirements):
-            """replaces plyvel with plyvel-win32"""
+        def modify_requirements_for_windows_and_mac(temp_requirements):
+            """replaces plyvel with plyvel-wheels"""
             packages = []
             with open(requirements_path, 'r') as f:
                 for line in f.readlines():
                     if line.strip() == 'plyvel':
                         continue
                     packages.append(line)
-            packages.append('plyvel-win32')
+            packages.append('plyvel-wheels')
             with open(temp_requirements, 'w') as f:
                 f.writelines(packages)
 
@@ -98,19 +98,15 @@ class LocalTools:
         requirements_path = self.plugin.src.joinpath('requirements.txt')
         electrumx_libs_path = PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
 
-        if sys.platform in ['linux', 'darwin']:
-            if sys.platform == 'darwin':
-                # so that plyvel dependency can build wheel
-                process = subprocess.Popen(["brew", "install", "leveldb"])
-                process.wait()
+        if sys.platform == 'linux':
             process = subprocess.Popen(
                 f"{sys.executable} -m pip install --target {electrumx_libs_path} "
                 f"-r {requirements_path} --upgrade", shell=True)
             process.wait()
 
-        elif sys.platform == 'win32':
+        elif sys.platform in {'win32', 'darwin'}:
             temp_requirements = self.plugin.src.joinpath('requirements-temp.txt')
-            modify_requirements_for_windows(temp_requirements)
+            modify_requirements_for_windows_and_mac(temp_requirements)
             process = subprocess.Popen(
                 f"{sys.executable} -m pip install --target {electrumx_libs_path} "
                 f"-r {temp_requirements} --upgrade", shell=True)
