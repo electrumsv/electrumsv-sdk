@@ -13,7 +13,6 @@ For Whatsonchain:
 
 For Merchant API:
 
-- **ASP.NET core sdk (3.1+)**
 - **Postgres**  (with a priviledged admin user: ``user=mapimaster`` and ``password=mapimasterpass``)
 
 
@@ -114,56 +113,6 @@ MacOS
     brew install node.js
 
 
-Install ASP.NET core 3.1+ (only for merchant api)
---------------------------------------------------
-
-Windows
-~~~~~~~~~~
-1. Go to: https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.405-windows-x64-installer
-
-Verify installation success::
-
-    > dotnet
-
-    # Should output this:
-    Usage: dotnet [options]
-    Usage: dotnet [path-to-application]
-
-    Options:
-      -h|--help         Display help.
-      --info            Display .NET information.
-      --list-sdks       Display the installed SDKs.
-      --list-runtimes   Display the installed runtimes.
-
-    path-to-application:
-      The path to an application .dll file to execute.
-
-
-
-Linux
-~~~~~~~~~~~~~
-1. I recommend using ``snap`` for a self-contained installation of dotnet-sdk.
-
-::
-
-    sudo snap install dotnet-sdk --channel=3.1/stable --classic
-
-It's possible you may need to manually add dotnet-sdk to your PATH in .bashrc
-
-MacOS
-~~~~~~~~~
-Follow these instructions to get dotnet-sdk 3.1.x https://github.com/isen-ng/homebrew-dotnet-sdk-versions
-
-i.e. ::
-
-    brew tap isen-ng/dotnet-sdk-versions
-    brew install --cask dotnet-sdk3-1-400
-
-check for success::
-
-    dotnet --list-sdks
-
-
 Install Postgres
 --------------------------------------------------
 I suggest a system installation of postgres for Windows and MacOS rather than
@@ -172,6 +121,12 @@ can wreak havoc with network adaptors and lead to wasted hours for the uninitiat
 But docker is always an option if you prefer.
 
 On linux the balance shifts in favour of just using docker in my personal opinion.
+
+Note: It is planned that in a later release we will bundle an embedded postgres
+and automate the initialisation with::
+
+    user=mapimaster
+    password=mapimasterpass
 
 Windows or MacOS
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -215,57 +170,19 @@ Install components (excluding merchant API)
     electrumsv-sdk install electrumx
     electrumsv-sdk install electrumsv
     electrumsv-sdk install whatsonchain
-
+    electrumsv-sdk install merchant_api
 
 .. image :: ../content/install-components.gif
 
 
 Install Merchant API
 ---------------------
-
-1. **SSL certificate**
-
-Unfortunately there is no way around this one. You need to generate a server
-ssl certificate. But a script for each platform has been provided here:
-https://github.com/electrumsv/electrumsv-sdk/releases/download/0.0.32/mAPI_ssl_cert_scripts.zip
-
-Extract and change directory to your platform of choice.
-
-Windows
-~~~~~~~~~~~~~~
+To install the Merchant API (version 1.3.0)
 ::
 
-    ./dev_cert_gen.ps1   # Run from an administrator shell
+    electrumsv-sdk install merchant_api
 
-Linux or MacOS
-~~~~~~~~~~~~~~~~~
-::
-
-    sudo apt-get update
-    sudo apt-get install dos2unix
-    dos2unix dev_cert_gen.sh
-    sudo apt-get install libnss3-tools
-    sudo chmod +x dev_cert_gen.sh
-    sudo ./dev_cert_gen.sh
-
-
-There will now be a ``localhost.pfx`` in the current working directory.
-
-2. **Install Merchant API**
-
-::
-
-    electrumsv-sdk install --ssl=$PWD/localhost.pfx merchant_api
-
-
-.. image:: ../content/install-merchant-api.png
-
-This is a one-time thing and now the ``localhost.pfx`` file is stored in the
-SDK datadir for merchant API.
-
-3. **Add Your Node to the Merchant API**
-
-::
+Remember to add Your Node to the Merchant API after starting the service like this::
 
     curl --location --request POST 'https://127.0.0.1:5051/api/v1/Node' \
     --header 'Content-Type: application/json' \
