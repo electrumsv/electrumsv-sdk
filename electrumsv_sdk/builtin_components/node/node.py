@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional, Tuple, List, Set
 
 from electrumsv_sdk.sdk_types import AbstractPlugin
-from electrumsv_sdk.config import Config
+from electrumsv_sdk.config import CLIInputs, Config
 from electrumsv_sdk.components import Component, ComponentTypedDict, ComponentMetadata
 from electrumsv_sdk.utils import get_directory_name
 from electrumsv_sdk.plugin_tools import PluginTools
@@ -17,7 +17,7 @@ from .local_tools import LocalTools
 
 def extend_start_cli(start_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
     """if this method is present it allows extension of the start argparser only.
-    This occurs dynamically and adds the new cli options as attributes of the Config object"""
+    This occurs dynamically and adds the new cli options as attributes of the CLIInputs object"""
     start_parser.add_argument("--regtest", action="store_true", help="run on regtest")
     start_parser.add_argument("--testnet", action="store_true", help="run on testnet")
 
@@ -45,9 +45,10 @@ class Plugin(AbstractPlugin):
     RESERVED_PORTS: Set[int] = {DEFAULT_PORT, DEFAULT_P2P_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
 
-    def __init__(self, config: Config):
-        self.config = config
-        self.plugin_tools = PluginTools(self, self.config)
+    def __init__(self, cli_inputs: CLIInputs):
+        self.cli_inputs = cli_inputs
+        self.config = Config()
+        self.plugin_tools = PluginTools(self, self.cli_inputs)
         self.tools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 

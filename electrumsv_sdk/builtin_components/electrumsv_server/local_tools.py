@@ -17,23 +17,23 @@ class LocalTools:
 
     def __init__(self, plugin: 'Plugin'):
         self.plugin = plugin
-        self.config = plugin.config
+        self.cli_inputs = plugin.cli_inputs
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
     def get_network_choice(self) -> str:
         network_options = [
-            self.config.cli_extension_args['regtest'],
-            self.config.cli_extension_args['testnet'],
-            self.config.cli_extension_args['scaling_testnet'],
-            self.config.cli_extension_args['main']
+            self.cli_inputs.cli_extension_args['regtest'],
+            self.cli_inputs.cli_extension_args['testnet'],
+            self.cli_inputs.cli_extension_args['scaling_testnet'],
+            self.cli_inputs.cli_extension_args['main']
         ]
         assert len([is_selected for is_selected in network_options if is_selected]) in {0, 1}, \
             "can only select 1 network"
         network_choice = "regtest"
-        if self.config.cli_extension_args['testnet']:
+        if self.cli_inputs.cli_extension_args['testnet']:
             network_choice = "testnet"
-        elif self.config.cli_extension_args['scaling_testnet']:
+        elif self.cli_inputs.cli_extension_args['scaling_testnet']:
             network_choice = "scaling-testnet"
-        elif self.config.cli_extension_args['main']:
+        elif self.cli_inputs.cli_extension_args['main']:
             network_choice = "main"
         return network_choice

@@ -6,7 +6,7 @@ import sys
 import uuid
 import logging
 import mimetypes
-from typing import Optional, Dict, Union, Any
+from typing import Optional, Dict, Any
 
 import aiohttp
 import bitcoinx

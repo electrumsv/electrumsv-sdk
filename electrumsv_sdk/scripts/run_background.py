@@ -6,7 +6,6 @@ capturing the exit returncode for immediate feedback to the status monitor).
 import json
 import logging
 import os
-import sys
 
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.constants import LOG_LEVEL

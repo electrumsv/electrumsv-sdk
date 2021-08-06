@@ -7,20 +7,21 @@ import sys
 from typing import Dict, Callable, Tuple, Set, List, Any, Optional
 import requests
 
+from .constants import NETWORKS_LIST
 from .sdk_types import AbstractPlugin, SelectedComponent
-from .constants import DATADIR, REMOTE_REPOS_DIR, LOGS_DIR, NETWORKS_LIST, PYTHON_LIB_DIR
 from .components import ComponentStore, ComponentTypedDict, ComponentMetadata
 from .utils import port_is_in_use, is_default_component_id, is_remote_repo, checkout_branch, \
     spawn_inline, spawn_new_terminal, spawn_background_supervised, prepend_to_pythonpath
-from .config import Config
+from .config import CLIInputs, Config
 
 
 class PluginTools:
     """This contains methods that are common to all/many different plugins"""
 
-    def __init__(self, plugin: AbstractPlugin, config: Config):
+    def __init__(self, plugin: AbstractPlugin, cli_inputs: CLIInputs):
         self.plugin = plugin
-        self.config = config
+        self.cli_inputs = cli_inputs
+        self.config = Config()
         self.component_store = ComponentStore()
         self.logger = logging.getLogger("plugin-tools")
 
@@ -36,17 +37,18 @@ class PluginTools:
         return component_datadir, component_id
 
     def get_source_dir(self, dirname: str) -> Path:
-        if is_remote_repo(self.config.repo):
-            self.plugin.src = REMOTE_REPOS_DIR.joinpath(dirname)
+        if is_remote_repo(self.cli_inputs.repo):
+            self.plugin.src = self.config.REMOTE_REPOS_DIR.joinpath(dirname)
             self.logger.debug(f"Remote repo installation directory for: "
                               f"{self.plugin.COMPONENT_NAME}: "f"{self.plugin.src}")
         else:
             self.logger.debug(f"Targetting local repo {self.plugin.COMPONENT_NAME} at: "
-                         f"{self.config.repo}")
-            assert Path(self.config.repo).exists(), f"the path {self.config.repo} does not exist!"
-            if self.config.branch != "":
-                checkout_branch(self.config.branch)
-            self.plugin.src = Path(self.config.repo)
+                         f"{self.cli_inputs.repo}")
+            assert Path(self.cli_inputs.repo).exists(), f"the path {self.cli_inputs.repo} " \
+                f"does not exist!"
+            if self.cli_inputs.branch != "":
+                checkout_branch(self.cli_inputs.branch)
+            self.plugin.src = Path(self.cli_inputs.repo)
         return self.plugin.src
 
     def call_for_component_id_or_type(self, component_name: SelectedComponent,
@@ -56,7 +58,7 @@ class PluginTools:
         component of interest - if there are many components of a particular type then the
         'callable' will be called multiple times.
         """
-        id = self.config.component_id
+        id = self.cli_inputs.component_id
         components_state = self.component_store.get_status(component_name)
 
         # stop component according to unique: --id
@@ -84,15 +86,15 @@ class PluginTools:
         def is_not_new_and_id(id: str, new: bool) -> bool:
             return id != "" and not new
 
-        new = self.config.new_flag
-        id = self.config.component_id
+        new = self.cli_inputs.new_flag
+        id = self.cli_inputs.component_id
 
         # autoincrement <component_name>1 -> <component_name>2 etc. new DATADIR is found
         if is_new_and_no_id(id, new):
             count = 1
             while True:
                 id = str(component_name) + str(count)
-                new_dir = DATADIR.joinpath(f"{component_name}/{id}")
+                new_dir = self.config.DATADIR.joinpath(f"{component_name}/{id}")
                 if not new_dir.exists():
                     break
                 else:
@@ -100,7 +102,7 @@ class PluginTools:
             self.logger.debug(f"Using new user-specified data dir ({id})")
 
         elif is_new_and_id(id, new):
-            new_dir = DATADIR.joinpath(f"{component_name}/{id}")
+            new_dir = self.config.DATADIR.joinpath(f"{component_name}/{id}")
             if new_dir.exists():
                 self.logger.debug(f"User-specified data directory: {new_dir} already exists ("
                       f"either drop the --new flag or choose a unique identifier).")
@@ -108,7 +110,7 @@ class PluginTools:
             self.logger.debug(f"Using user-specified data dir ({new_dir})")
 
         elif is_not_new_and_id(id, new):
-            new_dir = DATADIR.joinpath(f"{component_name}/{id}")
+            new_dir = self.config.DATADIR.joinpath(f"{component_name}/{id}")
             if not new_dir.exists():
                 self.logger.debug(f"User-specified data directory: {new_dir} does not exist"
                              f" and so will be created anew.")
@@ -116,7 +118,7 @@ class PluginTools:
 
         elif is_not_new_and_no_id(id, new):
             id = self.get_default_id(component_name)  # default
-            new_dir = DATADIR.joinpath(f"{component_name}/{id}")
+            new_dir = self.config.DATADIR.joinpath(f"{component_name}/{id}")
             self.logger.debug(f"Using default data dir ({new_dir})")
 
         os.makedirs(new_dir, exist_ok=True)
@@ -200,14 +202,14 @@ class PluginTools:
             env_vars = {}
 
         assert isinstance(command, str)
-        if self.config.background_flag:
+        if self.cli_inputs.background_flag:
             spawn_background_supervised(command, env_vars, id, component_name, src, logfile,
                 status_endpoint, metadata)
-        elif self.config.inline_flag:
+        elif self.cli_inputs.inline_flag:
             spawn_inline(command, env_vars, id, component_name, src, logfile,
                 status_endpoint, metadata)
             sys.exit(0)
-        elif self.config.new_terminal_flag:
+        elif self.cli_inputs.new_terminal_flag:
             spawn_new_terminal(command, env_vars, id, component_name, src, logfile,
                 status_endpoint, metadata)
         else:  # default
@@ -221,8 +223,8 @@ class PluginTools:
         """This method is exclusively for single-instance components.
         Multi-instance components (that use the --new flag) need to get allocated a component_id
         via the 'get_component_datadir()' method"""
-        id = self.config.component_id
-        new = self.config.new_flag
+        id = self.cli_inputs.component_id
+        new = self.cli_inputs.new_flag
         if not id and not new:  # Default component id (and port + DATADIR)
             return self.get_default_id(component_name)
 
@@ -234,15 +236,15 @@ class PluginTools:
         assert id is not None, "component id cannot be Null when deriving logfile path"
         dt = datetime.datetime.now()
         logfile_name = f"{dt.day}_{dt.month}_{dt.year}_{dt.hour}_{dt.minute}_{dt.second}.log"
-        logpath = LOGS_DIR.joinpath(self.plugin.COMPONENT_NAME).joinpath(f"{id}")
+        logpath = self.config.LOGS_DIR.joinpath(self.plugin.COMPONENT_NAME).joinpath(f"{id}")
         os.makedirs(logpath, exist_ok=True)
         logfile = logpath.joinpath(f"{logfile_name}")
         return logfile
 
     def set_network(self) -> None:
         # make sure that only one network is set on cli
-        count_networks_selected = len([self.config.cli_extension_args[network] for network in
-            NETWORKS_LIST if self.config.cli_extension_args[network] is True])
+        count_networks_selected = len([self.cli_inputs.cli_extension_args[network] for network in
+            NETWORKS_LIST if self.cli_inputs.cli_extension_args[network] is True])
         if count_networks_selected > 1:
             self.logger.error("you must only select a single network")
             sys.exit(1)
@@ -251,7 +253,7 @@ class PluginTools:
             self.plugin.network = self.plugin.network
         if count_networks_selected == 1:
             for network in NETWORKS_LIST:
-                if self.config.cli_extension_args[network]:
+                if self.cli_inputs.cli_extension_args[network]:
                     self.plugin.network = network
 
     def modify_pythonpath_for_portability(self, component_source_dir: Optional[Path]) -> None:
@@ -261,7 +263,7 @@ class PluginTools:
         if component_source_dir:
             additions = [Path(component_source_dir)]
         additions += [
-            PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME,
-            REMOTE_REPOS_DIR,
+            self.config.PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME,
+            self.config.REMOTE_REPOS_DIR,
         ]
         prepend_to_pythonpath(additions)

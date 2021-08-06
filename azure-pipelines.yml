@@ -408,7 +408,7 @@ jobs:
 # Todo - uncomment this when PREVIOUS_SDK_VERSION>=0.0.37
 #    - script: |
 #        set -e
-#        electrumsv-sdk config --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
+#        electrumsv-sdk cli_inputs --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
 #      displayName: 'configure for portable sdk-home-dir'
 
 # Todo - add back merchant_api testing from install/start/stop/reset when PREVIOUS_SDK_VERSION>=0.0.37

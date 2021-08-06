@@ -11,14 +11,14 @@ from electrumsv_sdk.components import Component, ComponentTypedDict, ComponentMe
 from electrumsv_sdk.utils import is_remote_repo, kill_process, get_directory_name, \
     set_deterministic_electrumsv_seed
 from electrumsv_sdk.plugin_tools import PluginTools
-from electrumsv_sdk.config import Config
+from electrumsv_sdk.config import CLIInputs, Config
 
 from .local_tools import LocalTools
 
 
 def extend_start_cli(start_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
     """if this method is present it allows extension of the start argparser only.
-    This occurs dynamically and adds the new cli options as attributes of the Config object"""
+    This occurs dynamically and adds the new cli options as attributes of the CLIInputs object"""
     start_parser.add_argument("--regtest", action="store_true", help="run on regtest")
     start_parser.add_argument("--testnet", action="store_true", help="run on testnet")
     start_parser.add_argument("--deterministic-seed", action="store_true", help="use "
@@ -31,7 +31,7 @@ def extend_start_cli(start_parser: ArgumentParser) -> Tuple[ArgumentParser, List
 
 def extend_reset_cli(reset_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
     """if this method is present it allows extension of the start argparser only.
-    This occurs dynamically and adds the new cli options as attributes of the Config object"""
+    This occurs dynamically and adds the new cli options as attributes of the CLIInputs object"""
     reset_parser.add_argument("--deterministic-seed", action="store_true", help="use "
         "deterministic seed for wallet")
 
@@ -59,9 +59,10 @@ class Plugin(AbstractPlugin):
     COMPONENT_NAME = get_directory_name(__file__)
     DEFAULT_REMOTE_REPO = "https://github.com/electrumsv/electrumsv.git"
 
-    def __init__(self, config: Config):
-        self.config = config
-        self.plugin_tools = PluginTools(self, self.config)
+    def __init__(self, cli_inputs: CLIInputs):
+        self.cli_inputs = cli_inputs
+        self.config = Config()
+        self.plugin_tools = PluginTools(self, self.cli_inputs)
         self.tools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
@@ -77,13 +78,13 @@ class Plugin(AbstractPlugin):
         """required state: source_dir  - which are derivable from 'repo' and 'branch' flags"""
         self.plugin_tools.modify_pythonpath_for_portability(self.src)
 
-        repo = self.config.repo
-        if self.config.repo == "":
+        repo = self.cli_inputs.repo
+        if self.cli_inputs.repo == "":
             repo = self.DEFAULT_REMOTE_REPO
         if is_remote_repo(repo):
-            self.tools.fetch_electrumsv(repo, self.config.branch)
+            self.tools.fetch_electrumsv(repo, self.cli_inputs.branch)
 
-        self.tools.packages_electrumsv(repo, self.config.branch)
+        self.tools.packages_electrumsv(repo, self.cli_inputs.branch)
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self) -> None:
@@ -103,7 +104,7 @@ class Plugin(AbstractPlugin):
 
         logfile = self.plugin_tools.get_logfile_path(self.id)
         metadata = ComponentMetadata(
-            config_path=str(self.datadir.joinpath("regtest/config")),
+            config_path=str(self.datadir.joinpath("regtest/cli_inputs")),
             datadir=str(self.datadir)
         )
         status_endpoint = f"http://127.0.0.1:{self.port}"
@@ -116,7 +117,7 @@ class Plugin(AbstractPlugin):
                 status_endpoint=status_endpoint, metadata=metadata)
 
         if self.tools.wallet_db_exists():
-            if self.config.cli_extension_args['deterministic_seed']:
+            if self.cli_inputs.cli_extension_args['deterministic_seed']:
                 if self.tools.wallet_db_exists():
                     raise ValueError(f"Cannot set a deterministic seed. This wallet: '{self.id}' "
                         f"already exists. Please try 'electrumsv-sdk reset --deterministic-seed "
@@ -124,9 +125,9 @@ class Plugin(AbstractPlugin):
 
         # If daemon or gui mode continue...
         elif not self.tools.wallet_db_exists():
-            if self.config.cli_extension_args['deterministic_seed']:
-                set_deterministic_electrumsv_seed(self.config.selected_component,
-                    self.config.component_id)
+            if self.cli_inputs.cli_extension_args['deterministic_seed']:
+                set_deterministic_electrumsv_seed(self.cli_inputs.selected_component,
+                    self.cli_inputs.component_id)
             # reset wallet
             self.tools.delete_wallet(datadir=self.datadir)
             self.tools.create_wallet(datadir=self.datadir, wallet_name='worker1.sqlite')
@@ -141,7 +142,7 @@ class Plugin(AbstractPlugin):
     def stop(self) -> None:
         """some components require graceful shutdown via a REST API or RPC API but most can use the
         generic 'plugin_tools.kill_component()' function."""
-        is_new_terminal = not (self.config.inline_flag or self.config.background_flag)
+        is_new_terminal = not (self.cli_inputs.inline_flag or self.cli_inputs.background_flag)
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME,
             callable=partial(kill_process, graceful_wait_period=5.0,
                 is_new_terminal=is_new_terminal))
@@ -159,9 +160,9 @@ class Plugin(AbstractPlugin):
 
             # reset is sometimes used with no args and so the --deterministic-seed extension
             # doesn't take effect
-            if hasattr(self.config, 'deterministic_seed'):
-                if self.config.cli_extension_args['deterministic_seed']:
-                    set_deterministic_electrumsv_seed(self.config.selected_component,
+            if hasattr(self.cli_inputs, 'deterministic_seed'):
+                if self.cli_inputs.cli_extension_args['deterministic_seed']:
+                    set_deterministic_electrumsv_seed(self.cli_inputs.selected_component,
                         self.id)
             metadata = component_dict.get('metadata', {})
             assert metadata is not None  # typing bug
