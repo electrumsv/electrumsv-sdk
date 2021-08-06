@@ -1,5 +1,5 @@
 """
-See exe-config/.env for hard-coded settings
+See exe-cli_inputs/.env for hard-coded settings
 
 Pre-requisites for this plugin to work are:
 - postgres running (e.g. via a docker container or a system installation - this is up to the user)

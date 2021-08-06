@@ -10,7 +10,7 @@ import stringcase
 
 from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command, \
     append_to_pythonpath
-from electrumsv_sdk.constants import REMOTE_REPOS_DIR, NETWORKS, PYTHON_LIB_DIR
+from ...constants import NETWORKS
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -25,15 +25,15 @@ class LocalTools:
     def __init__(self, plugin: 'Plugin'):
         self.plugin = plugin
         self.plugin_tools = self.plugin.plugin_tools
-        self.config = plugin.config
+        self.cli_inputs = plugin.cli_inputs
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
     def process_cli_args(self) -> None:
         self.plugin_tools.set_network()
 
     def is_offline_cli_mode(self) -> bool:
-        if len(self.config.component_args) != 0:
-            if self.config.component_args[0] in ['create_wallet', 'create_account', '--help']:
+        if len(self.cli_inputs.component_args) != 0:
+            if self.cli_inputs.component_args[0] in ['create_wallet', 'create_account', '--help']:
                 return True
         return False
 
@@ -58,7 +58,7 @@ class LocalTools:
         assert self.plugin.src is not None  # typing bug
         if not self.plugin.src.exists():
             logger.debug(f"Installing electrumsv (url={url})")
-            os.chdir(REMOTE_REPOS_DIR)
+            os.chdir(self.plugin.config.REMOTE_REPOS_DIR)
             subprocess.run(f"git clone {url}", shell=True, check=True)
 
         elif self.plugin.src.exists():
@@ -98,7 +98,7 @@ class LocalTools:
                 "contrib/deterministic-build/requirements-binaries.txt")
         )
 
-        electrumsv_libs_path = PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
+        electrumsv_libs_path = self.plugin.config.PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
         cmd1 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
                f"-r {electrumsv_requirements_path}"
         cmd2 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
@@ -230,8 +230,8 @@ class LocalTools:
         logger.debug(f"esv_datadir = {self.plugin.datadir}")
 
         # custom script (user-specified arguments are fed to ESV)
-        component_args = self.config.component_args if len(self.config.component_args) != 0 else \
-            None
+        component_args = self.cli_inputs.component_args \
+            if len(self.cli_inputs.component_args) != 0 else None
 
         if component_args:
             additional_args = " ".join(component_args)
@@ -240,7 +240,7 @@ class LocalTools:
                 command += " " + f"--dir {self.plugin.datadir}"
 
         # daemon script
-        elif not self.config.gui_flag:
+        elif not self.cli_inputs.gui_flag:
             path_to_example_dapps = self.plugin.src.joinpath("examples/applications")
             append_to_pythonpath([path_to_example_dapps])
 

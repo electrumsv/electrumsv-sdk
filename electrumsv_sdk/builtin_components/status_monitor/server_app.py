@@ -18,7 +18,8 @@ from aiohttp.web_ws import WebSocketResponse
 from filelock import FileLock
 
 from electrumsv_sdk.components import ComponentTypedDict
-from electrumsv_sdk.utils import get_directory_name, get_sdk_datadir
+from electrumsv_sdk.config import get_sdk_datadir
+from electrumsv_sdk.utils import get_directory_name
 
 # might be running this as __main__
 

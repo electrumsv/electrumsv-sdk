@@ -9,20 +9,18 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import List, Dict, Optional, Union, Any, TYPE_CHECKING
+from typing import List, Dict, Optional, Union, Any
 
 import bitcoinx
 import colorama
 import psutil
 import tailer
 from electrumsv_node import electrumsv_node
-from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
-from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE, \
-    DATADIR, CONFIG_PATH
-from .sdk_types import SubprocessCallResult
 
-if TYPE_CHECKING:
-    from .config import Config
+from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
+from .config import Config
+from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE
+from .sdk_types import SubprocessCallResult
 
 
 logger = logging.getLogger("utils")
@@ -213,15 +211,6 @@ def is_docker() -> bool:
     )
 
 
-def get_sdk_datadir() -> Path:
-    sdk_home_datadir = None
-    if sys.platform == "win32":
-        sdk_home_datadir = Path(os.environ["LOCALAPPDATA"]) / "ElectrumSV-SDK"
-    if sdk_home_datadir is None:
-        sdk_home_datadir = Path.home() / ".electrumsv-sdk"
-    return sdk_home_datadir
-
-
 def tail(logfile: Path) -> None:
     colorama.init()
     for line in tailer.follow(open(logfile), delay=0.3):
@@ -386,6 +375,7 @@ def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, componen
         str, src: Optional[Path]=None, logfile: Optional[Path]=None,
         status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
 
+    config = Config()
     env_vars.update(os.environ)
 
     def write_env_vars_to_temp_file():
@@ -394,8 +384,8 @@ def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, componen
         secret = os.urandom(32)
         key = bitcoinx.PrivateKey(secret)
         encrypted_message = key.public_key.encrypt_message_to_base64(env_vars_json)
-        temp_outfile = DATADIR / component_name / "encrypted.env"
-        os.makedirs(DATADIR / component_name, exist_ok=True)
+        temp_outfile = config.DATADIR / component_name / "encrypted.env"
+        os.makedirs(config.DATADIR / component_name, exist_ok=True)
         with open(temp_outfile, 'w') as f:
             f.write(encrypted_message)
         return secret
@@ -536,25 +526,6 @@ def set_deterministic_electrumsv_seed(component_type: str, component_id: Optiona
     os.environ['ELECTRUMSV_ACCOUNT_XPRV'] = "tprv8ZgxMBicQKsPd4wsdaJ11eH84eq4hHLX1K6Mx" \
                                             "8EQQhJzq8jr25WH1m8hgGkCqnksJDCZPZbDoMbQ6Q" \
                                             "troyCyn5ZckCmsLeiHDb1MAxhNUHN"
-
-
-def read_config_json() -> Dict:
-    if CONFIG_PATH.exists():
-        with open(CONFIG_PATH, "r") as f:
-            data = f.read()
-            if data.strip():
-                config = json.loads(data)
-            else:
-                config = {}
-
-        return config
-    else:
-        return {}
-
-
-def write_to_config_json(config: Dict) -> None:
-    with open(CONFIG_PATH, 'w') as f:
-        f.write(json.dumps(config))
 
 
 def append_to_pythonpath(paths: List[Path]) -> None:

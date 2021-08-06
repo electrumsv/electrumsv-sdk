@@ -10,7 +10,6 @@ import sys
 import typing
 from typing import Any, Callable, Dict
 from aiorpcx import timeout_after
-from electrumsv_sdk.constants import REMOTE_REPOS_DIR, PYTHON_LIB_DIR
 from electrumsv_sdk.utils import checkout_branch
 
 
@@ -28,7 +27,7 @@ class LocalTools:
     def __init__(self, plugin: 'Plugin'):
         self.plugin = plugin
         self.plugin_tools = self.plugin.plugin_tools
-        self.config = plugin.config
+        self.cli_inputs = plugin.cli_inputs
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
     def process_cli_args(self) -> None:
@@ -44,14 +43,14 @@ class LocalTools:
         assert self.plugin.src is not None  # typing bug
         if not self.plugin.src.exists():
             self.logger.debug(f"Installing electrumx (url={url})")
-            os.chdir(REMOTE_REPOS_DIR)
+            os.chdir(self.plugin.config.REMOTE_REPOS_DIR)
             process = subprocess.Popen(["git", "clone", f"{url}"])
             process.wait()
 
         elif self.plugin.src.exists():
             os.chdir(self.plugin.src)
             result = subprocess.run(
-                f"git config --get remote.origin.url",
+                f"git cli_inputs --get remote.origin.url",
                 shell=True,
                 check=True,
                 stdout=subprocess.PIPE,
@@ -60,7 +59,7 @@ class LocalTools:
             )
             if result.stdout.strip() == url:
                 self.logger.debug(f"ElectrumSV is already installed (url={url})")
-                process = subprocess.Popen(["git", "config", "pull.ff", "only"])
+                process = subprocess.Popen(["git", "cli_inputs", "pull.ff", "only"])
                 process.wait()
                 process = subprocess.Popen(["git", "pull"])
                 process.wait()
@@ -96,7 +95,7 @@ class LocalTools:
 
         checkout_branch(branch)
         requirements_path = self.plugin.src.joinpath('requirements.txt')
-        electrumx_libs_path = PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
+        electrumx_libs_path = self.plugin.config.PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
 
         if sys.platform == 'linux':
             process = subprocess.Popen(

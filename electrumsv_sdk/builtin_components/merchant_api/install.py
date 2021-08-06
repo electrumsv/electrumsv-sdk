@@ -14,7 +14,7 @@ from electrumsv_sdk.utils import get_directory_name
 VERSION = "0.0.2"  # electrumsv/electrumsv-mAPI version
 MERCHANT_API_VERSION = "1.3.0"
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
-PFX_PATH = pathlib.Path(MODULE_DIR) / "config/localhost.pfx"
+PFX_PATH = pathlib.Path(MODULE_DIR) / "cli_inputs/localhost.pfx"
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -95,7 +95,7 @@ def load_env_vars() -> None:
     }
     os.environ.update(env_vars)
     from dotenv import load_dotenv
-    env_path = pathlib.Path(MODULE_DIR) / 'exe-config/.env'
+    env_path = pathlib.Path(MODULE_DIR) / 'exe-cli_inputs/.env'
     load_dotenv(dotenv_path=env_path)
 
 

@@ -7,7 +7,7 @@ import asyncpg
 import logging
 
 
-logger = logging.getLogger('mapi-db-config')
+logger = logging.getLogger('mapi-db-cli_inputs')
 
 
 async def pg_connect():

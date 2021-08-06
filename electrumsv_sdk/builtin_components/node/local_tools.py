@@ -4,8 +4,6 @@ import sys
 
 import typing
 
-from electrumsv_sdk.constants import PYTHON_LIB_DIR
-
 if typing.TYPE_CHECKING:
     from .node import Plugin
 
@@ -17,13 +15,13 @@ class LocalTools:
     def __init__(self, plugin: 'Plugin') -> None:
         self.plugin = plugin
         self.plugin_tools = self.plugin.plugin_tools
-        self.config = plugin.config
+        self.config = plugin.cli_inputs
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
     def process_cli_args(self) -> None:
         self.plugin_tools.set_network()
 
     def fetch_node(self) -> None:
-        node_libs_path = PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
+        node_libs_path = self.plugin.config.PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
         subprocess.run(f"{sys.executable} -m pip install --target {node_libs_path} --upgrade "
             f"electrumsv-node", shell=True, check=True)

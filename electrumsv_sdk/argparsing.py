@@ -13,7 +13,7 @@ import sys
 from typing import Dict, List, Tuple, cast, Optional
 
 from .constants import NameSpace
-from .config import Config, ParsedArgs
+from .config import CLIInputs, ParsedArgs
 from .sdk_types import SubcommandIndicesType, ParserMap, RawArgsMap, SubcommandParsedArgsMap, \
     SelectedComponent
 from .validate_cli_args import ValidateCliArgs
@@ -26,7 +26,7 @@ class ArgParser:
     def __init__(self) -> None:
         self.component_store = ComponentStore()
 
-        # globals that are packed into Config after argparsing
+        # globals that are packed into CLIInputs after argparsing
         self.namespace: str = ""  # 'start', 'stop', 'reset', 'node', or 'status'
         self.selected_component: SelectedComponent = ""
         self.component_args: List[str] = []  # e.g. store arguments to pass to the electrumsv's cli
@@ -41,7 +41,7 @@ class ArgParser:
         self.parser_raw_args_map: RawArgsMap = {}
         # {namespace: parsed_args}
         self.subcmd_parsed_args_map: SubcommandParsedArgsMap = {}
-        self.config: Optional[Config] = None
+        self.cli_inputs: Optional[CLIInputs] = None
 
         self.new_cli_options: List[str] = []  # used for dynamic, plugin-specific extensions to cli
         self.setup_argparser()
@@ -49,13 +49,13 @@ class ArgParser:
     def validate_cli_args(self) -> None:
         """calls the appropriate handler for the argparsing.NameSpace"""
         # Node RPC args are treated differently
-        assert self.config is not None  # typing bug
-        assert self.config.namespace is not None  # typing bug
-        if self.config.namespace == NameSpace.NODE:
+        assert self.cli_inputs is not None  # typing bug
+        assert self.cli_inputs.namespace is not None  # typing bug
+        if self.cli_inputs.namespace == NameSpace.NODE:
             return
-        handlers = ValidateCliArgs(self.config)
-        parsed_args = self.subcmd_parsed_args_map[self.config.namespace]
-        func = getattr(handlers, "handle_" + self.config.namespace + "_args")
+        handlers = ValidateCliArgs(self.cli_inputs)
+        parsed_args = self.subcmd_parsed_args_map[self.cli_inputs.namespace]
+        func = getattr(handlers, "handle_" + self.cli_inputs.namespace + "_args")
         func(parsed_args)
 
     def parse_first_arg(self, arg: str, cur_cmd_name: str,
@@ -184,10 +184,7 @@ class ArgParser:
                     continue
 
             elif self.namespace == NameSpace.CONFIG:
-                # <status options>
-                if arg.startswith("--") and not component_selected:
-                    subcommand_indices[cur_cmd_name].append(index)
-                    continue
+                subcommand_indices[cur_cmd_name].append(index)
 
             # print(f"subcommand_indices={subcommand_indices}, index={index}, arg={arg}")
 
@@ -206,20 +203,20 @@ class ArgParser:
 
         self.feed_to_argparsers(args, subcommand_indices)
 
-    def generate_config(self) -> Config:
+    def generate_config(self) -> CLIInputs:
         # Node RPC args are treated differently to the rest
         if self.namespace == NameSpace.NODE:
             assert self.node_args is not None  # typing bug
-            self.config = Config(
+            self.cli_inputs = CLIInputs(
                 namespace=self.namespace,
                 node_args=self.node_args,
                 # --id is managed manually see controller.node()
             )
-            return self.config
+            return self.cli_inputs
 
         parsed_args = self.subcmd_parsed_args_map[self.namespace]
         if self.namespace == NameSpace.INSTALL:
-            self.config = Config(
+            self.cli_inputs = CLIInputs(
                 namespace=self.namespace,
                 selected_component=self.selected_component,
                 repo=parsed_args.repo,
@@ -228,7 +225,7 @@ class ArgParser:
                 component_id=parsed_args.id,
             )
         elif self.namespace == NameSpace.START:
-            self.config = Config(
+            self.cli_inputs = CLIInputs(
                 namespace=self.namespace,
                 selected_component=self.selected_component,
                 repo=parsed_args.repo,
@@ -242,7 +239,7 @@ class ArgParser:
                 component_args=self.component_args
             )
         elif self.namespace == NameSpace.RESET:
-            self.config = Config(
+            self.cli_inputs = CLIInputs(
                 namespace=self.namespace,
                 selected_component=self.selected_component,
                 repo=parsed_args.repo,
@@ -251,35 +248,36 @@ class ArgParser:
                 component_args=self.component_args
             )
         elif self.namespace == NameSpace.STOP:
-            self.config = Config(
+            self.cli_inputs = CLIInputs(
                 namespace=self.namespace,
                 selected_component=self.selected_component,
                 component_id=parsed_args.id,
             )
         elif self.namespace == NameSpace.STATUS:
-            self.config = Config(
+            self.cli_inputs = CLIInputs(
                 namespace=self.namespace,
                 selected_component=self.selected_component,
                 component_id=parsed_args.id,
             )
         elif self.namespace == NameSpace.CONFIG:
-            self.config = Config(
+            self.cli_inputs = CLIInputs(
                 namespace=self.namespace,
                 sdk_home_dir=parsed_args.sdk_home_dir,
+                portable=parsed_args.portable,
             )
         elif self.namespace == NameSpace.TOP_LEVEL:
-            self.config = Config(
+            self.cli_inputs = CLIInputs(
                 namespace=self.namespace,
             )
 
         # CLI extensions via the plugin
-        assert self.config is not None
+        assert self.cli_inputs is not None
         if self.new_cli_options:
             for varname in self.new_cli_options:
                 value = getattr(self.subcmd_parsed_args_map[self.namespace], varname)
-                self.config.cli_extension_args[varname] = value
+                self.cli_inputs.cli_extension_args[varname] = value
 
-        return self.config
+        return self.cli_inputs
 
     def update_subcommands_args_map(self, args: List[str], subcommand_indices:
             SubcommandIndicesType) -> None:
@@ -292,13 +290,23 @@ class ArgParser:
         """feeds relevant arguments to each child (or parent) ArgumentParser"""
         self.update_subcommands_args_map(args, subcommand_indices)
 
+        def parse_args():
+            parsed_args = cast(ParsedArgs,
+                self.parser_map[cmd_name].parse_args(args=self.parser_raw_args_map[cmd_name]))
+            return parsed_args
+
         for cmd_name in self.parser_map:
             if cmd_name == NameSpace.NODE:
                 self.node_args = self.parser_raw_args_map[cmd_name]
+            elif cmd_name == NameSpace.CONFIG:
+                parsed_args = parse_args()
+                if parsed_args.portable in {'true', 'True'}:
+                    parsed_args.portable = True
+                if parsed_args.portable in {'false', 'False'}:
+                    parsed_args.portable = False
+                self.subcmd_parsed_args_map[cmd_name] = parsed_args
             else:
-                parsed_args = cast(ParsedArgs, self.parser_map[cmd_name].parse_args(
-                    args=self.parser_raw_args_map[cmd_name]
-                ))
+                parsed_args = parse_args()
                 self.subcmd_parsed_args_map[cmd_name] = parsed_args
 
     def add_install_argparser(self, namespaces: _SubParsersAction) \
@@ -406,10 +414,13 @@ class ArgParser:
 
     def add_config_argparser(self, namespaces: _SubParsersAction) -> ArgumentParser:
         config_parser = namespaces.add_parser(
-            "config", help="alter the configuration for the SDK"
+            "cli_inputs", help="alter the configuration for the SDK"
         )
         config_parser.add_argument("--sdk-home-dir", type=str, default="", help="The location to "
             "store the component data")
+        config_parser.add_argument("--portable", type=str, default="true",
+            help="If true will search ascending directories for the 'ElectrumSV-SDK' directory "
+                 "i.e. the SDK_HOME_DIR.")
         return config_parser
 
     def add_global_flags(self, top_level_parser: ArgumentParser) -> None:

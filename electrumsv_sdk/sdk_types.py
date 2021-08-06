@@ -8,7 +8,7 @@ from typing import Set, Optional, List, Dict
 import typing
 
 if typing.TYPE_CHECKING:
-    from electrumsv_sdk.config import Config, ParsedArgs
+    from electrumsv_sdk.config import CLIInputs, Config
     from .components import Component
     from .plugin_tools import PluginTools
 
@@ -20,9 +20,10 @@ class AbstractPlugin:
     COMPONENT_NAME = ""
     DEFAULT_REMOTE_REPO = "https://github.com/electrumsv/electrumsv.git"
 
-    def __init__(self, config: "Config"):
-        self.config = config
-        self.plugin_tools = PluginTools(self, config)
+    def __init__(self, cli_inputs: "CLIInputs"):
+        self.cli_inputs = cli_inputs
+        self.cli_inputs = Config()
+        self.plugin_tools = PluginTools(self, cli_inputs)
         self.src: Optional[Path] = None
         self.datadir: Optional[Path] = None
         self.id: Optional[str] = None

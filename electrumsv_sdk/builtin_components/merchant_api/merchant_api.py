@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional, Set
 
 from electrumsv_sdk.sdk_types import AbstractPlugin
-from electrumsv_sdk.config import Config
+from electrumsv_sdk.config import CLIInputs
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
@@ -29,9 +29,9 @@ class Plugin(AbstractPlugin):
     MERCHANT_API_HOST = os.environ.get("MERCHANT_API_HOST") or "127.0.0.1"
     MERCHANT_API_PORT = int(os.environ.get("MERCHANT_API_PORT") or DEFAULT_PORT)
 
-    def __init__(self, config: Config):
-        self.config = config
-        self.plugin_tools = PluginTools(self, self.config)
+    def __init__(self, cli_inputs: CLIInputs):
+        self.cli_inputs = cli_inputs
+        self.plugin_tools = PluginTools(self, self.cli_inputs)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
         self.src = self.plugin_tools.get_source_dir(dirname="merchant_api")

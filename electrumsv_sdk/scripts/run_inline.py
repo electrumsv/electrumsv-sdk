@@ -12,7 +12,7 @@ from pathlib import Path
 import bitcoinx
 
 from electrumsv_sdk.components import Component
-from electrumsv_sdk.constants import DATADIR
+from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import spawn_inline
 
 
@@ -28,6 +28,8 @@ def unwrap_and_unescape_text(arg: str) -> str:
 
 
 def main() -> None:
+    config = Config()
+
     top_level_parser = argparse.ArgumentParser()
     top_level_parser.add_argument("--command", type=str, default="",
         help="one contiguous string command (to run a server)")
@@ -46,7 +48,7 @@ def main() -> None:
 
     component_name = component_info.component_type
     if parsed_args.env_vars_encryption_key:
-        infile = DATADIR / component_name / "encrypted.env"
+        infile = config.DATADIR / component_name / "encrypted.env"
         with open(infile, 'r') as f:
             encrypted_message = f.read()
             key = bitcoinx.PrivateKey.from_hex(parsed_args.env_vars_encryption_key)
