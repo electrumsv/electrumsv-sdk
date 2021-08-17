@@ -114,8 +114,8 @@ class Config:
         assert self.PYTHON_LIB_DIR is not None
 
     def print_json(self):
-        print(f"config json:")
-        print(json.dumps(self.read_config_json(), indent=4))
+        print(f"config json:", flush=True)
+        print(json.dumps(self.read_config_json(), indent=4), flush=True)
 
     def set_paths(self):
         self.SDK_HOME_DIR: Path = self.get_dynamic_datadir()
@@ -173,17 +173,15 @@ class Config:
 
         current_dir: Path = Path(os.path.dirname(os.path.abspath(sys.executable)))
         while True:
-            self.logger.debug(f"current dir = {current_dir}")
             directories = os.listdir(current_dir)
             if 'SDK_HOME_DIR' in directories:
                 sdk_home_dir = current_dir.joinpath('SDK_HOME_DIR')
-                self.logger.info(f"found SDK_HOME_DIR at: {sdk_home_dir}")
+                # self.logger.debug(f"found SDK_HOME_DIR at: {sdk_home_dir}")
                 return sdk_home_dir
 
             last_dir = current_dir
             current_dir = get_parent_dir(current_dir)
             if last_dir == current_dir:
-                self.logger.debug("SDK_HOME_DIR not found")
                 raise FileNotFoundError("SDK_HOME_DIR not found")
 
     def get_dynamic_datadir(self) -> Path:
@@ -206,7 +204,6 @@ class Config:
         # Searches ascending directories for 'SDK_HOME_DIR'
         if is_portable_mode(config):
             sdk_home_dir = self.search_for_sdk_home_dir()
-            self.logger.warning(f"portability mode feature not fully implemented yet")
 
         # Reset to default sdk_home_dir (on switching portable mode off but without
         # specifying an --sdk-home-dir input)
