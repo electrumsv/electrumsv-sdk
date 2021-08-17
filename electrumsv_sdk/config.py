@@ -81,7 +81,10 @@ class Config:
         self.logger = logging.getLogger("config")
         self.cli_inputs = cli_inputs
         # ------------------ FILE PATHS ------------------ #
-        self.CONFIG_PATH: Optional[Path] = None
+        # Config file location is always found in the standard location in user home directory
+        self.CONFIG_PATH: Path = get_sdk_datadir().joinpath("config.json")
+
+        # Whereas these depend on the location of SDK_HOME_DIR for portability reasons
         self.SDK_HOME_DIR: Optional[Path] = None
         self.REMOTE_REPOS_DIR: Optional[Path] = None
         self.DATADIR: Optional[Path] = None
@@ -96,11 +99,12 @@ class Config:
         self.USER_PLUGINS_DIR: Optional[Path] = None
         self.LOCAL_PLUGINS_DIR: Optional[Path] = None
 
-        self.set_paths()
         if self.cli_inputs:
             assert self.cli_inputs is not None
             self.update_config_file(self.cli_inputs)
-            self.set_paths()  # called again because values will likely be different now
+
+        # set global paths based on state of config.json
+        self.set_paths()
 
         assert self.CONFIG_PATH is not None
         assert self.SDK_HOME_DIR is not None
@@ -114,10 +118,6 @@ class Config:
         print(json.dumps(self.read_config_json(), indent=4))
 
     def set_paths(self):
-        # Config file location is always found in the standard location in user home directory
-        self.CONFIG_PATH: Path = get_sdk_datadir().joinpath("config.json")
-
-        # Whereas these depend on the location of SDK_HOME_DIR for portability reasons
         self.SDK_HOME_DIR: Path = self.get_dynamic_datadir()
         self.REMOTE_REPOS_DIR: Path = self.SDK_HOME_DIR.joinpath("remote_repos")
         self.DATADIR: Path = self.SDK_HOME_DIR.joinpath("component_datadirs")
@@ -164,12 +164,33 @@ class Config:
         config['is_first_run'] = False
         self.write_to_config_json(config)
 
+    def search_for_sdk_home_dir(self) -> Path:
+        """In portable mode the SDK searches ascending directories until it finds a directory with
+        the name: 'SDK_HOME_DIR'"""
+
+        def get_parent_dir(path: Path):
+            return path.parent
+
+        current_dir: Path = Path(os.path.dirname(os.path.abspath(sys.executable)))
+        while True:
+            self.logger.debug(f"current dir = {current_dir}")
+            directories = os.listdir(current_dir)
+            if 'SDK_HOME_DIR' in directories:
+                sdk_home_dir = current_dir.joinpath('SDK_HOME_DIR')
+                self.logger.info(f"found SDK_HOME_DIR at: {sdk_home_dir}")
+                return sdk_home_dir
+
+            last_dir = current_dir
+            current_dir = get_parent_dir(current_dir)
+            if last_dir == current_dir:
+                self.logger.debug("SDK_HOME_DIR not found")
+                raise FileNotFoundError("SDK_HOME_DIR not found")
+
     def get_dynamic_datadir(self) -> Path:
         """Check config.json (which needs to *always* be located in the system home directory at
         initial startup) to see if a local directory has been set for SDK_HOME_DIR (or if it is
         set to 'portable' mode"""
 
-        # Todo - if --portable mode is true then search ascending directories
         def is_portable_mode(config: Dict):
             if self.cli_inputs is not None and self.cli_inputs.portable is True:
                 return True
@@ -182,17 +203,20 @@ class Config:
         config = self.read_config_json()
         modified_sdk_home_dir = config.get("sdk_home_dir")
 
+        # Searches ascending directories for 'SDK_HOME_DIR'
         if is_portable_mode(config):
-            # Todo - if --portable mode is true then search ascending directories
+            sdk_home_dir = self.search_for_sdk_home_dir()
             self.logger.warning(f"portability mode feature not fully implemented yet")
 
-        # Reset to default sdk_home_dir (on switching portable mode off)
-        if modified_sdk_home_dir == "**portable**" and not is_portable_mode(config):
+        # Reset to default sdk_home_dir (on switching portable mode off but without
+        # specifying an --sdk-home-dir input)
+        elif modified_sdk_home_dir == "**portable**" and not is_portable_mode(config):
             sdk_home_dir = get_sdk_datadir()
 
         # Pull persisted sdk_home_dir value from config.json for usage
         elif modified_sdk_home_dir is not None and modified_sdk_home_dir != "**portable**":
             sdk_home_dir = Path(modified_sdk_home_dir)
+
         return sdk_home_dir
 
     def read_config_json(self) -> Dict:

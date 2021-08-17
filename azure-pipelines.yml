@@ -374,6 +374,105 @@ jobs:
         artifactName: 'WindowsLogs'
       displayName: 'Publish logs'
 
+
+- job: TestWindowsPortableMode
+
+  pool:
+    vmImage: 'windows-latest'
+
+  services:
+    postgres: pg12-win32
+
+  variables:
+    MODIFIED_SDK_HOME_DIR: $(Agent.ToolsDirectory)\SDK_HOME_DIR
+    NEW_LOG_DIR: $(Agent.ToolsDirectory)\SDK_HOME_DIR\logs
+    SDK_LOG_LEVEL: DEBUG
+
+  steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: 3.9
+        addToPath: true
+        architecture: 'x64'
+
+    # need to add python Scripts/ dir to PATH to find 'electrumsv-sdk' command
+    - pwsh: |
+        $scripts_dir = py -3.9 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
+        $env:PATH += $scripts_dir
+        py -3.9 -m pip install --upgrade pip
+        py -3.9 -m pip install wheel
+        py -3.9 -m pip install -e .
+        py -3.9 -m pip install pytest pytest-cov
+      displayName: 'install electrumsv-sdk'
+
+    - script: |
+        set -e
+        mkdir -p $(Agent.ToolsDirectory)\SDK_HOME_DIR
+        electrumsv-sdk config --portable=True
+      displayName: 'Turn on portable mode (searches for "SDK_HOME_DIR"'
+
+    - script: |
+        cd $(Build.Repository.LocalPath)/contrib/azure
+        python3 -m pip install asyncpg
+        python3 ./mapi_db_config.py
+      displayName: 'prepare postgres'
+
+    - script: |
+        electrumsv-sdk install node
+        electrumsv-sdk install electrumx
+        electrumsv-sdk install electrumsv
+        electrumsv-sdk install whatsonchain
+        electrumsv-sdk install merchant_api
+      displayName: 'install all components'
+
+    - script: |
+        electrumsv-sdk start --background status_monitor
+        electrumsv-sdk start --background --new node
+        electrumsv-sdk start --background --new electrumx
+        electrumsv-sdk start --background --new --deterministic-seed electrumsv
+        electrumsv-sdk node generate 1
+        electrumsv-sdk start --background whatsonchain
+        electrumsv-sdk start --background merchant_api
+        electrumsv-sdk status
+        python3 ./contrib/check_all_started.py
+      displayName: 'start all components'
+      continueOnError: true
+
+    - script: |
+        electrumsv-sdk stop node
+        electrumsv-sdk stop electrumx
+        electrumsv-sdk stop electrumsv
+        electrumsv-sdk stop whatsonchain
+        electrumsv-sdk stop status_monitor
+        electrumsv-sdk stop merchant_api
+        electrumsv-sdk status
+        python3 ./contrib/check_all_stopped.py
+      displayName: 'stop all components'
+      continueOnError: true
+
+    - script: |
+        sleep 5
+        electrumsv-sdk reset
+        electrumsv-sdk status
+      displayName: 'reset all components'
+      continueOnError: true
+
+    - script: |
+        sleep 5
+        electrumsv-sdk reset --id=node1 node
+        electrumsv-sdk reset --id=electrumx1 electrumx
+        electrumsv-sdk reset --id=electrumsv1 --deterministic-seed electrumsv
+        electrumsv-sdk status
+      displayName: 'reset by id'
+      continueOnError: true
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: $(NEW_LOG_DIR)
+        artifactName: 'WindowsPortableModeLogs'
+      displayName: 'Publish logs'
+
+
 # Peace of mind that there is no conflict with previously installed SDK version.
 - job: TestWindowsVersionMigration
 
