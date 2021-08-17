@@ -37,6 +37,7 @@ class PluginTools:
         return component_datadir, component_id
 
     def get_source_dir(self, dirname: str) -> Path:
+        assert self.config.REMOTE_REPOS_DIR is not None
         if is_remote_repo(self.cli_inputs.repo):
             self.plugin.src = self.config.REMOTE_REPOS_DIR.joinpath(dirname)
             self.logger.debug(f"Remote repo installation directory for: "
@@ -77,6 +78,8 @@ class PluginTools:
 
     def get_component_datadir(self, component_name: str) -> Tuple[Path, str]:
         """Used for multi-instance components"""
+        assert self.config.DATADIR is not None
+
         def is_new_and_no_id(id: str, new: bool) -> bool:
             return id == "" and new
         def is_new_and_id(id: str, new: bool) -> bool:
@@ -234,11 +237,13 @@ class PluginTools:
     def get_logfile_path(self, id: str) -> Path:
         """deterministic / standardised location for logging to file"""
         assert id is not None, "component id cannot be Null when deriving logfile path"
+        assert self.config.LOGS_DIR is not None
         dt = datetime.datetime.now()
         logfile_name = f"{dt.day}_{dt.month}_{dt.year}_{dt.hour}_{dt.minute}_{dt.second}.log"
         logpath = self.config.LOGS_DIR.joinpath(self.plugin.COMPONENT_NAME).joinpath(f"{id}")
         os.makedirs(logpath, exist_ok=True)
         logfile = logpath.joinpath(f"{logfile_name}")
+        self.logger.debug(f"logfile={logfile}")
         return logfile
 
     def set_network(self) -> None:
@@ -259,6 +264,8 @@ class PluginTools:
     def modify_pythonpath_for_portability(self, component_source_dir: Optional[Path]) -> None:
         """This is only necessary as a workaround to get the SDK working with a portable / bundled
         version of python"""
+        assert self.config.PYTHON_LIB_DIR is not None
+        assert self.config.REMOTE_REPOS_DIR is not None
         additions = []
         if component_source_dir:
             additions = [Path(component_source_dir)]

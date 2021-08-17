@@ -74,7 +74,7 @@ class CLIInputs(object):
 
 
 class Config:
-    """Maps to a cli_inputs.json file and is predominantly concerned with file paths and portability
+    """Maps to a config.json file and is predominantly concerned with file paths and portability
     of the SDK (or else uses the standard location in the user's home directory)."""
 
     def __init__(self, cli_inputs: Optional[CLIInputs] = None):
@@ -98,16 +98,24 @@ class Config:
 
         self.set_paths()
         if self.cli_inputs:
-            self.update_config_file(cli_inputs)
+            assert self.cli_inputs is not None
+            self.update_config_file(self.cli_inputs)
             self.set_paths()  # called again because values will likely be different now
+
+        assert self.CONFIG_PATH is not None
+        assert self.SDK_HOME_DIR is not None
+        assert self.REMOTE_REPOS_DIR is not None
+        assert self.DATADIR is not None
+        assert self.LOGS_DIR is not None
+        assert self.PYTHON_LIB_DIR is not None
 
     def print_json(self):
         print(f"config json:")
-        print(json.dumps(read_config_json(self), indent=4))
+        print(json.dumps(self.read_config_json(), indent=4))
 
     def set_paths(self):
         # Config file location is always found in the standard location in user home directory
-        self.CONFIG_PATH: Path = get_sdk_datadir().joinpath("cli_inputs.json")
+        self.CONFIG_PATH: Path = get_sdk_datadir().joinpath("config.json")
 
         # Whereas these depend on the location of SDK_HOME_DIR for portability reasons
         self.SDK_HOME_DIR: Path = self.get_dynamic_datadir()
@@ -126,11 +134,11 @@ class Config:
         os.makedirs(self.LOGS_DIR, exist_ok=True)
         os.makedirs(self.USER_PLUGINS_DIR, exist_ok=True)
 
-    def update_config_file(self, cli_inputs) -> None:
+    def update_config_file(self, cli_inputs: CLIInputs) -> None:
         """When switching to portable mode the 'sdk_home_dir' is set to **portable** to avoid
         any confusion. It is automatically set back to the default LOCALAPPDATA location when
         turning off portable mode"""
-        config = read_config_json(self)  # Config is always stored at LOCALAPPDATA location
+        config = self.read_config_json()  # Config is always stored at LOCALAPPDATA location
         sdk_home_dir = cli_inputs.sdk_home_dir
         portable_mode = cli_inputs.portable
 
@@ -139,7 +147,8 @@ class Config:
             return
 
         if sdk_home_dir:
-            config['sdk_home_dir'] = self.SDK_HOME_DIR
+            config['sdk_home_dir'] = sdk_home_dir
+            config['portable'] = False
 
         elif portable_mode:
             config['sdk_home_dir'] = "**portable**"
@@ -152,7 +161,8 @@ class Config:
             if config.get('sdk_home_dir', '') in {"**portable**", ""}:
                 config['sdk_home_dir'] = str(get_sdk_datadir())
 
-        write_to_config_json(config)
+        config['is_first_run'] = False
+        self.write_to_config_json(config)
 
     def get_dynamic_datadir(self) -> Path:
         """Check config.json (which needs to *always* be located in the system home directory at
@@ -169,7 +179,7 @@ class Config:
                 return portable_mode
 
         sdk_home_dir = get_sdk_datadir()
-        config = read_config_json(self)
+        config = self.read_config_json()
         modified_sdk_home_dir = config.get("sdk_home_dir")
 
         if is_portable_mode(config):
@@ -185,28 +195,25 @@ class Config:
             sdk_home_dir = Path(modified_sdk_home_dir)
         return sdk_home_dir
 
+    def read_config_json(self) -> Dict:
+        assert self.CONFIG_PATH is not None
+        if self.CONFIG_PATH.exists():
+            with open(self.CONFIG_PATH, "r") as f:
+                data = f.read()
+                if data.strip():
+                    config = json.loads(data)
+                else:
+                    config = {}
 
-def read_config_json(config: Config) -> Dict:
-    CONFIG_PATH = config.CONFIG_PATH
-    if CONFIG_PATH.exists():
-        with open(CONFIG_PATH, "r") as f:
-            data = f.read()
-            if data.strip():
-                config = json.loads(data)
-            else:
-                config = {}
+            return config
+        else:
+            return {}
 
-        return config
-    else:
-        return {}
-
-
-
-def write_to_config_json(config: Dict) -> None:
-    config_file_json = Config()
-    with open(config_file_json.CONFIG_PATH, 'w') as f:
-        f.write(json.dumps(config))
-
+    def write_to_config_json(self, config: Dict) -> None:
+        assert self.CONFIG_PATH is not None
+        with open(self.CONFIG_PATH, 'w') as f:
+            f.write(json.dumps(config))
+        self.logger.debug(f"updated config.json file at: {self.CONFIG_PATH} with: {config}")
 
 
 def get_sdk_datadir() -> Path:

@@ -41,6 +41,7 @@ class LocalTools:
         (dir exists, url does not match - it's a forked repo)
         """
         assert self.plugin.src is not None  # typing bug
+        assert self.plugin.config.REMOTE_REPOS_DIR is not None  # typing bug
         if not self.plugin.src.exists():
             self.logger.debug(f"Installing electrumx (url={url})")
             os.chdir(self.plugin.config.REMOTE_REPOS_DIR)
@@ -77,6 +78,9 @@ class LocalTools:
     def packages_electrumx(self, url: str, branch: str) -> None:
         """plyvel wheels are not available on windows so it is swapped out for plyvel-win32 to
         make it work"""
+
+        assert self.plugin.config.PYTHON_LIB_DIR is not None
+        assert self.plugin.COMPONENT_NAME is not None
 
         def modify_requirements_for_windows_and_mac(temp_requirements):
             """replaces plyvel with plyvel-wheels"""

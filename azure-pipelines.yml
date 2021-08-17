@@ -40,7 +40,7 @@ jobs:
   variables:
     MODIFIED_SDK_HOME_DIR:  $(Agent.HomeDirectory)/my_portable_sdk_datadir
     NEW_LOG_DIR:            $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
-    SDK_LOG_LEVEL:          INFO
+    SDK_LOG_LEVEL:          DEBUG
 
   steps:
     - task: UsePythonVersion@0
@@ -168,7 +168,7 @@ jobs:
   variables:
     MODIFIED_SDK_HOME_DIR:  $(Agent.HomeDirectory)/my_portable_sdk_datadir
     NEW_LOG_DIR:            $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
-    SDK_LOG_LEVEL:          INFO
+    SDK_LOG_LEVEL:          DEBUG
 
   steps:
     # https://stackoverflow.com/questions/27700596/homebrew-postgres-broken
@@ -287,9 +287,9 @@ jobs:
     postgres: pg12-win32
 
   variables:
-    MODIFIED_SDK_HOME_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir
-    NEW_LOG_DIR: $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
-    SDK_LOG_LEVEL: "INFO"
+    MODIFIED_SDK_HOME_DIR: $(Agent.HomeDirectory)\my_portable_sdk_datadir
+    NEW_LOG_DIR: $(Agent.HomeDirectory)\my_portable_sdk_datadir\logs
+    SDK_LOG_LEVEL: DEBUG
 
   steps:
     - task: UsePythonVersion@0
@@ -408,7 +408,7 @@ jobs:
 # Todo - uncomment this when PREVIOUS_SDK_VERSION>=0.0.37
 #    - script: |
 #        set -e
-#        electrumsv-sdk cli_inputs --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
+#        electrumsv-sdk config --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
 #      displayName: 'configure for portable sdk-home-dir'
 
 # Todo - add back merchant_api testing from install/start/stop/reset when PREVIOUS_SDK_VERSION>=0.0.37
@@ -476,7 +476,7 @@ jobs:
     - task: PublishBuildArtifacts@1
       inputs:
         pathToPublish: $(LOG_DIR)
-        artifactName: 'WindowsLogs'
+        artifactName: 'WindowsMigrationLogs'
       displayName: 'Publish logs'
       continueOnError: true
 
