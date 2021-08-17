@@ -24,8 +24,8 @@ class Plugin(AbstractPlugin):
     SCRIPT_PATH = COMPONENT_PATH / "server_app.py"
 
     def __init__(self, cli_inputs: CLIInputs):
-        self.config = cli_inputs
-        self.plugin_tools = PluginTools(self, self.config)
+        self.cli_inputs = cli_inputs
+        self.plugin_tools = PluginTools(self, self.cli_inputs)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
         self.src = self.COMPONENT_PATH

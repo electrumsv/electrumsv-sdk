@@ -95,7 +95,7 @@ def load_env_vars() -> None:
     }
     os.environ.update(env_vars)
     from dotenv import load_dotenv
-    env_path = pathlib.Path(MODULE_DIR) / 'exe-cli_inputs/.env'
+    env_path = pathlib.Path(MODULE_DIR) / 'exe-config/.env'
     load_dotenv(dotenv_path=env_path)
 
 

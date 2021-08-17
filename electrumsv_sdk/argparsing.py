@@ -262,7 +262,7 @@ class ArgParser:
         elif self.namespace == NameSpace.CONFIG:
             self.cli_inputs = CLIInputs(
                 namespace=self.namespace,
-                sdk_home_dir=parsed_args.sdk_home_dir,
+                sdk_home_dir=str(parsed_args.sdk_home_dir),
                 portable=parsed_args.portable,
             )
         elif self.namespace == NameSpace.TOP_LEVEL:
@@ -304,6 +304,8 @@ class ArgParser:
                     parsed_args.portable = True
                 if parsed_args.portable in {'false', 'False'}:
                     parsed_args.portable = False
+                if parsed_args.portable is None:
+                    parsed_args.portable = None
                 self.subcmd_parsed_args_map[cmd_name] = parsed_args
             else:
                 parsed_args = parse_args()
@@ -418,7 +420,7 @@ class ArgParser:
         )
         config_parser.add_argument("--sdk-home-dir", type=str, default="", help="The location to "
             "store the component data")
-        config_parser.add_argument("--portable", type=str, default="true",
+        config_parser.add_argument("--portable", type=str, default=None,
             help="If true will search ascending directories for the 'ElectrumSV-SDK' directory "
                  "i.e. the SDK_HOME_DIR.")
         return config_parser

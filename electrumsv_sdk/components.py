@@ -136,6 +136,7 @@ class ComponentStore:
     def __init__(self) -> None:
         self.config = Config()
         self.file_name = "component_state.json"
+        assert self.config.SDK_HOME_DIR is not None
         self.lock_path = self.config.SDK_HOME_DIR / "component_state.json.lock"
         self.file_lock = FileLock(str(self.lock_path), timeout=5)
         self.component_state_path = self.config.SDK_HOME_DIR / self.file_name
@@ -221,6 +222,10 @@ class ComponentStore:
         return None
 
     def get_component_map(self) -> Dict[str, Path]:
+        assert self.config.BUILTIN_COMPONENTS_DIR is not None
+        assert self.config.USER_PLUGINS_DIR is not None
+        assert self.config.LOCAL_PLUGINS_DIR is not None
+
         component_map = {}  # component_name: <component_dir>
         ignored = {'__init__.py', '__pycache__', '.idea', '.vscode'}
 

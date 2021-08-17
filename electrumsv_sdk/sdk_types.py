@@ -11,6 +11,7 @@ if typing.TYPE_CHECKING:
     from electrumsv_sdk.config import CLIInputs, Config
     from .components import Component
     from .plugin_tools import PluginTools
+    from .config import ParsedArgs
 
 
 class AbstractPlugin:
@@ -22,7 +23,7 @@ class AbstractPlugin:
 
     def __init__(self, cli_inputs: "CLIInputs"):
         self.cli_inputs = cli_inputs
-        self.cli_inputs = Config()
+        self.config = Config()
         self.plugin_tools = PluginTools(self, cli_inputs)
         self.src: Optional[Path] = None
         self.datadir: Optional[Path] = None
@@ -51,6 +52,6 @@ class AbstractModuleType(ModuleType):
 SubcommandIndicesType = Dict[str, List[int]]
 ParserMap = Dict[str, ArgumentParser]
 RawArgsMap = Dict[str, List[str]]
-SubcommandParsedArgsMap = Dict[str, "ParsedArgs"]
+SubcommandParsedArgsMap = Dict[str, 'ParsedArgs']
 SelectedComponent = str
 SubprocessCallResult = subprocess.Popen[builtins.bytes]

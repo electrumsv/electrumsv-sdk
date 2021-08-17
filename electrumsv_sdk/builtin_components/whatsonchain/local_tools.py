@@ -25,6 +25,7 @@ class LocalTools:
     def fetch_whatsonchain(self, url: str="https://github.com/AustEcon/woc-explorer.git",
                            branch: str='') -> None:
         assert self.plugin.src is not None  # typing bug
+        assert self.plugin.config.REMOTE_REPOS_DIR is not None  # typing bug
         if not self.plugin.src.exists():
             os.makedirs(self.plugin.src, exist_ok=True)
             os.chdir(self.plugin.config.REMOTE_REPOS_DIR)
