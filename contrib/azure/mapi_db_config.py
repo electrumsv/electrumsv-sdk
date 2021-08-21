@@ -1,20 +1,22 @@
 """
-Create superuser mapimaster with password=mapimasterpass for default postgres install on osx
-(with brew install postgres)
+Create superuser mapimaster with password=mapimasterpass for default postgres install
 """
 import asyncio
+import os
+
 import asyncpg
 import logging
 
 
 logger = logging.getLogger('mapi-db-config')
+POSTGRES_PORT = os.environ.get('POSTGRES_PORT', 5432)
 
 
 async def pg_connect():
     pg_conn = await asyncpg.connect(
         user="postgres",
         host="127.0.0.1",
-        port=5432,
+        port=POSTGRES_PORT,
         password='postgres',
         database="postgres",
     )
