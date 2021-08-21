@@ -134,9 +134,9 @@ jobs:
         echo 'export PATH="/usr/local/opt/postgresql/bin:$PATH"' >> /Users/runner/.bash_profile
         export PKG_CONFIG_PATH="/usr/local/opt/postgresql/lib/pkgconfig"
 
-        pg_ctl -D /usr/local/var/postgres -p 15432 start
-        psql -U postgres --list
-        psql -U postgres -c "\du"
+        pg_ctl -o "-p 15432" -D /usr/local/var/postgres start
+        psql -p 15432 -U postgres --list
+        psql -p 15432 -U postgres -c "\du"
 
         cd $(Build.Repository.LocalPath)/contrib/azure
         python3 -m pip install asyncpg

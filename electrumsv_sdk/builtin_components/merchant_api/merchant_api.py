@@ -74,7 +74,7 @@ class Plugin(AbstractPlugin):
             return
 
         logfile = self.plugin_tools.get_logfile_path(self.id)
-        status_endpoint = "http://127.0.0.1:45111/mapi/feeQuote"
+        status_endpoint = "http://127.0.0.1:5050/mapi/feeQuote"
 
         self.plugin_tools.spawn_process(str(command), env_vars=os.environ.copy(), id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,

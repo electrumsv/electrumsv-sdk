@@ -4,7 +4,7 @@ import os
 import sys
 from argparse import Namespace
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 
 from electrumsv_sdk.sdk_types import SelectedComponent
 
@@ -26,7 +26,7 @@ class ParsedArgs(Namespace):
     component_id: str = ""
     cli_extension_args: Dict[str, Any] = {}
     sdk_home_dir: str = ""
-    portable: str = "str"
+    portable: Union[bool, str] = ""
 
 
 class CLIInputs(object):
@@ -52,7 +52,7 @@ class CLIInputs(object):
             component_id: str = "",
             cli_extension_args: Optional[Dict[str, Any]] = None,
             sdk_home_dir: str = "",
-            portable: str = ""
+            portable: Union[bool, str] = ""
 
     ):
         # ------------------ CLI INPUT VALUES ------------------ #
