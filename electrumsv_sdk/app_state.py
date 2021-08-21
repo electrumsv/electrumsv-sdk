@@ -29,7 +29,7 @@ class AppState:
     def __init__(self, arguments: List[str]):
         self.argparser = ArgParser()
         self.argparser.manual_argparsing(arguments)  # allows library to inject args (vs sys.argv)
-        self.cli_inputs = self.argparser.generate_config()
+        self.cli_inputs = self.argparser.generate_cli_inputs()
         self.config = Config(cli_inputs=self.cli_inputs)
         if self.cli_inputs.namespace == NameSpace.CONFIG:
             self.config.print_json()

@@ -15,9 +15,11 @@ VERSION = "0.0.2"  # electrumsv/electrumsv-mAPI version
 MERCHANT_API_VERSION = "1.3.0"
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 PFX_PATH = pathlib.Path(MODULE_DIR) / "cli_inputs/localhost.pfx"
+POSTGRES_PORT = os.environ.get('POSTGRES_PORT', 5432)
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
+
 
 
 # The uri is copied from the Github repository release assets list.
@@ -89,6 +91,16 @@ def chmod_exe(install_path: pathlib.Path) -> None:
     os.chmod(run_path, st.st_mode | stat.S_IEXEC)
 
 
+def maybe_change_postgres_port() -> None:
+    if POSTGRES_PORT != 5432:
+        DBConnectionString = os.environ['ConnectionStrings__DBConnectionString']
+        DBConnectionStringDDL = os.environ['ConnectionStrings__DBConnectionStringDDL']
+        DBConnectionStringMaster = os.environ['ConnectionStrings__DBConnectionStringMaster']
+        os.environ['ConnectionStrings__DBConnectionString'] = DBConnectionString.replace("Port=5432", f"Port={POSTGRES_PORT}")
+        os.environ['ConnectionStrings__DBConnectionStringDDL'] = DBConnectionStringDDL.replace("Port=5432", f"Port={POSTGRES_PORT}")
+        os.environ['ConnectionStrings__DBConnectionStringMaster'] = DBConnectionStringMaster.replace("Port=5432", f"Port={POSTGRES_PORT}")
+
+
 def load_env_vars() -> None:
     env_vars = {
         "PYTHONUNBUFFERED": "1"
@@ -97,6 +109,7 @@ def load_env_vars() -> None:
     from dotenv import load_dotenv
     env_path = pathlib.Path(MODULE_DIR) / 'exe-config/.env'
     load_dotenv(dotenv_path=env_path)
+    maybe_change_postgres_port()
 
 
 def get_run_path(install_path: pathlib.Path) -> pathlib.Path:

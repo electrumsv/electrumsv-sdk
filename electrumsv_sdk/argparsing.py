@@ -13,7 +13,7 @@ import sys
 from typing import Dict, List, Tuple, cast, Optional
 
 from .constants import NameSpace
-from .config import CLIInputs, ParsedArgs
+from .config import CLIInputs, ParsedArgs, Config
 from .sdk_types import SubcommandIndicesType, ParserMap, RawArgsMap, SubcommandParsedArgsMap, \
     SelectedComponent
 from .validate_cli_args import ValidateCliArgs
@@ -24,8 +24,6 @@ logger = logging.getLogger("argparsing")
 
 class ArgParser:
     def __init__(self) -> None:
-        self.component_store = ComponentStore()
-
         # globals that are packed into CLIInputs after argparsing
         self.namespace: str = ""  # 'start', 'stop', 'reset', 'node', or 'status'
         self.selected_component: SelectedComponent = ""
@@ -44,7 +42,30 @@ class ArgParser:
         self.cli_inputs: Optional[CLIInputs] = None
 
         self.new_cli_options: List[str] = []  # used for dynamic, plugin-specific extensions to cli
-        self.setup_argparser()
+
+        # Ensures that the config command will still take effect if SDK_HOME_DIR cannot be found
+        # Otherwise the exception interrupts the process before the new configuration can be set
+        try:
+            self.component_store = ComponentStore()
+            self.setup_argparser()
+        except FileNotFoundError:
+            if sys.argv[1] == NameSpace.CONFIG:
+                self.force_parse_config_command()
+            else:
+                raise
+
+    def force_parse_config_command(self):
+        # Manually parse the args for CONFIG subcommand and save new config to config.json
+        top_level_parser = argparse.ArgumentParser()
+        namespaces = top_level_parser.add_subparsers(help="namespaces", required=False)
+        config_parser = self.add_config_argparser(namespaces)
+        parsed_args = cast(ParsedArgs, config_parser.parse_args(sys.argv[2:]))
+        parsed_args = self.sanitize_portable_arg(parsed_args)
+        cli_inputs = CLIInputs(namespace=self.namespace, sdk_home_dir=str(parsed_args.sdk_home_dir),
+            portable=parsed_args.portable, )
+        config = Config(cli_inputs=cli_inputs)  # re-saves the config.json
+        config.print_json()
+        sys.exit(0)
 
     def validate_cli_args(self) -> None:
         """calls the appropriate handler for the argparsing.NameSpace"""
@@ -203,7 +224,7 @@ class ArgParser:
 
         self.feed_to_argparsers(args, subcommand_indices)
 
-    def generate_config(self) -> CLIInputs:
+    def generate_cli_inputs(self) -> CLIInputs:
         # Node RPC args are treated differently to the rest
         if self.namespace == NameSpace.NODE:
             assert self.node_args is not None  # typing bug
@@ -285,12 +306,21 @@ class ArgParser:
             for index in subcommand_indices[namespace]:
                 self.parser_raw_args_map[namespace].append(args[index])
 
+    def sanitize_portable_arg(self, parsed_args: ParsedArgs) -> ParsedArgs:
+        if parsed_args.portable in {'true', 'True'}:
+            parsed_args.portable = True
+        if parsed_args.portable in {'false', 'False'}:
+            parsed_args.portable = False
+        if parsed_args.portable is None:
+            parsed_args.portable = None
+        return parsed_args
+
     def feed_to_argparsers(self, args: List[str], subcommand_indices: SubcommandIndicesType) \
             -> None:
         """feeds relevant arguments to each child (or parent) ArgumentParser"""
         self.update_subcommands_args_map(args, subcommand_indices)
 
-        def parse_args():
+        def parse_args() -> ParsedArgs:
             parsed_args = cast(ParsedArgs,
                 self.parser_map[cmd_name].parse_args(args=self.parser_raw_args_map[cmd_name]))
             return parsed_args
@@ -300,12 +330,7 @@ class ArgParser:
                 self.node_args = self.parser_raw_args_map[cmd_name]
             elif cmd_name == NameSpace.CONFIG:
                 parsed_args = parse_args()
-                if parsed_args.portable in {'true', 'True'}:
-                    parsed_args.portable = True
-                if parsed_args.portable in {'false', 'False'}:
-                    parsed_args.portable = False
-                if parsed_args.portable is None:
-                    parsed_args.portable = None
+                parsed_args = self.sanitize_portable_arg(parsed_args)
                 self.subcmd_parsed_args_map[cmd_name] = parsed_args
             else:
                 parsed_args = parse_args()

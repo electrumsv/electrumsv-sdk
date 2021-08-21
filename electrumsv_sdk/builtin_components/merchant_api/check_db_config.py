@@ -14,6 +14,7 @@ this is the workaround.
 """
 import asyncio
 import logging
+import os
 import sys
 
 import asyncpg
@@ -23,12 +24,14 @@ from electrumsv_sdk.utils import get_directory_name
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
+POSTGRES_PORT = os.environ.get('POSTGRES_PORT', 5432)
+
 
 async def pg_connect(db_name='postgres') -> asyncpg.connection.Connection:
     pg_conn = await asyncpg.connect(
         user="mapimaster",  # usually would be 'postgres'
         host="127.0.0.1",
-        port=5432,
+        port=POSTGRES_PORT,
         password="mapimasterpass",  # usually would be 'postgres'
         database=db_name,
     )
@@ -52,7 +55,7 @@ async def drop_db_if_exists() -> None:
     except Exception:
         logger.exception("postgres database check failed - please see documentation to configure "
             "postgres")
-        sys.exit(1)
+        raise
     finally:
         if pg_conn:
             await pg_conn.close()
