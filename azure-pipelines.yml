@@ -41,7 +41,7 @@ jobs:
     MODIFIED_SDK_HOME_DIR:  $(Agent.HomeDirectory)/my_portable_sdk_datadir
     NEW_LOG_DIR:            $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
     SDK_LOG_LEVEL:          DEBUG
-    POSTGRES_PORT:          15432
+    SDK_POSTGRES_PORT:          15432
 
   steps:
     - task: UsePythonVersion@0
@@ -118,7 +118,7 @@ jobs:
     MODIFIED_SDK_HOME_DIR:  $(Agent.HomeDirectory)/my_portable_sdk_datadir
     NEW_LOG_DIR:            $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
     SDK_LOG_LEVEL:          DEBUG
-    POSTGRES_PORT:          15432
+    SDK_POSTGRES_PORT:          15432
 
   steps:
     # https://stackoverflow.com/questions/27700596/homebrew-postgres-broken
@@ -188,7 +188,7 @@ jobs:
     MODIFIED_SDK_HOME_DIR:    $(Agent.HomeDirectory)\my_portable_sdk_datadir
     NEW_LOG_DIR:              $(Agent.HomeDirectory)\my_portable_sdk_datadir\logs
     SDK_LOG_LEVEL:            DEBUG
-    POSTGRES_PORT:            15432
+    SDK_POSTGRES_PORT:            15432
 
   steps:
     - task: UsePythonVersion@0
@@ -239,7 +239,8 @@ jobs:
     MODIFIED_SDK_HOME_DIR:      $(Agent.ToolsDirectory)\SDK_HOME_DIR
     NEW_LOG_DIR:                $(Agent.ToolsDirectory)\SDK_HOME_DIR\logs
     SDK_LOG_LEVEL:              DEBUG
-    POSTGRES_PORT:              15432
+    SDK_POSTGRES_PORT:              15432
+    SDK_PORTABLE_MODE:          1
 
   steps:
     - task: UsePythonVersion@0
@@ -261,7 +262,7 @@ jobs:
     - script: |
         set -e
         mkdir -p $(Agent.ToolsDirectory)\SDK_HOME_DIR
-        electrumsv-sdk config --portable=True
+        set SDK_PORTABLE_MODE=1
       displayName: 'Turn on portable mode (searches for "SDK_HOME_DIR"'
 
     - script: |
@@ -292,7 +293,7 @@ jobs:
     LOG_DIR:                C:\Users\VssAdministrator\AppData\Local\ElectrumSV-SDK\logs
     SDK_LOG_LEVEL:          INFO
     PREVIOUS_SDK_VERSION:   0.0.37
-    POSTGRES_PORT:          15432
+    SDK_POSTGRES_PORT:          15432
 
   steps:
     - task: UsePythonVersion@0

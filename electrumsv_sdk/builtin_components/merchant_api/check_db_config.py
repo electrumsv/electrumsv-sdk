@@ -24,14 +24,14 @@ from electrumsv_sdk.utils import get_directory_name
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
-POSTGRES_PORT = os.environ.get('POSTGRES_PORT', 5432)
+SDK_POSTGRES_PORT = os.environ.get('SDK_POSTGRES_PORT', 5432)
 
 
 async def pg_connect(db_name='postgres') -> asyncpg.connection.Connection:
     pg_conn = await asyncpg.connect(
         user="mapimaster",  # usually would be 'postgres'
         host="127.0.0.1",
-        port=POSTGRES_PORT,
+        port=SDK_POSTGRES_PORT,
         password="mapimasterpass",  # usually would be 'postgres'
         database=db_name,
     )
