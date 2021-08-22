@@ -78,14 +78,4 @@ class ValidateCliArgs:
         return
 
     def handle_config_args(self, parsed_args: ParsedArgs) -> None:
-        portable = None
-        if parsed_args.portable in {'true', 'True'}:
-            portable = True
-        elif parsed_args.portable in {'false', 'False'}:
-            portable = False
-
-        if parsed_args.sdk_home_dir and portable is True:
-            logger.error(f"It is invalid to input both --sdk-home-dir and --portable=True. "
-                f"You must set --portable mode back to False before you can alter the "
-                f"--sdk-home-dir.")
-            return
+        return

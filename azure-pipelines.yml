@@ -239,7 +239,7 @@ jobs:
     MODIFIED_SDK_HOME_DIR:      $(Agent.ToolsDirectory)\SDK_HOME_DIR
     NEW_LOG_DIR:                $(Agent.ToolsDirectory)\SDK_HOME_DIR\logs
     SDK_LOG_LEVEL:              DEBUG
-    SDK_POSTGRES_PORT:              15432
+    SDK_POSTGRES_PORT:          15432
     SDK_PORTABLE_MODE:          1
 
   steps:
@@ -262,7 +262,6 @@ jobs:
     - script: |
         set -e
         mkdir -p $(Agent.ToolsDirectory)\SDK_HOME_DIR
-        set SDK_PORTABLE_MODE=1
       displayName: 'Turn on portable mode (searches for "SDK_HOME_DIR"'
 
     - script: |

@@ -46,16 +46,6 @@ class AppState:
 
         self.controller = Controller(self)
 
-    def purge_prev_installs_if_exist(self) -> None:
-        def remove_readonly(func: Callable[[Path], None], path: Path, excinfo: Any) -> None:
-            os.chmod(path, stat.S_IWRITE)
-            func(path)
-
-        assert self.config.REMOTE_REPOS_DIR is not None
-        if self.config.REMOTE_REPOS_DIR.exists():
-            shutil.rmtree(self.config.REMOTE_REPOS_DIR, onerror=remove_readonly)
-            os.makedirs(self.config.REMOTE_REPOS_DIR, exist_ok=True)
-
     def handle_first_ever_run(self) -> None:
         assert self.config.CONFIG_PATH is not None
         try:
@@ -71,9 +61,6 @@ class AppState:
                 f.write(json.dumps(config, indent=4))
 
         if config.get("is_first_run") or config.get("is_first_run") is None:
-            logger.debug(
-                "Running SDK for the first time. please wait for configuration to complete..."
-            )
             with open(self.config.CONFIG_PATH, "w") as f:
                 config = {"is_first_run": False}
                 f.write(json.dumps(config, indent=4))
