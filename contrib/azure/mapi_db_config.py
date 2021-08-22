@@ -9,15 +9,15 @@ import logging
 
 
 logger = logging.getLogger('mapi-db-config')
-POSTGRES_PORT = os.environ.get('POSTGRES_PORT', 5432)
-print(f"Using postgres port: {POSTGRES_PORT}")
+SDK_POSTGRES_PORT = os.environ.get('SDK_POSTGRES_PORT', 5432)
+print(f"Using postgres port: {SDK_POSTGRES_PORT}")
 
 
 async def pg_connect():
     pg_conn = await asyncpg.connect(
         user="postgres",
         host="127.0.0.1",
-        port=POSTGRES_PORT,
+        port=SDK_POSTGRES_PORT,
         password='postgres',
         database="postgres",
     )

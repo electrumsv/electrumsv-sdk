@@ -43,29 +43,8 @@ class ArgParser:
 
         self.new_cli_options: List[str] = []  # used for dynamic, plugin-specific extensions to cli
 
-        # Ensures that the config command will still take effect if SDK_HOME_DIR cannot be found
-        # Otherwise the exception interrupts the process before the new configuration can be set
-        try:
-            self.component_store = ComponentStore()
-            self.setup_argparser()
-        except FileNotFoundError:
-            if sys.argv[1] == NameSpace.CONFIG:
-                self.force_parse_config_command()
-            else:
-                raise
-
-    def force_parse_config_command(self):
-        # Manually parse the args for CONFIG subcommand and save new config to config.json
-        top_level_parser = argparse.ArgumentParser()
-        namespaces = top_level_parser.add_subparsers(help="namespaces", required=False)
-        config_parser = self.add_config_argparser(namespaces)
-        parsed_args = cast(ParsedArgs, config_parser.parse_args(sys.argv[2:]))
-        parsed_args = self.sanitize_portable_arg(parsed_args)
-        cli_inputs = CLIInputs(namespace=self.namespace, sdk_home_dir=str(parsed_args.sdk_home_dir),
-            portable=parsed_args.portable, )
-        config = Config(cli_inputs=cli_inputs)  # re-saves the config.json
-        config.print_json()
-        sys.exit(0)
+        self.component_store = ComponentStore()
+        self.setup_argparser()
 
     def validate_cli_args(self) -> None:
         """calls the appropriate handler for the argparsing.NameSpace"""
@@ -284,7 +263,6 @@ class ArgParser:
             self.cli_inputs = CLIInputs(
                 namespace=self.namespace,
                 sdk_home_dir=str(parsed_args.sdk_home_dir),
-                portable=parsed_args.portable,
             )
         elif self.namespace == NameSpace.TOP_LEVEL:
             self.cli_inputs = CLIInputs(
@@ -306,15 +284,6 @@ class ArgParser:
             for index in subcommand_indices[namespace]:
                 self.parser_raw_args_map[namespace].append(args[index])
 
-    def sanitize_portable_arg(self, parsed_args: ParsedArgs) -> ParsedArgs:
-        if parsed_args.portable in {'true', 'True'}:
-            parsed_args.portable = True
-        if parsed_args.portable in {'false', 'False'}:
-            parsed_args.portable = False
-        if parsed_args.portable is None:
-            parsed_args.portable = None
-        return parsed_args
-
     def feed_to_argparsers(self, args: List[str], subcommand_indices: SubcommandIndicesType) \
             -> None:
         """feeds relevant arguments to each child (or parent) ArgumentParser"""
@@ -328,10 +297,6 @@ class ArgParser:
         for cmd_name in self.parser_map:
             if cmd_name == NameSpace.NODE:
                 self.node_args = self.parser_raw_args_map[cmd_name]
-            elif cmd_name == NameSpace.CONFIG:
-                parsed_args = parse_args()
-                parsed_args = self.sanitize_portable_arg(parsed_args)
-                self.subcmd_parsed_args_map[cmd_name] = parsed_args
             else:
                 parsed_args = parse_args()
                 self.subcmd_parsed_args_map[cmd_name] = parsed_args
@@ -445,9 +410,6 @@ class ArgParser:
         )
         config_parser.add_argument("--sdk-home-dir", type=str, default="", help="The location to "
             "store the component data")
-        config_parser.add_argument("--portable", type=str, default=None,
-            help="If true will search ascending directories for the 'ElectrumSV-SDK' directory "
-                 "i.e. the SDK_HOME_DIR.")
         return config_parser
 
     def add_global_flags(self, top_level_parser: ArgumentParser) -> None:

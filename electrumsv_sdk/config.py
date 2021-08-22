@@ -6,6 +6,7 @@ from argparse import Namespace
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Union
 
+from electrumsv_sdk.constants import NameSpace
 from electrumsv_sdk.sdk_types import SelectedComponent
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -26,7 +27,6 @@ class ParsedArgs(Namespace):
     component_id: str = ""
     cli_extension_args: Dict[str, Any] = {}
     sdk_home_dir: str = ""
-    portable: Union[bool, str] = ""
 
 
 class CLIInputs(object):
@@ -52,7 +52,6 @@ class CLIInputs(object):
             component_id: str = "",
             cli_extension_args: Optional[Dict[str, Any]] = None,
             sdk_home_dir: str = "",
-            portable: Union[bool, str] = ""
 
     ):
         # ------------------ CLI INPUT VALUES ------------------ #
@@ -70,7 +69,6 @@ class CLIInputs(object):
         self.component_id = component_id
         self.cli_extension_args = cli_extension_args if cli_extension_args else {}
         self.sdk_home_dir = sdk_home_dir
-        self.portable = portable
 
 
 class Config:
@@ -99,7 +97,7 @@ class Config:
         self.USER_PLUGINS_DIR: Optional[Path] = None
         self.LOCAL_PLUGINS_DIR: Optional[Path] = None
 
-        if self.cli_inputs:
+        if self.cli_inputs and self.cli_inputs.namespace == NameSpace.CONFIG:
             assert self.cli_inputs is not None
             self.update_config_file(self.cli_inputs)
 
@@ -140,26 +138,9 @@ class Config:
         turning off portable mode"""
         config = self.read_config_json()  # Config is always stored at LOCALAPPDATA location
         sdk_home_dir = cli_inputs.sdk_home_dir
-        portable_mode = cli_inputs.portable
-
-        # Both options cannot coexist
-        if sdk_home_dir and portable_mode is True:
-            return
 
         if sdk_home_dir:
             config['sdk_home_dir'] = sdk_home_dir
-            config['portable'] = False
-
-        elif portable_mode:
-            config['sdk_home_dir'] = "**portable**"
-            config['portable'] = portable_mode
-
-        # When switching off portable mode need to replace '**portable**' with default LOCALAPPDATA
-        # Location for the SDK_HOME_DIR
-        elif portable_mode is False:
-            config['portable'] = False
-            if config.get('sdk_home_dir', '') in {"**portable**", ""}:
-                config['sdk_home_dir'] = str(get_sdk_datadir())
 
         config['is_first_run'] = False
         self.write_to_config_json(config)
@@ -186,32 +167,35 @@ class Config:
 
     def get_dynamic_datadir(self) -> Path:
         """Check config.json (which needs to *always* be located in the system home directory at
-        initial startup) to see if a local directory has been set for SDK_HOME_DIR (or if it is
-        set to 'portable' mode"""
+        initial startup) to see if a local directory has been set for SDK_HOME_DIR
 
-        def is_portable_mode(config: Dict):
-            if self.cli_inputs is not None and self.cli_inputs.portable is True:
+        There is an environment variable: SDK_PORTABLE_MODE=1 which will override everything else
+        and trigger an ascending search for a directory named: 'SDK_HOME_DIR'.
+        """
+        def is_portable_mode():
+            portable_mode = int(os.environ.get("SDK_PORTABLE_MODE", 0))
+            if portable_mode == 1:
                 return True
-
-            portable_mode = config.get('portable', False)
-            if portable_mode:
-                return portable_mode
 
         sdk_home_dir = get_sdk_datadir()
         config = self.read_config_json()
         modified_sdk_home_dir = config.get("sdk_home_dir")
 
+        # The --portable cli option was phased out in v0.0.38 in favour of
+        # the env var SDK_PORTABLE_MODE=1 for its simpler implementation
+        if modified_sdk_home_dir == "**portable**":
+            modified_sdk_home_dir = None
+            config['sdk_home_dir'] = str(sdk_home_dir)
+            if 'portable' in config:
+                del config['portable']
+            self.write_to_config_json(config)
+
         # Searches ascending directories for 'SDK_HOME_DIR'
-        if is_portable_mode(config):
+        if is_portable_mode():
             sdk_home_dir = self.search_for_sdk_home_dir()
 
-        # Reset to default sdk_home_dir (on switching portable mode off but without
-        # specifying an --sdk-home-dir input)
-        elif modified_sdk_home_dir == "**portable**" and not is_portable_mode(config):
-            sdk_home_dir = get_sdk_datadir()
-
         # Pull persisted sdk_home_dir value from config.json for usage
-        elif modified_sdk_home_dir is not None and modified_sdk_home_dir != "**portable**":
+        elif modified_sdk_home_dir is not None:
             sdk_home_dir = Path(modified_sdk_home_dir)
 
         return sdk_home_dir
@@ -228,6 +212,10 @@ class Config:
 
             return config
         else:
+            os.makedirs(os.path.dirname(os.path.abspath(self.CONFIG_PATH)))
+            with open(self.CONFIG_PATH, "w") as f:
+                config = {"is_first_run": False}
+                f.write(json.dumps(config, indent=4))
             return {}
 
     def write_to_config_json(self, config: Dict) -> None:
