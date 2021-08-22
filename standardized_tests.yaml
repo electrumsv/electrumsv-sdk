@@ -16,7 +16,7 @@ steps:
     electrumsv-sdk start --background whatsonchain
     electrumsv-sdk start --background merchant_api
     electrumsv-sdk status
-    python3 ./contrib/check_all_started.py
+    python3 ./contrib/check_all_started.py 6
   displayName: 'start all components'
   continueOnError: true
 
