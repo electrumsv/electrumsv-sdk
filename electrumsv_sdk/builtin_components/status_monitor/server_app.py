@@ -18,14 +18,10 @@ from aiohttp.web_ws import WebSocketResponse
 from filelock import FileLock
 
 from electrumsv_sdk.components import ComponentTypedDict
-from electrumsv_sdk.config import get_sdk_datadir
+from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import get_directory_name
 
 # might be running this as __main__
-
-DATA_PATH = get_sdk_datadir()
-FILE_LOCK_PATH = DATA_PATH / "component_state.json.lock"
-COMPONENT_STATE_PATH = DATA_PATH / "component_state.json"
 
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 56565
@@ -43,7 +39,15 @@ aiohttp_logger.setLevel(logging.WARNING)
 class ApplicationState(object):
 
     def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
-        self.file_lock = FileLock(str(FILE_LOCK_PATH), timeout=5)
+        self.config = Config()
+        self.file_name = "component_state.json"
+        assert self.config.SDK_HOME_DIR is not None
+        self.lock_path = self.config.SDK_HOME_DIR / "component_state.json.lock"
+        self.file_lock = FileLock(str(self.lock_path), timeout=5)
+        self.component_state_path = self.config.SDK_HOME_DIR / self.file_name
+
+
+        self.file_lock = FileLock(str(self.lock_path), timeout=5)
         self.previous_state = self.read_state()  # compare at regularly to detect change
         self.websockets: Set[WebSocketResponse] = set()
         self.websockets_lock: threading.Lock = threading.Lock()
@@ -125,7 +129,7 @@ class ApplicationState(object):
 
     def read_state(self) -> Dict[str, ComponentTypedDict]:
         with self.file_lock:
-            with open(COMPONENT_STATE_PATH, 'r') as f:
+            with open(self.component_state_path, 'r') as f:
                 data = f.read()
                 if data:
                     component_state: Dict[str, ComponentTypedDict] = json.loads(data)
