@@ -262,7 +262,7 @@ jobs:
     - script: |
         set -e
         mkdir -p $(Agent.ToolsDirectory)\SDK_HOME_DIR
-      displayName: 'Turn on portable mode (searches for "SDK_HOME_DIR"'
+      displayName: 'Turn on portable mode (searches for "SDK_HOME_DIR")'
 
     - script: |
         cd $(Build.Repository.LocalPath)/contrib/azure

@@ -500,7 +500,7 @@ def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Optional
 
     assert electrumsv_node.is_running(rpcport, rpchost), (
         "bitcoin node must be running to respond to rpc methods. "
-        "try: electrumsv-sdk start --node")
+        "try: electrumsv-sdk start node")
 
     result = electrumsv_node.call_any(method, *rpc_args, rpchost=rpchost, rpcport=rpcport,
         rpcuser="rpcuser", rpcpassword="rpcpassword")
