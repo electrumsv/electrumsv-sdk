@@ -93,7 +93,7 @@ async def check_running() -> bool:
 
 def extract() -> None:
     try:
-        if sys.platform == "win32":
+        if sys.platform in {"win32", "darwin"}:
             if not EXTRACTION_PATH.exists():
                 with zipfile.ZipFile(DOWNLOAD_PATH, 'r') as z:
                     z.extractall(EXTRACTION_PATH)

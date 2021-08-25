@@ -139,7 +139,7 @@ def download_and_init_postgres():
         from . import postgres
         if not postgres.check_extract_done():
             logger.info(
-                f"downloading and extracting embeded postgres to {postgres_install_path}")
+                f"downloading and extracting embedded postgres to {postgres_install_path}")
             postgres.download_and_extract()
 
         if not postgres.check_initdb_done():
