@@ -5,7 +5,7 @@ steps:
     electrumsv-sdk install electrumsv
     electrumsv-sdk install whatsonchain
     electrumsv-sdk install merchant_api
-  displayName: 'install all components'
+  displayName: 'Install all components'
 
 - script: |
     electrumsv-sdk start --background status_monitor
@@ -17,7 +17,7 @@ steps:
     electrumsv-sdk start --background merchant_api
     electrumsv-sdk status
     python3 ./contrib/check_all_started.py 6
-  displayName: 'start all components'
+  displayName: 'Start all components'
   continueOnError: true
 
 - script: |
@@ -29,14 +29,14 @@ steps:
     electrumsv-sdk stop merchant_api
     electrumsv-sdk status
     python3 ./contrib/check_all_stopped.py
-  displayName: 'stop all components'
+  displayName: 'Stop all components'
   continueOnError: true
 
 - script: |
     sleep 5
     electrumsv-sdk reset
     electrumsv-sdk status
-  displayName: 'reset all components'
+  displayName: 'Reset all components'
   continueOnError: true
 
 - script: |
@@ -45,5 +45,5 @@ steps:
     electrumsv-sdk reset --id=electrumx1 electrumx
     electrumsv-sdk reset --id=electrumsv1 --deterministic-seed electrumsv
     electrumsv-sdk status
-  displayName: 'reset by id'
+  displayName: 'Reset by id'
   continueOnError: true
