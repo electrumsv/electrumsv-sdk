@@ -1,21 +1,27 @@
+import asyncio
 import logging
 import os
 import pathlib
 import platform
+import shutil
 import stat
+from importlib import import_module
+
 import requests
 import sys
 import zipfile
 from typing import Dict, Any
 from urllib.parse import urlparse
 
+from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import get_directory_name
 
 VERSION = "0.0.2"  # electrumsv/electrumsv-mAPI version
 MERCHANT_API_VERSION = "1.3.0"
-MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODULE_DIR = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
 PFX_PATH = pathlib.Path(MODULE_DIR) / "cli_inputs/localhost.pfx"
 SDK_POSTGRES_PORT = os.environ.get('SDK_POSTGRES_PORT', 5432)
+SDK_PORTABLE_MODE = int(os.environ.get('SDK_PORTABLE_MODE', 0))
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -120,9 +126,51 @@ def get_run_path(install_path: pathlib.Path) -> pathlib.Path:
     return install_path / MERCHANT_API_VERSION / entry["exe"]
 
 
+def download_and_init_postgres():
+    config = Config()
+    if SDK_PORTABLE_MODE == 1:
+        postgres_install_path = config.DATADIR / "postgres"
+        os.makedirs(postgres_install_path, exist_ok=True)
+
+        # Set this environment variable before importing postgres script
+        os.environ['SDK_POSTGRES_INSTALL_DIR'] = str(postgres_install_path)
+        from . import postgres
+        if not postgres.check_extract_done():
+            logger.info(
+                f"downloading and extracting embeded postgres to {postgres_install_path}")
+            postgres.download_and_extract()
+
+        if not postgres.check_initdb_done():
+            logger.info(f"running initdb for postgres at {postgres_install_path}")
+            postgres.initdb()
+
+
+def start_postgres():
+    config = Config()
+    if SDK_PORTABLE_MODE == 1:
+        from . import postgres
+        postgres_install_path = config.DATADIR / "postgres"
+        if not asyncio.run(postgres.check_running()):
+            logger.info(f"starting postgres at {postgres_install_path}")
+            postgres.start()
+
+
+def stop_postgres():
+    config = Config()
+    if SDK_PORTABLE_MODE == 1:
+        from . import postgres
+        postgres_install_path = config.DATADIR / "postgres"
+        if not asyncio.run(postgres.check_running()):
+            logger.info(f"stopping postgres at {postgres_install_path}")
+            postgres.stop()
+
+
 if __name__ == "__main__":
     # This will download and extract the correct build to the local `zzz` directory for testing.
+    os.environ['SDK_PORTABLE_MODE'] = "1"
+    SDK_PORTABLE_MODE = int(os.environ['SDK_PORTABLE_MODE'])
     download_path = pathlib.Path("zzz")
+    config = Config()
     download_and_install(download_path)
 
     run_path = get_run_path(download_path)

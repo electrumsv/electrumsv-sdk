@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import sys
@@ -5,14 +6,18 @@ from pathlib import Path
 from typing import Optional, Set
 
 from electrumsv_sdk.sdk_types import AbstractPlugin
-from electrumsv_sdk.config import CLIInputs
+from electrumsv_sdk.config import CLIInputs, Config
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
 from .install import download_and_install, load_env_vars, get_run_path, chmod_exe, \
-    MERCHANT_API_VERSION
+    MERCHANT_API_VERSION, download_and_init_postgres, start_postgres, stop_postgres
 from .check_db_config import check_postgres_db, drop_db_on_install
+
+
+SDK_POSTGRES_PORT = os.environ.get('SDK_POSTGRES_PORT', 5432)
+SDK_PORTABLE_MODE = int(os.environ.get('SDK_PORTABLE_MODE', 0))
 
 
 class Plugin(AbstractPlugin):
@@ -31,6 +36,7 @@ class Plugin(AbstractPlugin):
 
     def __init__(self, cli_inputs: CLIInputs):
         self.cli_inputs = cli_inputs
+        self.config = Config()
         self.plugin_tools = PluginTools(self, self.cli_inputs)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
@@ -39,8 +45,12 @@ class Plugin(AbstractPlugin):
         self.id: Optional[str] = None  # dynamically allocated
         self.port: Optional[int] = None  # dynamically allocated
         self.component_info: Optional[Component] = None
+        download_and_init_postgres()  # only if necessary
 
     def install(self) -> None:
+        if SDK_PORTABLE_MODE == 1:
+            start_postgres()
+
         assert self.src is not None  # typing bug
         download_and_install(self.src)
         drop_db_on_install()
@@ -48,6 +58,9 @@ class Plugin(AbstractPlugin):
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self) -> None:
+        if SDK_PORTABLE_MODE == 1:
+            start_postgres()
+
         self.logger.debug(f"Starting Merchant API")
         check_postgres_db()
         assert self.src is not None  # typing bug
@@ -82,6 +95,18 @@ class Plugin(AbstractPlugin):
 
     def stop(self) -> None:
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
+
+        if SDK_PORTABLE_MODE == 1:
+            assert self.config.DATADIR is not None
+            postgres_install_path = self.config.DATADIR / "postgres"
+
+            # Set this environment variable before importing postgres script
+            os.environ['SDK_POSTGRES_INSTALL_DIR'] = str(postgres_install_path)
+            from . import postgres
+            if asyncio.run(postgres.check_running()):
+                self.logger.info(f"stopping postgres at {postgres_install_path}")
+                stop_postgres()
+
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self) -> None:
