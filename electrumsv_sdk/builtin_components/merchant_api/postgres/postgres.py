@@ -18,7 +18,7 @@ import requests
 from requests import Response
 
 logger: logging.Logger = logging.getLogger('postgres-script')
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(level=getattr(logging, os.environ.get('SDK_LOG_LEVEL', 'INFO')),
     format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s')
 
 SDK_POSTGRES_PORT: int = int(os.environ.get('SDK_POSTGRES_PORT', 15432))
@@ -134,14 +134,9 @@ def download_and_extract() -> None:
 
 
 def spawn(cmd: List[str]) -> None:
-    if sys.platform == 'win32':
-        process: Popen[bytes] = subprocess.Popen(cmd, env=os.environ.copy())
-        if process:
-            process.wait()
-    elif sys.platform in {'linux', 'darwin'}:
-        process: Popen[bytes] = subprocess.Popen(f"{cmd}", shell=True, env=os.environ.copy())
-        if process:
-            process.wait()
+    process: Popen[bytes] = subprocess.Popen(cmd, env=os.environ.copy())
+    if process:
+        process.wait()
 
 
 def initdb() -> None:
