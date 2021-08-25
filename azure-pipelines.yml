@@ -76,7 +76,7 @@ jobs:
     - script: |
         set -e
         python3 -m pip install -U pylint
-        python3 -m pylint --rcfile ./.pylintrc ./electrumsv-sdk
+        python3 -m pylint --rcfile ./.pylintrc ./electrumsv_sdk
         if [ $? -gt 0 ]
         then
           # https://docs.pylint.org/en/1.6.0/run.html#exit-codes
@@ -231,9 +231,6 @@ jobs:
 
   pool:
     vmImage: 'windows-latest'
-
-  services:
-    postgres: pg12-win32
 
   variables:
     MODIFIED_SDK_HOME_DIR:      $(Agent.ToolsDirectory)\SDK_HOME_DIR

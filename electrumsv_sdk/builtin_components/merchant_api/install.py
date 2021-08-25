@@ -3,9 +3,7 @@ import logging
 import os
 import pathlib
 import platform
-import shutil
 import stat
-from importlib import import_module
 
 import requests
 import sys
@@ -13,6 +11,7 @@ import zipfile
 from typing import Dict, Any
 from urllib.parse import urlparse
 
+from electrumsv_sdk.builtin_components.merchant_api.mapi_db_config import check_postgres_db
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import get_directory_name
 
@@ -102,9 +101,12 @@ def maybe_change_postgres_port() -> None:
         DBConnectionString = os.environ['ConnectionStrings__DBConnectionString']
         DBConnectionStringDDL = os.environ['ConnectionStrings__DBConnectionStringDDL']
         DBConnectionStringMaster = os.environ['ConnectionStrings__DBConnectionStringMaster']
-        os.environ['ConnectionStrings__DBConnectionString'] = DBConnectionString.replace("Port=5432", f"Port={SDK_POSTGRES_PORT}")
-        os.environ['ConnectionStrings__DBConnectionStringDDL'] = DBConnectionStringDDL.replace("Port=5432", f"Port={SDK_POSTGRES_PORT}")
-        os.environ['ConnectionStrings__DBConnectionStringMaster'] = DBConnectionStringMaster.replace("Port=5432", f"Port={SDK_POSTGRES_PORT}")
+        os.environ['ConnectionStrings__DBConnectionString'] = \
+            DBConnectionString.replace("Port=5432", f"Port={SDK_POSTGRES_PORT}")
+        os.environ['ConnectionStrings__DBConnectionStringDDL'] = \
+            DBConnectionStringDDL.replace("Port=5432", f"Port={SDK_POSTGRES_PORT}")
+        os.environ['ConnectionStrings__DBConnectionStringMaster'] = \
+            DBConnectionStringMaster.replace("Port=5432", f"Port={SDK_POSTGRES_PORT}")
 
 
 def load_env_vars() -> None:
@@ -141,8 +143,13 @@ def download_and_init_postgres():
             postgres.download_and_extract()
 
         if not postgres.check_initdb_done():
-            logger.info(f"running initdb for postgres at {postgres_install_path}")
+            logger.info(f"running initdb for postgres port: {SDK_POSTGRES_PORT} "
+                f"at: {postgres_install_path}")
             postgres.initdb()
+
+
+def prepare_fresh_postgres():
+    check_postgres_db()
 
 
 def start_postgres():
@@ -151,7 +158,7 @@ def start_postgres():
         from . import postgres
         postgres_install_path = config.DATADIR / "postgres"
         if not asyncio.run(postgres.check_running()):
-            logger.info(f"starting postgres at {postgres_install_path}")
+            logger.info(f"starting postgres port: {SDK_POSTGRES_PORT} at: {postgres_install_path}")
             postgres.start()
 
 
@@ -161,7 +168,7 @@ def stop_postgres():
         from . import postgres
         postgres_install_path = config.DATADIR / "postgres"
         if not asyncio.run(postgres.check_running()):
-            logger.info(f"stopping postgres at {postgres_install_path}")
+            logger.info(f"stopping postgres port: {SDK_POSTGRES_PORT} at: {postgres_install_path}")
             postgres.stop()
 
 

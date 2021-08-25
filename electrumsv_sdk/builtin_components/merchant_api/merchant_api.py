@@ -12,7 +12,8 @@ from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
 from .install import download_and_install, load_env_vars, get_run_path, chmod_exe, \
-    MERCHANT_API_VERSION, download_and_init_postgres, start_postgres, stop_postgres
+    MERCHANT_API_VERSION, download_and_init_postgres, start_postgres, stop_postgres, \
+    prepare_fresh_postgres
 from .check_db_config import check_postgres_db, drop_db_on_install
 
 
@@ -50,6 +51,8 @@ class Plugin(AbstractPlugin):
     def install(self) -> None:
         if SDK_PORTABLE_MODE == 1:
             start_postgres()
+            prepare_fresh_postgres()
+
 
         assert self.src is not None  # typing bug
         download_and_install(self.src)
@@ -104,7 +107,6 @@ class Plugin(AbstractPlugin):
             os.environ['SDK_POSTGRES_INSTALL_DIR'] = str(postgres_install_path)
             from . import postgres
             if asyncio.run(postgres.check_running()):
-                self.logger.info(f"stopping postgres at {postgres_install_path}")
                 stop_postgres()
 
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")

@@ -2,10 +2,8 @@ import json
 import logging
 import os
 from pathlib import Path
-import shutil
-import stat
 import sys
-from typing import List, Callable, Any
+from typing import List
 
 from electrumsv_node import electrumsv_node
 

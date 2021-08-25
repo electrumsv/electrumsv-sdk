@@ -4,7 +4,7 @@ import os
 import sys
 from argparse import Namespace
 from pathlib import Path
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any
 
 from electrumsv_sdk.constants import NameSpace
 from electrumsv_sdk.sdk_types import SelectedComponent

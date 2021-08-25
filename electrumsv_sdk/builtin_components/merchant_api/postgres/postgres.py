@@ -146,7 +146,8 @@ def spawn(cmd: List[str]) -> None:
 
 def initdb() -> None:
     os.makedirs(PG_DATA, exist_ok=True)
-    cmd: List[str] = [str(INITDB), "--pgdata", str(PG_DATA), "--username", "postgres"]
+    cmd: List[str] = [str(INITDB), "--encoding", "UTF8", "--pgdata", str(PG_DATA),
+        "--username", "postgres"]
     spawn(cmd)
 
 

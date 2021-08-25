@@ -13,7 +13,7 @@ import sys
 from typing import Dict, List, Tuple, cast, Optional
 
 from .constants import NameSpace
-from .config import CLIInputs, ParsedArgs, Config
+from .config import CLIInputs, ParsedArgs
 from .sdk_types import SubcommandIndicesType, ParserMap, RawArgsMap, SubcommandParsedArgsMap, \
     SelectedComponent
 from .validate_cli_args import ValidateCliArgs
