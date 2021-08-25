@@ -17,8 +17,9 @@ from .install import download_and_install, load_env_vars, get_run_path, chmod_ex
 from .check_db_config import check_postgres_db, drop_db_on_install
 
 
-SDK_POSTGRES_PORT = os.environ.get('SDK_POSTGRES_PORT', 5432)
-SDK_PORTABLE_MODE = int(os.environ.get('SDK_PORTABLE_MODE', 0))
+SDK_POSTGRES_PORT = int(os.environ.get('SDK_POSTGRES_PORT', "5432"))
+SDK_PORTABLE_MODE = int(os.environ.get('SDK_PORTABLE_MODE', "0"))
+SDK_SKIP_POSTGRES_INIT: int = int(os.environ.get('SDK_SKIP_POSTGRES_INIT', "0"))
 
 
 class Plugin(AbstractPlugin):
@@ -49,20 +50,23 @@ class Plugin(AbstractPlugin):
         download_and_init_postgres()  # only if necessary
 
     def install(self) -> None:
-        if SDK_PORTABLE_MODE == 1:
-            start_postgres()
-            prepare_fresh_postgres()
-
-
         assert self.src is not None  # typing bug
         download_and_install(self.src)
-        drop_db_on_install()
-        check_postgres_db()
+
+        if SDK_SKIP_POSTGRES_INIT != 1:
+            if SDK_PORTABLE_MODE == 1:
+                start_postgres()
+                prepare_fresh_postgres()
+
+            drop_db_on_install()
+            check_postgres_db()
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self) -> None:
         if SDK_PORTABLE_MODE == 1:
+            download_and_install(self.src)
             start_postgres()
+            prepare_fresh_postgres()
 
         self.logger.debug(f"Starting Merchant API")
         check_postgres_db()

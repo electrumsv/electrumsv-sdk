@@ -19,8 +19,9 @@ VERSION = "0.0.2"  # electrumsv/electrumsv-mAPI version
 MERCHANT_API_VERSION = "1.3.0"
 MODULE_DIR = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
 PFX_PATH = pathlib.Path(MODULE_DIR) / "cli_inputs/localhost.pfx"
-SDK_POSTGRES_PORT = os.environ.get('SDK_POSTGRES_PORT', 5432)
-SDK_PORTABLE_MODE = int(os.environ.get('SDK_PORTABLE_MODE', 0))
+SDK_POSTGRES_PORT: int = int(os.environ.get('SDK_POSTGRES_PORT', "5432"))
+SDK_PORTABLE_MODE: int = int(os.environ.get('SDK_PORTABLE_MODE', "0"))
+SDK_SKIP_POSTGRES_INIT: int = int(os.environ.get('SDK_SKIP_POSTGRES_INIT', "0"))
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -142,7 +143,9 @@ def download_and_init_postgres():
                 f"downloading and extracting embedded postgres to {postgres_install_path}")
             postgres.download_and_extract()
 
-        if not postgres.check_initdb_done():
+        # We do not initialise the db in the azure pipeline because there are issues with file
+        # permissions
+        if not postgres.check_initdb_done() and SDK_SKIP_POSTGRES_INIT != 1:
             logger.info(f"running initdb for postgres port: {SDK_POSTGRES_PORT} "
                 f"at: {postgres_install_path}")
             postgres.initdb()
