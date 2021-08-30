@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from typing import Optional, Set
 
+from electrumsv_sdk.builtin_components.merchant_api.add_node_to_mapi_thread import AddNodeThread
 from electrumsv_sdk.sdk_types import AbstractPlugin
 from electrumsv_sdk.config import CLIInputs, Config
 from electrumsv_sdk.components import Component
@@ -96,9 +97,16 @@ class Plugin(AbstractPlugin):
         logfile = self.plugin_tools.get_logfile_path(self.id)
         status_endpoint = "http://127.0.0.1:5050/mapi/feeQuote"
 
+        self.add_node_thread = AddNodeThread(mapi_url="http://127.0.0.1:5050", max_wait_time=10)
+        self.add_node_thread.start()
+
         self.plugin_tools.spawn_process(str(command), env_vars=os.environ.copy(), id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
             status_endpoint=status_endpoint)
+
+        # will keep trying to add node until mAPI REST API available (up to a limited wait time)
+        self.logger.info("Adding node to mAPI instance (if not already added)")
+        self.add_node_thread.join()
 
     def stop(self) -> None:
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)
