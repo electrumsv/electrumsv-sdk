@@ -51,7 +51,7 @@ class Plugin(AbstractPlugin):
         download_and_init_postgres()  # only if necessary
 
     def install(self) -> None:
-        assert self.src is not None  # typing bug
+        assert self.src is not None  # typing bug in mypy
         download_and_install(self.src)
 
         if SDK_SKIP_POSTGRES_INIT != 1:
@@ -64,6 +64,7 @@ class Plugin(AbstractPlugin):
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self) -> None:
+        assert self.src is not None  # typing bug
         if SDK_PORTABLE_MODE == 1:
             download_and_install(self.src)
             start_postgres()
@@ -71,7 +72,7 @@ class Plugin(AbstractPlugin):
 
         self.logger.debug(f"Starting Merchant API")
         check_postgres_db()
-        assert self.src is not None  # typing bug
+
         if not self.src.exists():
             self.logger.error(f"source code directory does not exist - try 'electrumsv-sdk install "
                               f"{self.COMPONENT_NAME}' to install the plugin first")

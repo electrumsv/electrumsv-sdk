@@ -179,8 +179,11 @@ def kill_by_pid(parent_pid: Optional[int], graceful_wait_period: float=0.0,
                 return
             time.sleep(0.2)
 
-    if psutil.pid_exists(pid):
-        sigkill(parent_pid=pid)
+    for pid in pid_list:
+        # sometimes we can't be sure which is the parent and which is child
+        # hence check to see if the pid still exists
+        if psutil.pid_exists(pid):
+            sigkill(parent_pid=pid)
 
 
 def kill_process(component_dict: ComponentTypedDict, graceful_wait_period: float=0.0,

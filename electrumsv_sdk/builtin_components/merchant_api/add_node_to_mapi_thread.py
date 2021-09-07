@@ -2,9 +2,7 @@ import json
 import logging
 import threading
 import time
-
 import requests
-from requests.auth import HTTPBasicAuth
 
 
 class MerchantAPIUnavailableError(Exception):
@@ -47,7 +45,8 @@ class AddNodeThread(threading.Thread):
                 return True
             except Exception as e:
                 if result:
-                    self.logger.exception(f"Unexpected exception connecting to mAPI. Reason: {result.content}")
+                    self.logger.exception(f"Unexpected exception connecting to mAPI. "
+                                          f"Reason: {result.content}")
                 else:
                     # self.logger.exception("Unexpected exception connecting to mAPI")
                     pass
