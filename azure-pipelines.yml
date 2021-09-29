@@ -14,7 +14,7 @@ resources:
   - container: pg12
     image: postgres:12
     ports:
-      - 15432:5432
+      - 55432:5432
     env:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -23,7 +23,7 @@ resources:
   - container: pg12-win32
     image: stellirin/postgres-windows:12
     ports:
-      - 15432:5432
+      - 55432:5432
     env:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -41,7 +41,7 @@ jobs:
     MODIFIED_SDK_HOME_DIR:  $(Agent.HomeDirectory)/my_portable_sdk_datadir
     NEW_LOG_DIR:            $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
     SDK_LOG_LEVEL:          DEBUG
-    SDK_POSTGRES_PORT:          15432
+    SDK_POSTGRES_PORT:      55432
 
   steps:
     - task: UsePythonVersion@0
@@ -118,7 +118,7 @@ jobs:
     MODIFIED_SDK_HOME_DIR:  $(Agent.HomeDirectory)/my_portable_sdk_datadir
     NEW_LOG_DIR:            $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
     SDK_LOG_LEVEL:          DEBUG
-    SDK_POSTGRES_PORT:          15432
+    SDK_POSTGRES_PORT:      55432
 
   steps:
     # https://stackoverflow.com/questions/27700596/homebrew-postgres-broken
@@ -134,9 +134,9 @@ jobs:
         echo 'export PATH="/usr/local/opt/postgresql/bin:$PATH"' >> /Users/runner/.bash_profile
         export PKG_CONFIG_PATH="/usr/local/opt/postgresql/lib/pkgconfig"
 
-        pg_ctl -o "-p 15432" -D /usr/local/var/postgres start
-        psql -p 15432 -U postgres --list
-        psql -p 15432 -U postgres -c "\du"
+        pg_ctl -o "-p 55432" -D /usr/local/var/postgres start
+        psql -p 55432 -U postgres --list
+        psql -p 55432 -U postgres -c "\du"
 
         cd $(Build.Repository.LocalPath)/contrib/azure
         python3 -m pip install asyncpg
@@ -188,7 +188,7 @@ jobs:
     MODIFIED_SDK_HOME_DIR:    $(Agent.HomeDirectory)\my_portable_sdk_datadir
     NEW_LOG_DIR:              $(Agent.HomeDirectory)\my_portable_sdk_datadir\logs
     SDK_LOG_LEVEL:            DEBUG
-    SDK_POSTGRES_PORT:            15432
+    SDK_POSTGRES_PORT:        55432
 
   steps:
     - task: UsePythonVersion@0
@@ -236,7 +236,7 @@ jobs:
     MODIFIED_SDK_HOME_DIR:      $(Agent.ToolsDirectory)\SDK_HOME_DIR
     NEW_LOG_DIR:                $(Agent.ToolsDirectory)\SDK_HOME_DIR\logs
     SDK_LOG_LEVEL:              DEBUG
-    SDK_POSTGRES_PORT:          15432
+    SDK_POSTGRES_PORT:          55432
     SDK_PORTABLE_MODE:          1
 
   steps:
@@ -288,7 +288,7 @@ jobs:
     LOG_DIR:                C:\Users\VssAdministrator\AppData\Local\ElectrumSV-SDK\logs
     SDK_LOG_LEVEL:          INFO
     PREVIOUS_SDK_VERSION:   0.0.37
-    SDK_POSTGRES_PORT:          15432
+    SDK_POSTGRES_PORT:      55432
 
   steps:
     - task: UsePythonVersion@0

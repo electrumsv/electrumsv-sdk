@@ -21,7 +21,7 @@ logger: logging.Logger = logging.getLogger('postgres-script')
 logging.basicConfig(level=getattr(logging, os.environ.get('SDK_LOG_LEVEL', 'INFO')),
     format='%(asctime)s %(levelname)-8s %(name)-24s %(message)s')
 
-SDK_POSTGRES_PORT: int = int(os.environ.get('SDK_POSTGRES_PORT', 15432))
+SDK_POSTGRES_PORT: int = int(os.environ.get('SDK_POSTGRES_PORT', 55432))
 INSTALL_PATH: Path = Path(os.environ.get("SDK_POSTGRES_INSTALL_DIR",
     Path(os.path.dirname(os.path.abspath(__file__)))))
 
