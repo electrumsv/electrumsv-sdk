@@ -1,4 +1,3 @@
-import builtins
 import subprocess
 from argparse import ArgumentParser
 from pathlib import Path
@@ -8,10 +7,9 @@ from typing import Set, Optional, List, Dict
 import typing
 
 if typing.TYPE_CHECKING:
-    from electrumsv_sdk.config import CLIInputs, Config
+    from .config import CLIInputs, Config, ParsedArgs
     from .components import Component
     from .plugin_tools import PluginTools
-    from .config import ParsedArgs
 
 
 class AbstractPlugin:
@@ -54,4 +52,4 @@ ParserMap = Dict[str, ArgumentParser]
 RawArgsMap = Dict[str, List[str]]
 SubcommandParsedArgsMap = Dict[str, 'ParsedArgs']
 SelectedComponent = str
-SubprocessCallResult = subprocess.Popen[builtins.bytes]
+SubprocessCallResult = subprocess.Popen

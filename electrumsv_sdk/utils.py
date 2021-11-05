@@ -481,6 +481,19 @@ def submit_blocks_from_file(node_id: str, filepath: Union[Path, str]) -> None:
 def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Optional[Any]:
     rpc_args = cast_str_int_args_to_int(list(args))
     rpc_args = cast_str_bool_args_to_bool(rpc_args)
+
+    rpchost = os.getenv("BITCOIN_NODE_HOST")
+    rpcport = int(os.getenv("BITCOIN_NODE_PORT", "0"))
+    if rpchost and rpcport:
+        assert electrumsv_node.is_running(rpcport, rpchost), (
+            "bitcoin node must be running to respond to rpc methods. "
+            "try: electrumsv-sdk start node")
+
+        result = electrumsv_node.call_any(method, *rpc_args, rpchost=rpchost, rpcport=rpcport,
+            rpcuser="rpcuser", rpcpassword="rpcpassword")
+
+        return json.loads(result.content)
+
     component_store = ComponentStore()
     DEFAULT_RPCHOST = "127.0.0.1"
     DEFAULT_RPCPORT = 18332
@@ -494,7 +507,7 @@ def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Optional
     assert component_dict is not None  # typing bug
     metadata = component_dict["metadata"]
     assert metadata is not None  # typing bug
-    rpcport = metadata.get("rpcport")
+    rpcport = int(metadata.get("rpcport", 18332))
     if not metadata:
         logger.error(f"could not locate metadata for node instance: {node_id}, "
                      f"using default of 18332")

@@ -137,42 +137,52 @@ def download_and_init_postgres():
 
         # Set this environment variable before importing postgres script
         os.environ['SDK_POSTGRES_INSTALL_DIR'] = str(postgres_install_path)
-        from . import postgres
-        if not postgres.check_extract_done():
+        from .. import _postgres
+        if not _postgres.check_extract_done():
             logger.info(
                 f"downloading and extracting embedded postgres to {postgres_install_path}")
-            postgres.download_and_extract()
+            _postgres.download_and_extract()
 
         # We do not initialise the db in the azure pipeline because there are issues with file
         # permissions
-        if not postgres.check_initdb_done() and SDK_SKIP_POSTGRES_INIT != 1:
+        if not _postgres.check_initdb_done() and SDK_SKIP_POSTGRES_INIT != 1:
             logger.info(f"running initdb for postgres port: {SDK_POSTGRES_PORT} "
                 f"at: {postgres_install_path}")
-            postgres.initdb()
+            _postgres.initdb()
 
 
 def prepare_fresh_postgres():
     check_postgres_db()
 
 
+def reset_postgres():
+    config = Config()
+    if SDK_PORTABLE_MODE == 1:
+        from .. import _postgres
+        postgres_install_path = config.DATADIR / "postgres"
+        if not asyncio.run(_postgres.check_running()):
+            logger.info(f"resetting postgres at: {postgres_install_path}")
+            _postgres.reset()
+
+
 def start_postgres():
     config = Config()
     if SDK_PORTABLE_MODE == 1:
-        from . import postgres
+        from .. import _postgres
         postgres_install_path = config.DATADIR / "postgres"
-        if not asyncio.run(postgres.check_running()):
+        if not asyncio.run(_postgres.check_running()):
             logger.info(f"starting postgres port: {SDK_POSTGRES_PORT} at: {postgres_install_path}")
-            postgres.start()
+            _postgres.start()
 
 
 def stop_postgres():
     config = Config()
     if SDK_PORTABLE_MODE == 1:
-        from . import postgres
+        from .. import _postgres
         postgres_install_path = config.DATADIR / "postgres"
-        if not asyncio.run(postgres.check_running()):
+        if not asyncio.run(_postgres.check_running()):
             logger.info(f"stopping postgres port: {SDK_POSTGRES_PORT} at: {postgres_install_path}")
-            postgres.stop()
+            _postgres.stop()
 
 
 if __name__ == "__main__":

@@ -43,11 +43,10 @@ class ApplicationState(object):
         self.file_name = "component_state.json"
         assert self.config.SDK_HOME_DIR is not None
         self.lock_path = self.config.SDK_HOME_DIR / "component_state.json.lock"
-        self.file_lock = FileLock(str(self.lock_path), timeout=5)
         self.component_state_path = self.config.SDK_HOME_DIR / self.file_name
 
 
-        self.file_lock = FileLock(str(self.lock_path), timeout=5)
+        self.file_lock = FileLock(str(self.lock_path), timeout=5)  # pylint: disable=abstract-class-instantiated
         self.previous_state = self.read_state()  # compare at regularly to detect change
         self.websockets: Set[WebSocketResponse] = set()
         self.websockets_lock: threading.Lock = threading.Lock()

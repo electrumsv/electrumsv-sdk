@@ -56,6 +56,8 @@ class Plugin(AbstractPlugin):
 
         if SDK_SKIP_POSTGRES_INIT != 1:
             if SDK_PORTABLE_MODE == 1:
+                # stop_postgres()
+                # reset_postgres()
                 start_postgres()
                 prepare_fresh_postgres()
 
@@ -118,8 +120,8 @@ class Plugin(AbstractPlugin):
 
             # Set this environment variable before importing postgres script
             os.environ['SDK_POSTGRES_INSTALL_DIR'] = str(postgres_install_path)
-            from . import postgres
-            if asyncio.run(postgres.check_running()):
+            from .. import _postgres
+            if asyncio.run(_postgres.check_running()):
                 stop_postgres()
 
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")

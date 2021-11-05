@@ -166,6 +166,7 @@ def reset() -> None:
         logger.info("resetting postgres data directory")
         shutil.rmtree(PG_DATA)
     os.makedirs(PG_DATA, exist_ok=True)
+    initdb()
 
 
 def main() -> None:

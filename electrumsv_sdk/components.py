@@ -138,7 +138,7 @@ class ComponentStore:
         self.file_name = "component_state.json"
         assert self.config.SDK_HOME_DIR is not None
         self.lock_path = self.config.SDK_HOME_DIR / "component_state.json.lock"
-        self.file_lock = FileLock(str(self.lock_path), timeout=5)
+        self.file_lock = FileLock(str(self.lock_path), timeout=5)  # pylint: disable=abstract-class-instantiated
         self.component_state_path = self.config.SDK_HOME_DIR / self.file_name
         if not self.component_state_path.exists():
             open(self.component_state_path, 'w').close()
@@ -227,7 +227,7 @@ class ComponentStore:
         assert self.config.LOCAL_PLUGINS_DIR is not None
 
         component_map = {}  # component_name: <component_dir>
-        ignored = {'__init__.py', '__pycache__', '.idea', '.vscode'}
+        ignored = {'__init__.py', '__pycache__', '.idea', '.vscode', '_postgres'}
 
         # Layer 1
         builtin_components_list = [
