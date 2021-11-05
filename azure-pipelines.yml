@@ -46,7 +46,7 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.9
+        versionSpec: 3.10
 
     - script: |
           set -e
@@ -145,7 +145,7 @@ jobs:
 
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.9
+        versionSpec: 3.10
 
     - script: |
         brew upgrade sqlite3
@@ -193,18 +193,18 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.9
+        versionSpec: 3.10
         addToPath: true
         architecture: 'x64'
 
     # need to add python Scripts/ dir to PATH to find 'electrumsv-sdk' command
     - pwsh: |
-        $scripts_dir = py -3.9 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
+        $scripts_dir = py -3.10 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
         $env:PATH += $scripts_dir
-        py -3.9 -m pip install --upgrade pip
-        py -3.9 -m pip install wheel
-        py -3.9 -m pip install -e .
-        py -3.9 -m pip install pytest pytest-cov
+        py -3.10 -m pip install --upgrade pip
+        py -3.10 -m pip install wheel
+        py -3.10 -m pip install -e .
+        py -3.10 -m pip install pytest pytest-cov
       displayName: 'Install electrumsv-sdk'
 
     - script: |
@@ -242,18 +242,18 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.9
+        versionSpec: 3.10
         addToPath: true
         architecture: 'x64'
 
     # need to add python Scripts/ dir to PATH to find 'electrumsv-sdk' command
     - pwsh: |
-        $scripts_dir = py -3.9 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
+        $scripts_dir = py -3.10 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
         $env:PATH += $scripts_dir
-        py -3.9 -m pip install --upgrade pip
-        py -3.9 -m pip install wheel
-        py -3.9 -m pip install -e .
-        py -3.9 -m pip install pytest pytest-cov
+        py -3.10 -m pip install --upgrade pip
+        py -3.10 -m pip install wheel
+        py -3.10 -m pip install -e .
+        py -3.10 -m pip install pytest pytest-cov
       displayName: 'Install electrumsv-sdk'
 
     - script: |
@@ -293,18 +293,18 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.9
+        versionSpec: 3.10
         addToPath: true
         architecture: 'x64'
 
     # need to add python Scripts/ dir to PATH to find 'electrumsv-sdk' command
     - pwsh: |
-        $scripts_dir = py -3.9 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
+        $scripts_dir = py -3.10 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
         $env:PATH += $scripts_dir
-        py -3.9 -m pip install --upgrade pip
-        py -3.9 -m pip install wheel
-        py -3.9 -m pip install pytest pytest-cov
-        py -3.9 -m pip install electrumsv-sdk==$(PREVIOUS_SDK_VERSION)
+        py -3.10 -m pip install --upgrade pip
+        py -3.10 -m pip install wheel
+        py -3.10 -m pip install pytest pytest-cov
+        py -3.10 -m pip install electrumsv-sdk==$(PREVIOUS_SDK_VERSION)
       displayName: 'Install electrumsv-sdk previous version'
 
 #    - script: |
@@ -326,11 +326,11 @@ jobs:
       displayName: 'Install all components'
 
     - script: |
-        py -3.9 -m pip uninstall electrumsv-sdk
-        py -3.9 -m pip install -e .
+        py -3.10 -m pip uninstall electrumsv-sdk
+        py -3.10 -m pip install -e .
       displayName: 'Install electrumsv-sdk latest master'
 
-    - script: |
+    - script: | 
         electrumsv-sdk install node
         electrumsv-sdk install electrumx
         electrumsv-sdk install electrumsv
@@ -411,7 +411,7 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.9
+        versionSpec: 3.10
 
     - script: |
         py -3 -m pip install --upgrade pip
@@ -431,7 +431,7 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.9
+        versionSpec: 3.10
 
     - bash: |
         python3 -m pip install --upgrade pip

@@ -95,7 +95,7 @@ class ApplicationState(object):
             # status change from previous
             for id in current_state.keys():
                 current_component_state: ComponentTypedDict = current_state[id]
-                prev_component_state = self.previous_state[id]
+                prev_component_state = self.previous_state.get(id)
 
                 # new component (new id)
                 if not prev_component_state:
