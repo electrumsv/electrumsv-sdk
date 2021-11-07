@@ -82,7 +82,7 @@ class LocalTools:
         assert self.plugin.config.PYTHON_LIB_DIR is not None
         assert self.plugin.COMPONENT_NAME is not None
 
-        def modify_requirements_for_windows_and_mac(temp_requirements):
+        def modify_requirements(temp_requirements):
             """replaces plyvel with plyvel-wheels"""
             packages = []
             with open(requirements_path, 'r') as f:
@@ -101,20 +101,13 @@ class LocalTools:
         requirements_path = self.plugin.src.joinpath('requirements.txt')
         electrumx_libs_path = self.plugin.config.PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
 
-        if sys.platform == 'linux':
-            process = subprocess.Popen(
-                f"{sys.executable} -m pip install --target {electrumx_libs_path} "
-                f"-r {requirements_path} --upgrade", shell=True)
-            process.wait()
-
-        elif sys.platform in {'win32', 'darwin'}:
-            temp_requirements = self.plugin.src.joinpath('requirements-temp.txt')
-            modify_requirements_for_windows_and_mac(temp_requirements)
-            process = subprocess.Popen(
-                f"{sys.executable} -m pip install --target {electrumx_libs_path} "
-                f"-r {temp_requirements} --upgrade", shell=True)
-            process.wait()
-            os.remove(temp_requirements)
+        temp_requirements = self.plugin.src.joinpath('requirements-temp.txt')
+        modify_requirements(temp_requirements)
+        process = subprocess.Popen(
+            f"{sys.executable} -m pip install --target {electrumx_libs_path} "
+            f"-r {temp_requirements} --upgrade", shell=True)
+        process.wait()
+        os.remove(temp_requirements)
 
     async def stop_electrumx(self, rpcport: int=8000) -> bool:
         try:
