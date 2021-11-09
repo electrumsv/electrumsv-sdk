@@ -227,7 +227,7 @@ class ComponentStore:
         assert self.config.LOCAL_PLUGINS_DIR is not None
 
         component_map = {}  # component_name: <component_dir>
-        ignored = {'__init__.py', '__pycache__', '.idea', '.vscode', '_postgres'}
+        ignored = {'__init__.py', '__pycache__', '.idea', '.vscode', '_postgres', '_common'}
 
         # Layer 1
         builtin_components_list = [
