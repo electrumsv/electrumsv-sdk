@@ -68,7 +68,7 @@ class Plugin(AbstractPlugin):
             start_postgres()
             prepare_fresh_postgres()
 
-        self.logger.debug(f"Starting Merchant API")
+        self.logger.debug(f"Starting Peer Channels")
         check_postgres_db()
 
         if not self.src.exists():
@@ -124,4 +124,4 @@ class Plugin(AbstractPlugin):
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self) -> None:
-        self.logger.info("resetting Merchant API is not applicable")
+        self.logger.info("resetting Peer Channels is not applicable")

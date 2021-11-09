@@ -17,20 +17,6 @@ COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
 
-
-def maybe_change_postgres_port() -> None:
-    if SDK_POSTGRES_PORT != 5432:
-        DBConnectionString = os.environ['ConnectionStrings__DBConnectionString']
-        DBConnectionStringDDL = os.environ['ConnectionStrings__DBConnectionStringDDL']
-        DBConnectionStringMaster = os.environ['ConnectionStrings__DBConnectionStringMaster']
-        os.environ['ConnectionStrings__DBConnectionString'] = \
-            DBConnectionString.replace("Port=5432", f"Port={SDK_POSTGRES_PORT}")
-        os.environ['ConnectionStrings__DBConnectionStringDDL'] = \
-            DBConnectionStringDDL.replace("Port=5432", f"Port={SDK_POSTGRES_PORT}")
-        os.environ['ConnectionStrings__DBConnectionStringMaster'] = \
-            DBConnectionStringMaster.replace("Port=5432", f"Port={SDK_POSTGRES_PORT}")
-
-
 def download_and_init_postgres():
     config = Config()
     if SDK_PORTABLE_MODE == 1:

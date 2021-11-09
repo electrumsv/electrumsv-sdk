@@ -10,7 +10,6 @@ import zipfile
 from typing import Dict, Any
 from urllib.parse import urlparse
 
-from electrumsv_sdk.builtin_components._common.utils import maybe_change_postgres_port
 from electrumsv_sdk.builtin_components.peer_channels.mapi_db_config import check_postgres_db
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import get_directory_name
@@ -103,6 +102,19 @@ def chmod_exe(install_path: pathlib.Path) -> None:
     run_path = get_run_path(install_path)
     st = os.stat(run_path)
     os.chmod(run_path, st.st_mode | stat.S_IEXEC)
+
+
+def maybe_change_postgres_port() -> None:
+    if SDK_POSTGRES_PORT != 5432:
+        DBConnectionString = os.environ['AppConfiguration__DBConnectionString']
+        DBConnectionStringDDL = os.environ['AppConfiguration__DBConnectionStringDDL']
+        DBConnectionStringMaster = os.environ['AppConfiguration__DBConnectionStringMaster']
+        os.environ['AppConfiguration__DBConnectionString'] = \
+            DBConnectionString.replace("Port=5432", f"Port={SDK_POSTGRES_PORT}")
+        os.environ['AppConfiguration__DBConnectionStringDDL'] = \
+            DBConnectionStringDDL.replace("Port=5432", f"Port={SDK_POSTGRES_PORT}")
+        os.environ['AppConfiguration__DBConnectionStringMaster'] = \
+            DBConnectionStringMaster.replace("Port=5432", f"Port={SDK_POSTGRES_PORT}")
 
 
 def load_env_vars() -> None:
