@@ -3,6 +3,7 @@ import logging
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Optional, Set
 
@@ -87,12 +88,6 @@ class Plugin(AbstractPlugin):
         try:
             chmod_exe(self.src)
 
-            # Create channels account
-            cmd = str(get_run_path(self.src)) + \
-                  " -createaccount channelsaccount channelsuser channelspass"
-            process = subprocess.Popen(cmd, shell=True, env=os.environ.copy())
-            process.wait()
-
             # Channels RESTAPI server startup command
             command = str(get_run_path(self.src)) + " -startup"
         except FileNotFoundError:
@@ -104,9 +99,20 @@ class Plugin(AbstractPlugin):
         logfile = self.plugin_tools.get_logfile_path(self.id)
         status_endpoint = None
 
+        # self.add_node_thread = threading.Thread(target=self._create_account)
+        # self.add_node_thread.start()
+
         self.plugin_tools.spawn_process(str(command), env_vars=os.environ.copy(), id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
             status_endpoint=status_endpoint)
+
+        # Create channels account
+        # - Requires that peer channels server has been started at least once to make db tables
+        time.sleep(3)  # Give time for peer channels server to boot up
+        cmd = str(
+            get_run_path(self.src)) + " -createaccount channelsaccount channelsuser channelspass"
+        process = subprocess.Popen(cmd, shell=True, env=os.environ.copy())
+        process.wait()
 
     def stop(self) -> None:
         self.plugin_tools.call_for_component_id_or_type(self.COMPONENT_NAME, callable=kill_process)

@@ -10,7 +10,7 @@ import zipfile
 from typing import Dict, Any
 from urllib.parse import urlparse
 
-from electrumsv_sdk.builtin_components.peer_channels.mapi_db_config import check_postgres_db
+from electrumsv_sdk.builtin_components.peer_channels.channels_db_config import check_postgres_db
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import get_directory_name
 
