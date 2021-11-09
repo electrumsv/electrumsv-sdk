@@ -5,6 +5,7 @@ steps:
     electrumsv-sdk install electrumsv
     electrumsv-sdk install whatsonchain
     electrumsv-sdk install merchant_api
+    electrumsv-sdk install peer_channels
   displayName: 'Install all components'
 
 - script: |
@@ -15,6 +16,7 @@ steps:
     electrumsv-sdk node generate 1
     electrumsv-sdk start --background whatsonchain
     electrumsv-sdk start --background merchant_api
+    electrumsv-sdk start --background peer_channels
     electrumsv-sdk status
     python3 ./contrib/check_all_started.py 6
   displayName: 'Start all components'
@@ -27,6 +29,7 @@ steps:
     electrumsv-sdk stop whatsonchain
     electrumsv-sdk stop status_monitor
     electrumsv-sdk stop merchant_api
+    electrumsv-sdk stop peer_channels
     electrumsv-sdk status
     python3 ./contrib/check_all_stopped.py
   displayName: 'Stop all components'

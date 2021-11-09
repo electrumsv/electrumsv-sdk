@@ -48,7 +48,6 @@ class Plugin(AbstractPlugin):
 
     def install(self) -> None:
         assert self.src is not None  # typing bug in mypy
-        import pdb; pdb.set_trace()
         download_and_install(self.src)
 
         if SDK_SKIP_POSTGRES_INIT != 1:
