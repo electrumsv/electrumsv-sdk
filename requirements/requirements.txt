@@ -1,7 +1,7 @@
 electrumsv-node>=0.0.21
 requests
 filelock>=3.0.12
-psutil>=5.6.6
+psutil-wheels>=5.6.6
 setuptools>=49.6.0
 aiorpcX>=0.22.1
 bitcoinX>=0.2.4
