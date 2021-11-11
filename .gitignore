@@ -17,3 +17,5 @@ electrumsv_sdk/electrumsv_sdk/component_state.json
 *.dat
 *.zip
 electrumsv_sdk/builtin_components/merchant_api/zzz/*
+local_headers.mmap
+node_headers.mmap
