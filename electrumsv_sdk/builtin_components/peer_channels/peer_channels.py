@@ -108,7 +108,7 @@ class Plugin(AbstractPlugin):
 
         # Create channels account
         # - Requires that peer channels server has been started at least once to make db tables
-        time.sleep(3)  # Give time for peer channels server to boot up
+        time.sleep(5)  # Give time for peer channels server to boot up
         cmd = str(
             get_run_path(self.src)) + " -createaccount channelsaccount channelsuser channelspass"
         process = subprocess.Popen(cmd, shell=True, env=os.environ.copy())

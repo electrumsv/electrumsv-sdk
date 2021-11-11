@@ -6,6 +6,7 @@ steps:
     electrumsv-sdk install whatsonchain
     electrumsv-sdk install merchant_api
     electrumsv-sdk install peer_channels
+    electrumsv-sdk install simple_indexer
   displayName: 'Install all components'
 
 - script: |
@@ -17,8 +18,9 @@ steps:
     electrumsv-sdk start --background whatsonchain
     electrumsv-sdk start --background merchant_api
     electrumsv-sdk start --background peer_channels
+    electrumsv-sdk start --background simple_indexer
     electrumsv-sdk status
-    python3 ./contrib/check_all_started.py 7
+    python3 ./contrib/check_all_started.py 8
   displayName: 'Start all components'
   continueOnError: true
 
@@ -30,6 +32,7 @@ steps:
     electrumsv-sdk stop status_monitor
     electrumsv-sdk stop merchant_api
     electrumsv-sdk stop peer_channels
+    electrumsv-sdk stop simple_indexer
     electrumsv-sdk status
     python3 ./contrib/check_all_stopped.py
   displayName: 'Stop all components'
