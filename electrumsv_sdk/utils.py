@@ -19,7 +19,8 @@ from electrumsv_node import electrumsv_node
 
 from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
 from .config import Config
-from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE
+from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE, \
+    SIGINT_EXITCODE_LINUX, SIGKILL_EXITCODE_LINUX
 from .sdk_types import SubprocessCallResult
 
 
@@ -253,7 +254,8 @@ def spawn_inline(command: str, env_vars: Dict[str, str], id: str, component_name
 
     def on_exit(process: SubprocessCallResult) -> None:
         # on windows signal.CTRL_C_EVENT gives back SUCCESS_EXITCODE (0)
-        if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE}:
+        if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE,
+                SIGINT_EXITCODE_LINUX, SIGKILL_EXITCODE_LINUX}:
             update_state(process, ComponentState.STOPPED)
         elif process.returncode != SUCCESS_EXITCODE:
             update_state(process, ComponentState.FAILED)
@@ -342,10 +344,10 @@ def spawn_background(command: str, env_vars: Dict[Any, Any], id: str, component_
 
     def on_exit(process: SubprocessCallResult) -> None:
         # on windows signal.CTRL_C_EVENT gives back SUCCESS_EXITCODE (0)
-        if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE}:
+        if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE,
+                SIGINT_EXITCODE_LINUX, SIGKILL_EXITCODE_LINUX}:
             update_state(process, ComponentState.STOPPED)
         elif process.returncode != SUCCESS_EXITCODE:
-            logger.info(f"Component: {component_name} failed with returncode: {process.returncode}")
             update_state(process, ComponentState.FAILED)
 
     if logfile:
