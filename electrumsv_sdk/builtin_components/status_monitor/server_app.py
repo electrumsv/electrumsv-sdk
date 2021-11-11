@@ -38,7 +38,7 @@ aiohttp_logger.setLevel(logging.WARNING)
 
 class ApplicationState(object):
 
-    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+    def __init__(self) -> None:
         self.config = Config()
         self.file_name = "component_state.json"
         assert self.config.SDK_HOME_DIR is not None
@@ -50,7 +50,6 @@ class ApplicationState(object):
         self.previous_state = self.read_state()  # compare at regularly to detect change
         self.websockets: Set[WebSocketResponse] = set()
         self.websockets_lock: threading.Lock = threading.Lock()
-        self.loop = loop
 
         self.update_thread = threading.Thread(target=self.update_status_thread,
             name='status_thread', daemon=True)
@@ -124,7 +123,8 @@ class ApplicationState(object):
                 )
                 # in the unlikely event a connection is dropped in the milliseconds between
                 # last checking, I think this will swallow the exception which is fine by me...
-                asyncio.run_coroutine_threadsafe(ws.send_str(json.dumps(component)), self.loop)
+                loop = asyncio.get_running_loop()
+                asyncio.run_coroutine_threadsafe(ws.send_str(json.dumps(component)), loop)
 
     def read_state(self) -> Dict[str, ComponentTypedDict]:
         with self.file_lock:
@@ -210,8 +210,7 @@ class ApplicationState(object):
 
 def run_server() -> None:
     logging.basicConfig(level=logging.DEBUG)
-    loop = asyncio.get_event_loop()
-    app_state = ApplicationState(loop)
+    app_state = ApplicationState()
 
     web_app = web.Application()
     web_app['app_state'] = app_state
