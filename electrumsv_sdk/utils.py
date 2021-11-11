@@ -345,6 +345,7 @@ def spawn_background(command: str, env_vars: Dict[Any, Any], id: str, component_
         if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE}:
             update_state(process, ComponentState.STOPPED)
         elif process.returncode != SUCCESS_EXITCODE:
+            logger.info(f"Component: {component_name} failed with returncode: {process.returncode}")
             update_state(process, ComponentState.FAILED)
 
     if logfile:
