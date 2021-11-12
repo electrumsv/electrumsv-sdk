@@ -19,6 +19,7 @@ steps:
     electrumsv-sdk start --background merchant_api
     electrumsv-sdk start --background peer_channels
     electrumsv-sdk start --background simple_indexer
+    sleep 3
     electrumsv-sdk status
     python3 ./contrib/check_all_started.py 8
   displayName: 'Start all components'
