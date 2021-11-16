@@ -442,7 +442,8 @@ class ArgParser:
         self.parser_map[NameSpace.CONFIG] = config_parser
 
         # prepare raw_args
-        for namespace in self.parser_map.keys():
+        for namespace, parser in self.parser_map.items():
+            parser.prog = 'electrumsv-sdk'
             self.parser_raw_args_map[namespace] = []
 
     def extend_cli(self, selected_component: SelectedComponent, namespace: str) -> List[str]:
