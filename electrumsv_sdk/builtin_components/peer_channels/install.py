@@ -89,6 +89,9 @@ def download_and_install(install_path: pathlib.Path) -> None:
         with zipfile.ZipFile(download_path, 'r') as z:
             z.extractall(install_path / PEER_CHANNELS_VERSION)
 
+    if download_path.exists():
+        os.remove(download_path)
+
 
 def get_run_path(install_path: pathlib.Path) -> pathlib.Path:
     """
