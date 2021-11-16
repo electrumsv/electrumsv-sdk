@@ -79,18 +79,19 @@ class Plugin(AbstractPlugin):
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self) -> None:
-        def reset_simple_indexer(component_dict: ComponentTypedDict) -> None:
-            self.logger.debug("Resetting state of RegTest simple_indexer server...")
-            metadata = component_dict.get('metadata', {})
-            assert metadata is not None  # typing bug
-            datadir = Path(metadata["datadir"])
-            if datadir.exists():
-                shutil.rmtree(datadir)
-                os.mkdir(datadir)
-            else:
-                os.makedirs(datadir, exist_ok=True)
-            self.logger.debug("Reset of RegTest simple_indexer server completed successfully.")
+        self.logger.debug("Resetting state of RegTest simple_indexer server...")
 
-        self.plugin_tools.call_for_component_id_or_type(
-            self.COMPONENT_NAME, callable=reset_simple_indexer)
+        db_path = self.src.joinpath("simple_indexer.db")
+        node_headers_path = self.src.joinpath("node_headers.mmap")
+        local_headers_path = self.src.joinpath("local_headers.mmap")
+
+        if db_path.exists():
+            os.remove(db_path)
+
+        if node_headers_path.exists():
+            os.remove(node_headers_path)
+
+        if local_headers_path.exists():
+            os.remove(local_headers_path)
+
         self.logger.info("Reset of RegTest simple_indexer completed successfully")
