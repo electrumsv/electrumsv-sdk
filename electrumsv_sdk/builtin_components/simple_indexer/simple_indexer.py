@@ -1,13 +1,11 @@
 import logging
 import os
-import shutil
 import sys
-from pathlib import Path
 from typing import Optional, Set
 
 from electrumsv_sdk.sdk_types import AbstractPlugin
 from electrumsv_sdk.config import CLIInputs, Config
-from electrumsv_sdk.components import Component, ComponentTypedDict
+from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
@@ -81,6 +79,7 @@ class Plugin(AbstractPlugin):
     def reset(self) -> None:
         self.logger.debug("Resetting state of RegTest simple_indexer server...")
 
+        assert self.src is not None
         db_path = self.src.joinpath("simple_indexer.db")
         node_headers_path = self.src.joinpath("node_headers.mmap")
         local_headers_path = self.src.joinpath("local_headers.mmap")

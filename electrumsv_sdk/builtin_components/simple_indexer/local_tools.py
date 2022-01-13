@@ -38,33 +38,11 @@ class LocalTools:
             os.chdir(self.plugin.config.REMOTE_REPOS_DIR)
             process = subprocess.Popen(["git", "clone", f"{url}"])
             process.wait()
-
         elif self.plugin.src.exists():
-            os.chdir(self.plugin.src)
-            result = subprocess.run(
-                f"git cli_inputs --get remote.origin.url",
-                shell=True,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            if result.stdout.strip() == url:
-                self.logger.debug(f"Simple Indexer is already installed (url={url})")
-                process = subprocess.Popen(["git", "cli_inputs", "pull.ff", "only"])
-                process.wait()
-                process = subprocess.Popen(["git", "pull"])
-                process.wait()
-                checkout_branch(branch)
-            if result.stdout.strip() != url:
-                existing_fork = self.plugin.src
-                self.logger.debug(f"Alternate fork of electrumx is already installed")
-                self.logger.debug(f"Moving existing fork (to '{existing_fork}.bak')")
-                self.logger.debug(f"Installing Simple Indexer (url={url})")
-                os.rename(
-                    self.plugin.src,
-                    self.plugin.src.with_suffix(".bak"),
-                )
+            process = subprocess.Popen(["git", "pull"])
+            process.wait()
+            checkout_branch(branch)
+
 
     def packages_simple_indexer(self, url: str, branch: str) -> None:
         """plyvel wheels are not available on windows so it is swapped out for plyvel-win32 to
