@@ -23,7 +23,7 @@ from electrumsv_sdk.utils import get_directory_name
 
 # might be running this as __main__
 
-SERVER_HOST = "127.0.0.1"
+SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 56565
 PING_URL = f"http://{SERVER_HOST}:{SERVER_PORT}/"
 REFRESH_INTERVAL = 1.0

@@ -95,6 +95,8 @@ class Plugin(AbstractPlugin):
                 self.COMPONENT_NAME, self.id)
 
         extra_params = []
+        # TODO: NODE_RPCALLOWIP and NODE_RPCBIND can be removed after the next release of
+        #  electrumsv-node as they now default to 0.0.0.0/0 and 0.0.0.0 respectively
         if self.NODE_RPCALLOWIP:
             extra_params.append(f"-rpcallowip={self.NODE_RPCALLOWIP}")
         if self.NODE_RPCBIND:
