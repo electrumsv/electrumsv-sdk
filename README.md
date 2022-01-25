@@ -72,3 +72,14 @@ Note: The "optional arguments" come **before** specifying the ``component_type``
     > electrumsv-sdk start --new --id=myspecialnode node
 
 
+Docker
+===================
+Docker support is here: https://github.com/electrumsv/electrumsv-sdk-docker. However,
+do note that we cannot promise to keep the docker support up-to-date as we are stretched
+too thin and have other priorities. Nevertheless, help will be gladly accepted.
+
+You might also find what you need here: https://github.com/jadwahab/regtest-stack. 
+Please check that one out too. Jad and co. are better placed to keep up with the bleeding
+edge versioning of the node, mAPI and LiteClient services as they are directly involved 
+with many of those projects. They also do not have the additional python layer of 
+abstraction to sort out when it comes to docker.
