@@ -62,7 +62,7 @@ class Controller:
             component_module = self.component_store.instantiate_plugin(cli_inputs)
             component_module.start()
 
-        # no args implies start all (default component ids only - e.g. node1, electrumx1 etc.)
+        # no args implies start all (default component ids only - e.g. node1, simple_indexer1 etc.)
         if not cli_inputs.component_id and not cli_inputs.selected_component:
             for component in self.component_store.component_map:
                 new_cli_inputs = CLIInputs(
@@ -106,7 +106,7 @@ class Controller:
             component_module = self.component_store.instantiate_plugin(cli_inputs)
             component_module.reset()
 
-        # no args (no --id or <component_type>) implies reset all (node, electrumx, electrumsv)
+        # no args (no --id or <component_type>) implies reset all (node, electrumsv)
         if not cli_inputs.component_id and not cli_inputs.selected_component:
             for component in self.component_store.component_map.keys():
                 new_cli_inputs = CLIInputs(

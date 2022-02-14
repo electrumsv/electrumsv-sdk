@@ -44,7 +44,6 @@ class Plugin(AbstractPlugin):
 
     # ---------- Environment Variables ---------- #
     BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
-    ELECTRUMX_CONNECTION_STRING = os.getenv("ELECTRUMX_CONNECTION_STRING")
 
     # For documentation purposes only (these env vars will be detected by electrumsv too)
     ELECTRUMSV_ACCOUNT_XPRV = os.getenv("ELECTRUMSV_ACCOUNT_XPRV")
@@ -58,6 +57,7 @@ class Plugin(AbstractPlugin):
     RESERVED_PORTS: Set[int] = {DEFAULT_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
     DEFAULT_REMOTE_REPO = "https://github.com/electrumsv/electrumsv.git"
+    DEFAULT_BRANCH = "develop"
 
     def __init__(self, cli_inputs: CLIInputs):
         self.cli_inputs = cli_inputs
@@ -81,10 +81,13 @@ class Plugin(AbstractPlugin):
         repo = self.cli_inputs.repo
         if self.cli_inputs.repo == "":
             repo = self.DEFAULT_REMOTE_REPO
+        branch = self.cli_inputs.branch
+        if self.cli_inputs.branch == "":
+            branch = self.DEFAULT_BRANCH
         if is_remote_repo(repo):
-            self.tools.fetch_electrumsv(repo, self.cli_inputs.branch)
+            self.tools.fetch_electrumsv(repo, branch)
 
-        self.tools.packages_electrumsv(repo, self.cli_inputs.branch)
+        self.tools.packages_electrumsv(repo, branch)
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self) -> None:

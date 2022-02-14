@@ -119,7 +119,6 @@ See :ref:`release-notes-label`.
    /component-types/overview.rst
    /component-types/whatsonchain.rst
    /component-types/node.rst
-   /component-types/electrumx.rst
    /component-types/electrumsv.rst
    /component-types/merchant-api.rst
    /component-types/status-monitor.rst

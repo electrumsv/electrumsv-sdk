@@ -3,6 +3,13 @@
 Release Notes
 ====================
 
+0.0.X
+-----
+- Add the simple indexer component.
+- Add the reference server component.
+- Remove the electrumx component (it is replaced by the simple indexer and the reference server).
+- Remove the peer channels component (it is replaced by the reference server).
+
 0.0.37
 ------
 - Add full and strict type annotations and static analysis to the SDK code-base with mypy

@@ -365,7 +365,7 @@ class ArgParser:
 
     def add_reset_argparser(self, namespaces: _SubParsersAction) -> \
             Tuple[ArgumentParser, List[ArgumentParser]]:
-        """only relevant for component types with a DATADIR (e.g. node, electrumx, electrumsv)"""
+        """only relevant for component types with a DATADIR (e.g. node, electrumsv)"""
         reset_parser = namespaces.add_parser("reset", help="reset state of relevant servers to "
             "genesis")
         reset_parser.add_argument("--id", type=str, default="", help="human-readable identifier "

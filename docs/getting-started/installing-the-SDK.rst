@@ -167,7 +167,8 @@ Install components (excluding merchant API)
 ::
 
     electrumsv-sdk install node
-    electrumsv-sdk install electrumx
+    electrumsv-sdk install simple_indexer
+    electrumsv-sdk install reference_server
     electrumsv-sdk install electrumsv
     electrumsv-sdk install whatsonchain
     electrumsv-sdk install merchant_api

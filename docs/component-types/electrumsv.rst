@@ -10,7 +10,8 @@ https://electrumsv.readthedocs.io/en/sv-1.3.11/building-on-electrumsv/rest-api.h
 Depends on these components:
 
 - node
-- electrumx
+- simple_indexer
+- reference_server
 
 So start these components first.
 

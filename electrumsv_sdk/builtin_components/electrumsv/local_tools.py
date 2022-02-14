@@ -49,7 +49,7 @@ class LocalTools:
         return False
 
     def fetch_electrumsv(self, url: str, branch: str) -> None:
-        # Todo - make this generic with electrumx
+        # Todo - make this generic
         """3 possibilities:
         (dir doesn't exists) -> install
         (dir exists, url matches)
@@ -209,20 +209,6 @@ class LocalTools:
         """
 
         assert self.plugin.src is not None
-        def get_default_electrumx() -> str:
-            if self.plugin.network == NETWORKS.REGTEST:
-                return "127.0.0.1:51001:t"
-            elif self.plugin.network == NETWORKS.TESTNET:
-                return "austecondevserver.app:51002:s"
-            else:
-                raise NotImplementedError("scaling-testnet and mainnet not yet supported")
-
-        def set_electrumx_server(command: str, connection_string: Optional[str]) -> str:
-            if not connection_string:
-                command += f"--server={get_default_electrumx()} "
-            elif connection_string is not None:
-                command += f"--server={connection_string} "
-            return command
 
         network_string = stringcase.spinalcase(self.plugin.network)  # need kebab-case
         command = ""
@@ -253,8 +239,6 @@ class LocalTools:
                 f"--file-logging "
                 f"--restapi --restapi-port={port} --restapi-user rpcuser --restapi-password= "
             )
-            connection_string = self.plugin.ELECTRUMX_CONNECTION_STRING
-            command = set_electrumx_server(command, connection_string)
 
         # GUI script
         else:
@@ -262,8 +246,6 @@ class LocalTools:
                 f"{sys.executable} {esv_launcher} gui --{network_string} --restapi "
                 f"--restapi-port={port} --v=debug --file-logging --dir {self.plugin.datadir} "
             )
-            command = set_electrumx_server(command,
-                connection_string=self.plugin.ELECTRUMX_CONNECTION_STRING)
 
         return command, env_vars
 

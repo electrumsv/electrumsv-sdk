@@ -22,7 +22,7 @@ These are the default settings::
     maxstackmemoryusageconsensus=0
     excessiveblocksize=10000000000
 
-    # TxIndex for ElectrumX indexer
+    # TxIndex for indexer
     txindex=1
 
     # If --inline flag is set (printtoconsole=1)

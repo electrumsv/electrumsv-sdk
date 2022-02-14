@@ -12,10 +12,11 @@ all ``--`` prefixed flags like ``--id``, ``--new``, ``--repo``, ``--inline``, ``
 
 Examples
 ~~~~~~~~~~
-run node + electrumx + electrumsv::
+run node + simple_indexer + reference_server + electrumsv::
 
    > electrumsv-sdk start node
-   > electrumsv-sdk start electrumx
+   > electrumsv-sdk start simple_indexer
+   > electrumsv-sdk start reference_server
    > electrumsv-sdk start electrumsv
 
 By default, this will launch the servers with the --new-terminal flag (spawning a new console window

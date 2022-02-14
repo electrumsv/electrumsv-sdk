@@ -7,8 +7,6 @@ docs/_build/*
 venv/*
 
 electrumsv_sdk/electrumsv_sdk/sdk_depends/electrumsv
-electrumsv_sdk/electrumsv_sdk/sdk_depends/electrumx
-electrumsv_sdk/electrumsv_sdk/sdk_depends/electrumx_data
 .vscode/*
 electrumsv-server/data
 electrumsv_sdk/electrumsv_sdk/run_scripts/proc_ids.json

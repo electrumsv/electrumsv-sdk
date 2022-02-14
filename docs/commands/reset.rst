@@ -22,7 +22,9 @@ Behaviour for each component
 +==================+=======================================+
 | node             | deletes datadir contents              |
 +------------------+---------------------------------------+
-| electrumx        | deletes datadir contents              |
+| simple_indexer   | deletes database/header files         |
++------------------+---------------------------------------+
+| reference_server | deletes database file                 |
 +------------------+---------------------------------------+
 | electrumsv       | deletes wallet for the datadir and    |
 |                  | re-creates a new one (worker1.sqlite) |

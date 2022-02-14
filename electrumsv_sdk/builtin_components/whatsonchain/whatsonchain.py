@@ -15,6 +15,9 @@ from .local_tools import LocalTools
 class Plugin(AbstractPlugin):
 
     # As per woc-explorer/cli_inputs.js
+    # TODO This is obsolete. ElectrumX is no longer supported in the SDK. Either we need to get
+    #      rid of the WOC components or replace them with an explorer component which we would
+    #      embed in the TestUI project.
     ELECTRUMX_HOST = os.environ.get("ELECTRUMX_HOST") or "127.0.0.1"
     ELECTRUMX_PORT = os.environ.get("ELECTRUMX_PORT") or 51001
 

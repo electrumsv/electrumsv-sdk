@@ -33,7 +33,7 @@ For help:
 
     > electrumsv-sdk --help
 
-**Note: You must run ``electrumsv-sdk install <component type>`` 
+**Note: You must run ``electrumsv-sdk install <component type>``
 first for each component type. This may require system dependencies
 you also need - please read the documentation.**
 
@@ -43,13 +43,12 @@ If you want help for one of the subcommands (e.g. 'start') do:
 
 Which will show:
 
-    usage: electrumsv-sdk start [-h] [--new] [--gui] [--background] [--inline] [--new-terminal] [--id ID] [--repo REPO] [--branch BRANCH] {electrumsv,electrumx,merchant_api,node,status_monitor,whatsonchain,whatsonchain_api} ...
+    usage: electrumsv-sdk start [-h] [--new] [--gui] [--background] [--inline] [--new-terminal] [--id ID] [--repo REPO] [--branch BRANCH] {electrumsv,merchant_api,node,status_monitor,whatsonchain,whatsonchain_api} ...
 
     positional arguments:
-      {electrumsv,electrumx,merchant_api,node,status_monitor,whatsonchain,whatsonchain_api}
+      {electrumsv,merchant_api,node,status_monitor,whatsonchain,whatsonchain_api}
                             subcommand
         electrumsv          start electrumsv
-        electrumx           start electrumx
         merchant_api        start merchant_api
         node                start node
         status_monitor      start status_monitor
@@ -78,8 +77,8 @@ Docker support is here: https://github.com/electrumsv/electrumsv-sdk-docker. How
 do note that we cannot promise to keep the docker support up-to-date as we are stretched
 too thin and have other priorities. Nevertheless, help will be gladly accepted.
 
-You might also find what you need here: https://github.com/jadwahab/regtest-stack. 
+You might also find what you need here: https://github.com/jadwahab/regtest-stack.
 Please check that one out too. Jad and co. are better placed to keep up with the bleeding
-edge versioning of the node, mAPI and LiteClient services as they are directly involved 
-with many of those projects. They also do not have the additional python layer of 
+edge versioning of the node, mAPI and LiteClient services as they are directly involved
+with many of those projects. They also do not have the additional python layer of
 abstraction to sort out when it comes to docker.
