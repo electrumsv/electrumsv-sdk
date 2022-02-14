@@ -18,7 +18,7 @@ steps:
     electrumsv-sdk start --background simple_indexer
     electrumsv-sdk start --background reference_server
     electrumsv-sdk status
-    python3 ./contrib/check_all_started.py 9
+    python3 ./contrib/check_all_started.py 7
   displayName: 'Start all components'
   continueOnError: true
 
