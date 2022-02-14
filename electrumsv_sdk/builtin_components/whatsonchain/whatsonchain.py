@@ -3,8 +3,8 @@ import os
 import sys
 from typing import Optional, Set
 
-from electrumsv_sdk.types import AbstractPlugin
-from electrumsv_sdk.config import Config
+from electrumsv_sdk.sdk_types import AbstractPlugin
+from electrumsv_sdk.config import CLIInputs, Config
 from electrumsv_sdk.plugin_tools import PluginTools
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.utils import get_directory_name, kill_process
@@ -14,7 +14,7 @@ from .local_tools import LocalTools
 
 class Plugin(AbstractPlugin):
 
-    # As per woc-explorer/config.js
+    # As per woc-explorer/cli_inputs.js
     ELECTRUMX_HOST = os.environ.get("ELECTRUMX_HOST") or "127.0.0.1"
     ELECTRUMX_PORT = os.environ.get("ELECTRUMX_PORT") or 51001
 
@@ -28,9 +28,10 @@ class Plugin(AbstractPlugin):
     RESERVED_PORTS: Set[int] = {DEFAULT_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
 
-    def __init__(self, config: Config):
-        self.config = config
-        self.plugin_tools = PluginTools(self, self.config)
+    def __init__(self, cli_inputs: CLIInputs):
+        self.cli_inputs = cli_inputs
+        self.config = Config()
+        self.plugin_tools = PluginTools(self, self.cli_inputs)
         self.tools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
@@ -41,7 +42,7 @@ class Plugin(AbstractPlugin):
         self.component_info: Optional[Component] = None
 
     def install(self) -> None:
-        if not self.config.repo == "":  # default
+        if not self.cli_inputs.repo == "":  # default
             self.logger.error("ignoring --repo flag for whatsonchain - not applicable.")
         self.tools.fetch_whatsonchain(url="https://github.com/AustEcon/woc-explorer.git", branch='')
         self.tools.packages_whatsonchain()

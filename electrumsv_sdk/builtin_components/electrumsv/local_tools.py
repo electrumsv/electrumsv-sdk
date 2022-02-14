@@ -6,11 +6,11 @@ import time
 from pathlib import Path
 import typing
 from typing import Optional, Dict
-
 import stringcase
 
-from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command
-from electrumsv_sdk.constants import REMOTE_REPOS_DIR, NETWORKS
+from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_command, \
+    append_to_pythonpath
+from ...constants import NETWORKS
 
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
@@ -25,28 +25,15 @@ class LocalTools:
     def __init__(self, plugin: 'Plugin'):
         self.plugin = plugin
         self.plugin_tools = self.plugin.plugin_tools
-        self.config = plugin.config
+        self.cli_inputs = plugin.cli_inputs
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
     def process_cli_args(self) -> None:
         self.plugin_tools.set_network()
 
-    def reinstall_conflicting_dependencies(self) -> None:
-        cmd1 = f"{sys.executable} -m pip freeze"
-        output = subprocess.check_output(cmd1, shell=True)
-        for line in output.decode('utf-8').splitlines():
-            if 'chardet' in line:
-                if int(line.split("==")[1][0]) >= 4:
-                    cmd1 = f"{sys.executable} -m pip uninstall -y chardet"
-                    process1 = subprocess.Popen(cmd1, shell=True)
-                    process1.wait()
-                    cmd2 = f"{sys.executable} -m pip install 'chardet<4.0'"
-                    process2 = subprocess.Popen(cmd2, shell=True)
-                    process2.wait()
-
     def is_offline_cli_mode(self) -> bool:
-        if len(self.config.component_args) != 0:
-            if self.config.component_args[0] in ['create_wallet', 'create_account', '--help']:
+        if len(self.cli_inputs.component_args) != 0:
+            if self.cli_inputs.component_args[0] in ['create_wallet', 'create_account', '--help']:
                 return True
         return False
 
@@ -69,9 +56,10 @@ class LocalTools:
         (dir exists, url does not match - it's a forked repo)
         """
         assert self.plugin.src is not None  # typing bug
+        assert self.plugin.config.REMOTE_REPOS_DIR is not None  # typing bug
         if not self.plugin.src.exists():
             logger.debug(f"Installing electrumsv (url={url})")
-            os.chdir(REMOTE_REPOS_DIR)
+            os.chdir(self.plugin.config.REMOTE_REPOS_DIR)
             subprocess.run(f"git clone {url}", shell=True, check=True)
 
         elif self.plugin.src.exists():
@@ -99,6 +87,8 @@ class LocalTools:
                 )
 
     def packages_electrumsv(self, url: str, branch: str) -> None:
+        assert self.plugin.config.PYTHON_LIB_DIR is not None  # typing bug
+        assert self.plugin.COMPONENT_NAME is not None  # typing bug
         assert self.plugin.src is not None  # typing bug
         os.chdir(self.plugin.src)
         checkout_branch(branch)
@@ -111,17 +101,11 @@ class LocalTools:
                 "contrib/deterministic-build/requirements-binaries.txt")
         )
 
-        if sys.platform == 'win32':
-            cmd1 = f"{sys.executable} -m pip install --user --upgrade -r " \
-                   f"{electrumsv_requirements_path}"
-            cmd2 = f"{sys.executable} -m pip install --user --upgrade -r " \
-                   f"{electrumsv_binary_requirements_path}"
-        elif sys.platform in ['linux', 'darwin']:
-            cmd1 = f"{sys.executable} -m pip install --upgrade -r " \
-                   f"{electrumsv_requirements_path}"
-            cmd2 = f"{sys.executable} -m pip install --upgrade -r " \
-                   f"{electrumsv_binary_requirements_path}"
-
+        electrumsv_libs_path = self.plugin.config.PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
+        cmd1 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
+               f"-r {electrumsv_requirements_path}"
+        cmd2 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
+               f"-r {electrumsv_binary_requirements_path}"
         process1 = subprocess.Popen(cmd1, shell=True)
         process1.wait()
         process2 = subprocess.Popen(cmd2, shell=True)
@@ -249,8 +233,8 @@ class LocalTools:
         logger.debug(f"esv_datadir = {self.plugin.datadir}")
 
         # custom script (user-specified arguments are fed to ESV)
-        component_args = self.config.component_args if len(self.config.component_args) != 0 else \
-            None
+        component_args = self.cli_inputs.component_args \
+            if len(self.cli_inputs.component_args) != 0 else None
 
         if component_args:
             additional_args = " ".join(component_args)
@@ -259,9 +243,9 @@ class LocalTools:
                 command += " " + f"--dir {self.plugin.datadir}"
 
         # daemon script
-        elif not self.config.gui_flag:
+        elif not self.cli_inputs.gui_flag:
             path_to_example_dapps = self.plugin.src.joinpath("examples/applications")
-            env_vars.update({"PYTHONPATH": f"{path_to_example_dapps}"})
+            append_to_pythonpath([path_to_example_dapps])
 
             command = (
                 f"{sys.executable} {esv_launcher} --portable --dir {self.plugin.datadir} "

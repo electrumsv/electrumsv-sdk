@@ -18,15 +18,12 @@ from aiohttp.web_ws import WebSocketResponse
 from filelock import FileLock
 
 from electrumsv_sdk.components import ComponentTypedDict
-from electrumsv_sdk.utils import get_directory_name, get_sdk_datadir
+from electrumsv_sdk.config import Config
+from electrumsv_sdk.utils import get_directory_name
 
 # might be running this as __main__
 
-DATA_PATH = get_sdk_datadir()
-FILE_LOCK_PATH = DATA_PATH / "component_state.json.lock"
-COMPONENT_STATE_PATH = DATA_PATH / "component_state.json"
-
-SERVER_HOST = "127.0.0.1"
+SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 56565
 PING_URL = f"http://{SERVER_HOST}:{SERVER_PORT}/"
 REFRESH_INTERVAL = 1.0
@@ -41,12 +38,18 @@ aiohttp_logger.setLevel(logging.WARNING)
 
 class ApplicationState(object):
 
-    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
-        self.file_lock = FileLock(str(FILE_LOCK_PATH), timeout=5)
+    def __init__(self) -> None:
+        self.config = Config()
+        self.file_name = "component_state.json"
+        assert self.config.SDK_HOME_DIR is not None
+        self.lock_path = self.config.SDK_HOME_DIR / "component_state.json.lock"
+        self.component_state_path = self.config.SDK_HOME_DIR / self.file_name
+
+
+        self.file_lock = FileLock(str(self.lock_path), timeout=5)  # pylint: disable=abstract-class-instantiated
         self.previous_state = self.read_state()  # compare at regularly to detect change
         self.websockets: Set[WebSocketResponse] = set()
         self.websockets_lock: threading.Lock = threading.Lock()
-        self.loop = loop
 
         self.update_thread = threading.Thread(target=self.update_status_thread,
             name='status_thread', daemon=True)
@@ -91,7 +94,7 @@ class ApplicationState(object):
             # status change from previous
             for id in current_state.keys():
                 current_component_state: ComponentTypedDict = current_state[id]
-                prev_component_state = self.previous_state[id]
+                prev_component_state = self.previous_state.get(id)
 
                 # new component (new id)
                 if not prev_component_state:
@@ -120,11 +123,12 @@ class ApplicationState(object):
                 )
                 # in the unlikely event a connection is dropped in the milliseconds between
                 # last checking, I think this will swallow the exception which is fine by me...
-                asyncio.run_coroutine_threadsafe(ws.send_str(json.dumps(component)), self.loop)
+                loop = asyncio.get_running_loop()
+                asyncio.run_coroutine_threadsafe(ws.send_str(json.dumps(component)), loop)
 
     def read_state(self) -> Dict[str, ComponentTypedDict]:
         with self.file_lock:
-            with open(COMPONENT_STATE_PATH, 'r') as f:
+            with open(self.component_state_path, 'r') as f:
                 data = f.read()
                 if data:
                     component_state: Dict[str, ComponentTypedDict] = json.loads(data)
@@ -206,8 +210,7 @@ class ApplicationState(object):
 
 def run_server() -> None:
     logging.basicConfig(level=logging.DEBUG)
-    loop = asyncio.get_event_loop()
-    app_state = ApplicationState(loop)
+    app_state = ApplicationState()
 
     web_app = web.Application()
     web_app['app_state'] = app_state

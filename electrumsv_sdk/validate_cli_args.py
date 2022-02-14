@@ -1,11 +1,10 @@
 """This acts as a kind of middleware - which has now been whittled down to only providing
 logging information"""
-
 import logging
 import platform
 
 from .constants import NameSpace
-from .config import Config, ParsedArgs
+from .config import CLIInputs, ParsedArgs
 from .utils import read_sdk_version
 
 logger = logging.getLogger("validate-cli-args")
@@ -14,12 +13,12 @@ logger = logging.getLogger("validate-cli-args")
 class ValidateCliArgs:
     """Called via ArgParser.validate_cli_args"""
 
-    def __init__(self, config: Config):
-        self.config = config
+    def __init__(self, cli_inputs: CLIInputs):
+        self.cli_inputs = cli_inputs
 
     # ----- MAIN ARGUMENT HANDLERS ----- #
     def handle_top_level_args(self, parsed_args: ParsedArgs) -> None:
-        if not self.config.namespace == NameSpace.TOP_LEVEL:
+        if not self.cli_inputs.namespace == NameSpace.TOP_LEVEL:
             return
 
         if parsed_args.version:
@@ -28,7 +27,7 @@ class ValidateCliArgs:
             logger.info(f"SDK version {read_sdk_version()}")
 
     def handle_install_args(self, parsed_args: ParsedArgs) -> None:
-        if not self.config.namespace == NameSpace.INSTALL:
+        if not self.cli_inputs.namespace == NameSpace.INSTALL:
             return
 
         # logging
@@ -40,7 +39,7 @@ class ValidateCliArgs:
             logger.debug(f"branch flag={parsed_args.branch}")
 
     def handle_start_args(self, parsed_args: ParsedArgs) -> None:
-        if not self.config.namespace == NameSpace.START:
+        if not self.cli_inputs.namespace == NameSpace.START:
             return
 
         # logging
@@ -57,7 +56,7 @@ class ValidateCliArgs:
 
     def handle_stop_args(self, parsed_args: ParsedArgs) -> None:
         """takes no arguments"""
-        if not self.config.namespace == NameSpace.STOP:
+        if not self.cli_inputs.namespace == NameSpace.STOP:
             return
 
         # logging
@@ -66,7 +65,7 @@ class ValidateCliArgs:
 
     def handle_reset_args(self, parsed_args: ParsedArgs) -> None:
         """takes no arguments"""
-        if not self.config.namespace == NameSpace.RESET:
+        if not self.cli_inputs.namespace == NameSpace.RESET:
             return
 
         # logging
@@ -76,4 +75,7 @@ class ValidateCliArgs:
             logger.debug(f"repo flag={parsed_args.repo}")
 
     def handle_status_args(self, _parsed_args: ParsedArgs) -> None:
+        return
+
+    def handle_config_args(self, parsed_args: ParsedArgs) -> None:
         return

@@ -2,16 +2,14 @@ import json
 import logging
 import os
 from pathlib import Path
-import shutil
-import stat
 import sys
-from typing import List, Callable, Any
+from typing import List
 
 from electrumsv_node import electrumsv_node
 
 from .argparsing import ArgParser
-from .constants import SDK_HOME_DIR, REMOTE_REPOS_DIR, DATADIR, LOGS_DIR, \
-    USER_PLUGINS_DIR, CONFIG_PATH
+from .config import Config
+from .constants import NameSpace
 from .controller import Controller
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,51 +25,41 @@ class AppState:
     """Global application state"""
 
     def __init__(self, arguments: List[str]):
-        os.makedirs(REMOTE_REPOS_DIR, exist_ok=True)
-        os.makedirs(DATADIR, exist_ok=True)
-        os.makedirs(LOGS_DIR, exist_ok=True)
-        os.makedirs(USER_PLUGINS_DIR, exist_ok=True)
+        self.argparser = ArgParser()
+        self.argparser.manual_argparsing(arguments)  # allows library to inject args (vs sys.argv)
+        self.cli_inputs = self.argparser.generate_cli_inputs()
+        self.config = Config(cli_inputs=self.cli_inputs)
+        if self.cli_inputs.namespace == NameSpace.CONFIG:
+            self.config.print_json()
+
+        self.argparser.validate_cli_args()
+
         self.calling_context_dir: Path = Path(os.getcwd())
         self.sdk_package_dir: Path = Path(MODULE_DIR)
 
-        # plugins
-        sys.path.append(str(self.sdk_package_dir))  # for dynamic import of builtin_components
-        sys.path.append(f"{SDK_HOME_DIR}")  # for dynamic import of user_components
-        sys.path.append(f"{self.calling_context_dir}")  # for dynamic import of local plugins
+        # Ensure all three plugin locations are importable
+        sys.path.append(str(self.sdk_package_dir))  # builtin_components
+        sys.path.append(f"{self.config.SDK_HOME_DIR}")  # user_components
+        sys.path.append(f"{self.calling_context_dir}")  # local plugins
 
-        self.argparser = ArgParser()
-        self.argparser.manual_argparsing(arguments)  # allows library to inject args (vs sys.argv)
-        self.config = self.argparser.generate_config()
-        self.argparser.validate_cli_args()
         self.controller = Controller(self)
 
-    def purge_prev_installs_if_exist(self) -> None:
-        def remove_readonly(func: Callable[[Path], None], path: Path, excinfo: Any) -> None:
-            os.chmod(path, stat.S_IWRITE)
-            func(path)
-
-        if REMOTE_REPOS_DIR.exists():
-            shutil.rmtree(REMOTE_REPOS_DIR, onerror=remove_readonly)
-            os.makedirs(REMOTE_REPOS_DIR, exist_ok=True)
-
     def handle_first_ever_run(self) -> None:
+        assert self.config.CONFIG_PATH is not None
         try:
-            with open(CONFIG_PATH, "r") as f:
+            with open(self.config.CONFIG_PATH, "r") as f:
                 data = f.read()
                 if data:
                     config = json.loads(data)
                 else:
                     config = {}
         except FileNotFoundError:
-            with open(CONFIG_PATH, "w") as f:
+            with open(self.config.CONFIG_PATH, "w") as f:
                 config = {"is_first_run": True}
                 f.write(json.dumps(config, indent=4))
 
         if config.get("is_first_run") or config.get("is_first_run") is None:
-            logger.debug(
-                "Running SDK for the first time. please wait for configuration to complete..."
-            )
-            with open(CONFIG_PATH, "w") as f:
+            with open(self.config.CONFIG_PATH, "w") as f:
                 config = {"is_first_run": False}
                 f.write(json.dumps(config, indent=4))
 

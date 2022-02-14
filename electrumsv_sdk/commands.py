@@ -1,6 +1,6 @@
 """This defines a set of exposed public methods for using the SDK as a library"""
 import logging
-from typing import Dict, Optional, Tuple, Any, List
+from typing import Dict, Optional, Tuple, Any
 
 from .components import ComponentStore, ComponentTypedDict
 from .app_state import AppState
@@ -27,7 +27,7 @@ def install(component_type: str, repo: str = "", branch: str = "",
     app_state = AppState(arguments)
     app_state.handle_first_ever_run()
     controller = Controller(app_state)
-    controller.install(app_state.config)
+    controller.install(app_state.cli_inputs)
 
 
 def _validate_network(network: str, component_type: str) -> None:
@@ -77,7 +77,7 @@ def start(component_type: str, component_args: Optional[Tuple[str]]=None, repo: 
     app_state = AppState(arguments)
     app_state.handle_first_ever_run()
     controller = Controller(app_state)
-    controller.start(app_state.config)
+    controller.start(app_state.cli_inputs)
 
 
 def stop(component_type: Optional[str]=None, component_id: str = "") -> None:
@@ -93,7 +93,7 @@ def stop(component_type: Optional[str]=None, component_id: str = "") -> None:
     app_state = AppState(arguments)
     app_state.handle_first_ever_run()
     controller = Controller(app_state)
-    controller.stop(app_state.config)
+    controller.stop(app_state.cli_inputs)
 
 
 def reset(component_type: Optional[str]=None, component_id: str = "", repo: str = "",
@@ -117,7 +117,7 @@ def reset(component_type: Optional[str]=None, component_id: str = "", repo: str 
     app_state = AppState(arguments)
     app_state.handle_first_ever_run()
     controller = Controller(app_state)
-    controller.reset(app_state.config)
+    controller.reset(app_state.cli_inputs)
 
 
 def node(method: str, *args: str, node_id: str = 'node1') -> Any:

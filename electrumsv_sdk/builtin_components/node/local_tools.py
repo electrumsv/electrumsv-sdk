@@ -4,7 +4,6 @@ import sys
 
 import typing
 
-
 if typing.TYPE_CHECKING:
     from .node import Plugin
 
@@ -16,11 +15,15 @@ class LocalTools:
     def __init__(self, plugin: 'Plugin') -> None:
         self.plugin = plugin
         self.plugin_tools = self.plugin.plugin_tools
-        self.config = plugin.config
+        self.config = plugin.cli_inputs
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
     def process_cli_args(self) -> None:
         self.plugin_tools.set_network()
 
     def fetch_node(self) -> None:
-        subprocess.run(f"{sys.executable} -m pip install electrumsv-node", shell=True, check=True)
+        assert self.plugin.config.PYTHON_LIB_DIR is not None  # typing bug
+        assert self.plugin.COMPONENT_NAME is not None  # typing bug
+        node_libs_path = self.plugin.config.PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
+        subprocess.run(f"{sys.executable} -m pip install --target {node_libs_path} --upgrade "
+            f"electrumsv-node", shell=True, check=True)

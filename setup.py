@@ -82,6 +82,7 @@ setup(
         [
             "electrumsv_sdk/scripts/*",
             "electrumsv-server/*",
+            "electrumsv_sdk/builtin_components/merchant_api/exe-config/*"
         ],
     },
     packages=find_packages(),

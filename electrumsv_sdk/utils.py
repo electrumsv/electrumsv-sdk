@@ -9,19 +9,19 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import List, Dict, Optional, Union, Any, TYPE_CHECKING
+from typing import List, Dict, Optional, Union, Any
 
 import bitcoinx
 import colorama
 import psutil
 import tailer
 from electrumsv_node import electrumsv_node
-from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
-from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE, DATADIR
-from .types import SubprocessCallResult
 
-if TYPE_CHECKING:
-    from .config import Config
+from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
+from .config import Config
+from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE, \
+    SIGINT_EXITCODE_LINUX, SIGKILL_EXITCODE_LINUX
+from .sdk_types import SubprocessCallResult
 
 
 logger = logging.getLogger("utils")
@@ -180,8 +180,11 @@ def kill_by_pid(parent_pid: Optional[int], graceful_wait_period: float=0.0,
                 return
             time.sleep(0.2)
 
-    if psutil.pid_exists(pid):
-        sigkill(parent_pid=pid)
+    for pid in pid_list:
+        # sometimes we can't be sure which is the parent and which is child
+        # hence check to see if the pid still exists
+        if psutil.pid_exists(pid):
+            sigkill(parent_pid=pid)
 
 
 def kill_process(component_dict: ComponentTypedDict, graceful_wait_period: float=0.0,
@@ -212,15 +215,6 @@ def is_docker() -> bool:
     )
 
 
-def get_sdk_datadir() -> Path:
-    sdk_home_datadir = None
-    if sys.platform == "win32":
-        sdk_home_datadir = Path(os.environ["LOCALAPPDATA"]) / "ElectrumSV-SDK"
-    if sdk_home_datadir is None:
-        sdk_home_datadir = Path.home() / ".electrumsv-sdk"
-    return sdk_home_datadir
-
-
 def tail(logfile: Path) -> None:
     colorama.init()
     for line in tailer.follow(open(logfile), delay=0.3):
@@ -248,6 +242,7 @@ def spawn_inline(command: str, env_vars: Dict[str, str], id: str, component_name
         src: Optional[Path]=None, logfile: Optional[Path]=None, status_endpoint: Optional[str]=None,
         metadata: Optional[ComponentMetadata]=None) -> None:
     """only for running servers with logging requirements - not for simple commands"""
+
     def update_state(process: SubprocessCallResult,
             component_state: Optional[str]) -> None:
         update_status_monitor(pid=process.pid, component_state=component_state, id=id,
@@ -259,7 +254,8 @@ def spawn_inline(command: str, env_vars: Dict[str, str], id: str, component_name
 
     def on_exit(process: SubprocessCallResult) -> None:
         # on windows signal.CTRL_C_EVENT gives back SUCCESS_EXITCODE (0)
-        if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE}:
+        if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE,
+                SIGINT_EXITCODE_LINUX, SIGKILL_EXITCODE_LINUX}:
             update_state(process, ComponentState.STOPPED)
         elif process.returncode != SUCCESS_EXITCODE:
             update_state(process, ComponentState.FAILED)
@@ -348,7 +344,8 @@ def spawn_background(command: str, env_vars: Dict[Any, Any], id: str, component_
 
     def on_exit(process: SubprocessCallResult) -> None:
         # on windows signal.CTRL_C_EVENT gives back SUCCESS_EXITCODE (0)
-        if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE}:
+        if process.returncode in {SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE,
+                SIGINT_EXITCODE_LINUX, SIGKILL_EXITCODE_LINUX}:
             update_state(process, ComponentState.STOPPED)
         elif process.returncode != SUCCESS_EXITCODE:
             update_state(process, ComponentState.FAILED)
@@ -384,13 +381,17 @@ def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, componen
         str, src: Optional[Path]=None, logfile: Optional[Path]=None,
         status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
 
+    config = Config()
+    env_vars.update(os.environ)
+
     def write_env_vars_to_temp_file():
         """encrypted for security in case it is not cleaned up as expected"""
         env_vars_json = json.dumps(dict(env_vars))
         secret = os.urandom(32)
         key = bitcoinx.PrivateKey(secret)
         encrypted_message = key.public_key.encrypt_message_to_base64(env_vars_json)
-        temp_outfile = DATADIR / component_name / "encrypted.env"
+        temp_outfile = config.DATADIR / component_name / "encrypted.env"
+        os.makedirs(config.DATADIR / component_name, exist_ok=True)
         with open(temp_outfile, 'w') as f:
             f.write(encrypted_message)
         return secret
@@ -483,6 +484,19 @@ def submit_blocks_from_file(node_id: str, filepath: Union[Path, str]) -> None:
 def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Optional[Any]:
     rpc_args = cast_str_int_args_to_int(list(args))
     rpc_args = cast_str_bool_args_to_bool(rpc_args)
+
+    rpchost = os.getenv("BITCOIN_NODE_HOST")
+    rpcport = int(os.getenv("BITCOIN_NODE_PORT", "0"))
+    if rpchost and rpcport:
+        assert electrumsv_node.is_running(rpcport, rpchost), (
+            "bitcoin node must be running to respond to rpc methods. "
+            "try: electrumsv-sdk start node")
+
+        result = electrumsv_node.call_any(method, *rpc_args, rpchost=rpchost, rpcport=rpcport,
+            rpcuser="rpcuser", rpcpassword="rpcpassword")
+
+        return json.loads(result.content)
+
     component_store = ComponentStore()
     DEFAULT_RPCHOST = "127.0.0.1"
     DEFAULT_RPCPORT = 18332
@@ -496,7 +510,7 @@ def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Optional
     assert component_dict is not None  # typing bug
     metadata = component_dict["metadata"]
     assert metadata is not None  # typing bug
-    rpcport = metadata.get("rpcport")
+    rpcport = int(metadata.get("rpcport", 18332))
     if not metadata:
         logger.error(f"could not locate metadata for node instance: {node_id}, "
                      f"using default of 18332")
@@ -505,7 +519,7 @@ def call_any_node_rpc(method: str, *args: str, node_id: str='node1') -> Optional
 
     assert electrumsv_node.is_running(rpcport, rpchost), (
         "bitcoin node must be running to respond to rpc methods. "
-        "try: electrumsv-sdk start --node")
+        "try: electrumsv-sdk start node")
 
     result = electrumsv_node.call_any(method, *rpc_args, rpchost=rpchost, rpcport=rpcport,
         rpcuser="rpcuser", rpcpassword="rpcpassword")
@@ -531,3 +545,17 @@ def set_deterministic_electrumsv_seed(component_type: str, component_id: Optiona
     os.environ['ELECTRUMSV_ACCOUNT_XPRV'] = "tprv8ZgxMBicQKsPd4wsdaJ11eH84eq4hHLX1K6Mx" \
                                             "8EQQhJzq8jr25WH1m8hgGkCqnksJDCZPZbDoMbQ6Q" \
                                             "troyCyn5ZckCmsLeiHDb1MAxhNUHN"
+
+
+def append_to_pythonpath(paths: List[Path]) -> None:
+    existing_pythonpath = os.environ.get('PYTHONPATH', "")
+    new_pythonpath = os.pathsep.join([existing_pythonpath] + [str(path) for path in paths])
+    new_pythonpath.strip(os.pathsep)
+    os.environ.update({"PYTHONPATH": new_pythonpath})
+
+
+def prepend_to_pythonpath(paths: List[Path]) -> None:
+    existing_pythonpath = os.environ.get('PYTHONPATH', "")
+    new_pythonpath = os.pathsep.join([str(path) for path in paths] + [existing_pythonpath])
+    new_pythonpath.strip(os.pathsep)
+    os.environ.update({"PYTHONPATH": new_pythonpath})

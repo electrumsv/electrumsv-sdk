@@ -8,8 +8,10 @@ import logging
 import os
 
 from electrumsv_sdk.components import Component
+from electrumsv_sdk.constants import LOG_LEVEL
 from electrumsv_sdk.utils import spawn_background
 
+logging.basicConfig(level=LOG_LEVEL)
 logger = logging.getLogger("run-background-script")
 
 

@@ -14,7 +14,7 @@ resources:
   - container: pg12
     image: postgres:12
     ports:
-      - 5432:5432
+      - 55432:5432
     env:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -23,7 +23,7 @@ resources:
   - container: pg12-win32
     image: stellirin/postgres-windows:12
     ports:
-      - 5432:5432
+      - 55432:5432
     env:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -37,120 +37,88 @@ jobs:
   services:
     postgres: pg12
 
+  variables:
+    MODIFIED_SDK_HOME_DIR:  $(Agent.HomeDirectory)/my_portable_sdk_datadir
+    NEW_LOG_DIR:            $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
+    SDK_LOG_LEVEL:          DEBUG
+    SDK_POSTGRES_PORT:      55432
+
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.9
+        versionSpec: 3.10
 
     - script: |
           set -e
           sudo apt-get update
           sudo apt-get install libusb-1.0-0-dev libudev-dev
           python3 -m pip install pysqlite3-binary
-      displayName: 'prepare for electrumsv'
+      displayName: 'Prepare for electrumsv'
 
     - script: |
         set -e
         python3 -m pip install wheel
         python3 -m pip install -e .
         python3 -m pip install pytest pytest-cov
-      displayName: 'install electrumsv-sdk'
+      displayName: 'Install electrumsv-sdk'
+
+    - script: |
+        set -e
+        electrumsv-sdk config --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
+      displayName: 'Configure for portable sdk-home-dir'
 
     - bash: |
         cd $(Build.Repository.LocalPath)/contrib/azure
         python3 -m pip install asyncpg
         python3 ./mapi_db_config.py
-      displayName: 'prepare postgres'
+      displayName: 'Prepare postgres'
 
     - script: |
         set -e
         python3 -m pip install -U pylint
-        python3 -m pylint --rcfile ./.pylintrc ./electrumsv-sdk
+        python3 -m pylint --rcfile ./.pylintrc ./electrumsv_sdk
         if [ $? -gt 0 ]
         then
           # https://docs.pylint.org/en/1.6.0/run.html#exit-codes
           echo "##vso[task.complete result=Failed;]DONE"
         fi
       continueOnError: true
-      displayName: 'pylint'
+      displayName: 'Pylint'
 
     - script: |
         python3 -m pip install mypy
         yes | python3 -m mypy --install-types
         python3 -m mypy --config-file mypy.ini
       continueOnError: true
-      displayName: 'mypy static analysis'
+      displayName: 'Mypy static analysis'
 
     - script: |
         set -e
         sudo apt-get update
         sudo apt install npm nodejs node-gyp
-      displayName: 'prepare node.js'
+      displayName: 'Prepare node.js'
       continueOnError: true
 
-    - script: |
-        set -e
-        electrumsv-sdk install node
-        electrumsv-sdk install electrumx
-        electrumsv-sdk install electrumsv
-        electrumsv-sdk install whatsonchain
-        electrumsv-sdk install merchant_api
-      displayName: 'install all components'
-
-    - script: |
-        set -e
-        electrumsv-sdk start --background status_monitor
-        electrumsv-sdk start --background --new node
-        electrumsv-sdk start --background --new electrumx
-        electrumsv-sdk start --background --new --deterministic-seed electrumsv
-        electrumsv-sdk node generate 1
-        electrumsv-sdk start --background whatsonchain
-        electrumsv-sdk start --background merchant_api
-        electrumsv-sdk status
-      displayName: 'start all components'
-      continueOnError: true
-
-    - script: |
-        set -e
-        electrumsv-sdk stop node
-        electrumsv-sdk stop electrumx
-        electrumsv-sdk stop electrumsv
-        electrumsv-sdk stop whatsonchain
-        electrumsv-sdk stop status_monitor
-        electrumsv-sdk stop merchant_api
-        electrumsv-sdk status
-      displayName: 'stop all components'
-      continueOnError: true
-
-    - script: |
-        set -e
-        sleep 5
-        electrumsv-sdk reset
-        electrumsv-sdk status
-      displayName: 'reset all components'
-      continueOnError: true
-
-    - script: |
-        set -e
-        sleep 5
-        electrumsv-sdk reset --id=node1 node
-        electrumsv-sdk reset --id=electrumx1 electrumx
-        electrumsv-sdk reset --id=electrumsv1 --deterministic-seed electrumsv
-        electrumsv-sdk status
-      displayName: 'reset by id'
-      continueOnError: true
+    - template: standardized_tests.yaml
 
     - task: PublishBuildArtifacts@1
       inputs:
-        pathToPublish: '/home/vsts/.electrumsv-sdk/logs/'
+        pathToPublish: $(NEW_LOG_DIR)
         artifactName: 'LinuxLogs'
       displayName: 'Publish logs'
+
 
 - job: TestMacOS
   timeoutInMinutes: 15
 
   pool:
     vmImage: 'macOS-latest'
+
+  variables:
+    MODIFIED_SDK_HOME_DIR:  $(Agent.HomeDirectory)/my_portable_sdk_datadir
+    NEW_LOG_DIR:            $(Agent.HomeDirectory)/my_portable_sdk_datadir/logs
+    SDK_LOG_LEVEL:          DEBUG
+    SDK_POSTGRES_PORT:      55432
 
   steps:
     # https://stackoverflow.com/questions/27700596/homebrew-postgres-broken
@@ -166,22 +134,22 @@ jobs:
         echo 'export PATH="/usr/local/opt/postgresql/bin:$PATH"' >> /Users/runner/.bash_profile
         export PKG_CONFIG_PATH="/usr/local/opt/postgresql/lib/pkgconfig"
 
-        pg_ctl -D /usr/local/var/postgres start
-        psql -U postgres --list
-        psql -U postgres -c "\du"
+        pg_ctl -o "-p 55432" -D /usr/local/var/postgres start
+        psql -p 55432 -U postgres --list
+        psql -p 55432 -U postgres -c "\du"
 
         cd $(Build.Repository.LocalPath)/contrib/azure
         python3 -m pip install asyncpg
         python3 ./mapi_db_config.py
-      displayName: 'install postgres'
+      displayName: 'Prepare postgres'
 
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.9
+        versionSpec: 3.10
 
     - script: |
         brew upgrade sqlite3
-      displayName: 'prepare for electrumsv'
+      displayName: 'Prepare for electrumsv'
 
     - script: |
         set -e
@@ -192,64 +160,19 @@ jobs:
 
     - script: |
         set -e
+        electrumsv-sdk config --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
+      displayName: 'Configure for portable sdk-home-dir'
+
+    - script: |
+        set -e
         brew install node
-      displayName: 'prepare node.js'
+      displayName: 'Prepare node.js'
 
-    - script: |
-        set -e
-        electrumsv-sdk install node
-        electrumsv-sdk install electrumx
-        electrumsv-sdk install electrumsv
-        electrumsv-sdk install whatsonchain
-        electrumsv-sdk install merchant_api
-      displayName: 'install all components'
-
-    - script: |
-        set -e
-        electrumsv-sdk start --background status_monitor
-        electrumsv-sdk start --background --new node
-        electrumsv-sdk start --background --new electrumx
-        electrumsv-sdk start --background --new --deterministic-seed electrumsv
-        electrumsv-sdk node generate 1
-        electrumsv-sdk start --background whatsonchain
-        electrumsv-sdk start --background merchant_api
-        electrumsv-sdk status
-      displayName: 'start all components'
-      continueOnError: true
-
-    - script: |
-        set -e
-        electrumsv-sdk stop node
-        electrumsv-sdk stop electrumx
-        electrumsv-sdk stop electrumsv
-        electrumsv-sdk stop whatsonchain
-        electrumsv-sdk stop status_monitor
-        electrumsv-sdk stop merchant_api
-        electrumsv-sdk status
-      displayName: 'stop all components'
-      continueOnError: true
-
-    - script: |
-        set -e
-        sleep 5
-        electrumsv-sdk reset
-        electrumsv-sdk status
-      displayName: 'reset all components'
-      continueOnError: true
-
-    - script: |
-        set -e
-        sleep 5
-        electrumsv-sdk reset --id=node1 node
-        electrumsv-sdk reset --id=electrumx1 electrumx
-        electrumsv-sdk reset --id=electrumsv1 --deterministic-seed electrumsv
-        electrumsv-sdk status
-      displayName: 'reset by id'
-      continueOnError: true
+    - template: standardized_tests.yaml
 
     - task: PublishBuildArtifacts@1
       inputs:
-        pathToPublish: '/Users/runner/.electrumsv-sdk/logs/'
+        pathToPublish: $(NEW_LOG_DIR)
         artifactName: 'MacOSXLogs'
       displayName: 'Publish logs'
 
@@ -261,36 +184,159 @@ jobs:
   services:
     postgres: pg12-win32
 
+  variables:
+    MODIFIED_SDK_HOME_DIR:    $(Agent.HomeDirectory)\my_portable_sdk_datadir
+    NEW_LOG_DIR:              $(Agent.HomeDirectory)\my_portable_sdk_datadir\logs
+    SDK_LOG_LEVEL:            DEBUG
+    SDK_POSTGRES_PORT:        55432
+
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.9
+        versionSpec: 3.10
         addToPath: true
         architecture: 'x64'
 
     # need to add python Scripts/ dir to PATH to find 'electrumsv-sdk' command
     - pwsh: |
-        $scripts_dir = py -3.9 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
+        $scripts_dir = py -3.10 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
         $env:PATH += $scripts_dir
-        py -3.9 -m pip install --upgrade pip
-        py -3.9 -m pip install wheel
-        py -3.9 -m pip install -e .
-        py -3.9 -m pip install pytest pytest-cov
-      displayName: 'install electrumsv-sdk'
+        py -3.10 -m pip install --upgrade pip
+        py -3.10 -m pip install wheel
+        py -3.10 -m pip install -e .
+        py -3.10 -m pip install pytest pytest-cov
+      displayName: 'Install electrumsv-sdk'
+
+    - script: |
+        set -e
+        electrumsv-sdk config --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
+      displayName: 'Configure for portable sdk-home-dir'
 
     - script: |
         cd $(Build.Repository.LocalPath)/contrib/azure
         python3 -m pip install asyncpg
         python3 ./mapi_db_config.py
-      displayName: 'prepare postgres'
+      displayName: 'Prepare postgres'
+
+    - template: standardized_tests.yaml
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: $(NEW_LOG_DIR)
+        artifactName: 'WindowsLogs'
+      displayName: 'Publish logs'
+
+
+- job: TestWindowsPortableMode
+
+  pool:
+    vmImage: 'windows-latest'
+
+  variables:
+    MODIFIED_SDK_HOME_DIR:      $(Agent.ToolsDirectory)\SDK_HOME_DIR
+    NEW_LOG_DIR:                $(Agent.ToolsDirectory)\SDK_HOME_DIR\logs
+    SDK_LOG_LEVEL:              DEBUG
+    SDK_POSTGRES_PORT:          55432
+    SDK_PORTABLE_MODE:          1
+
+  steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: 3.10
+        addToPath: true
+        architecture: 'x64'
+
+    # need to add python Scripts/ dir to PATH to find 'electrumsv-sdk' command
+    - pwsh: |
+        $scripts_dir = py -3.10 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
+        $env:PATH += $scripts_dir
+        py -3.10 -m pip install --upgrade pip
+        py -3.10 -m pip install wheel
+        py -3.10 -m pip install -e .
+        py -3.10 -m pip install pytest pytest-cov
+      displayName: 'Install electrumsv-sdk'
+
+    - script: |
+        mkdir -p $(Agent.ToolsDirectory)\SDK_HOME_DIR
+      displayName: 'Turn on portable mode (searches for "SDK_HOME_DIR")'
+
+    - script: |
+        cd $(Build.Repository.LocalPath)/contrib/azure
+        python3 -m pip install asyncpg
+        python3 ./mapi_db_config.py
+      displayName: 'Prepare postgres'
+
+    - template: standardized_tests.yaml
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: $(NEW_LOG_DIR)
+        artifactName: 'WindowsPortableModeLogs'
+      displayName: 'Publish logs'
+
+
+# Peace of mind that there is no conflict with previously installed SDK version.
+- job: TestWindowsVersionMigration
+
+  pool:
+    vmImage: 'windows-latest'
+
+  services:
+    postgres: pg12-win32
+
+  variables:
+    LOG_DIR:                C:\Users\VssAdministrator\AppData\Local\ElectrumSV-SDK\logs
+    SDK_LOG_LEVEL:          INFO
+    PREVIOUS_SDK_VERSION:   0.0.37
+    SDK_POSTGRES_PORT:      55432
+
+  steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: 3.10
+        addToPath: true
+        architecture: 'x64'
+
+    # need to add python Scripts/ dir to PATH to find 'electrumsv-sdk' command
+    - pwsh: |
+        $scripts_dir = py -3.10 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
+        $env:PATH += $scripts_dir
+        py -3.10 -m pip install --upgrade pip
+        py -3.10 -m pip install wheel
+        py -3.10 -m pip install pytest pytest-cov
+        py -3.10 -m pip install electrumsv-sdk==$(PREVIOUS_SDK_VERSION)
+      displayName: 'Install electrumsv-sdk previous version'
+
+#    - script: |
+#        set -e
+#        electrumsv-sdk config --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
+#      displayName: 'configure for portable sdk-home-dir'
+
+    - script: |
+        cd $(Build.Repository.LocalPath)/contrib/azure
+        python3 -m pip install asyncpg
+        python3 ./mapi_db_config.py
+      displayName: 'Prepare postgres'
 
     - script: |
         electrumsv-sdk install node
         electrumsv-sdk install electrumx
         electrumsv-sdk install electrumsv
         electrumsv-sdk install whatsonchain
+      displayName: 'Install all components'
+
+    - script: |
+        py -3.10 -m pip uninstall electrumsv-sdk
+        py -3.10 -m pip install -e .
+      displayName: 'Install electrumsv-sdk latest master'
+
+    - script: | 
+        electrumsv-sdk install node
+        electrumsv-sdk install electrumx
+        electrumsv-sdk install electrumsv
+        electrumsv-sdk install whatsonchain
         electrumsv-sdk install merchant_api
-      displayName: 'install all components'
+      displayName: 'Re-install all components (including mAPI)'
 
     - script: |
         electrumsv-sdk start --background status_monitor
@@ -301,7 +347,8 @@ jobs:
         electrumsv-sdk start --background whatsonchain
         electrumsv-sdk start --background merchant_api
         electrumsv-sdk status
-      displayName: 'start all components'
+        python3 ./contrib/check_all_started.py 6
+      displayName: 'Start all components'
       continueOnError: true
 
     - script: |
@@ -312,14 +359,20 @@ jobs:
         electrumsv-sdk stop status_monitor
         electrumsv-sdk stop merchant_api
         electrumsv-sdk status
-      displayName: 'stop all components'
+        python3 ./contrib/check_all_stopped.py
+      displayName: 'Stop all components'
       continueOnError: true
 
     - script: |
         sleep 5
-        electrumsv-sdk reset
+        electrumsv-sdk reset node
+        electrumsv-sdk reset electrumx
+        electrumsv-sdk reset electrumsv
+        electrumsv-sdk reset whatsonchain
+        electrumsv-sdk reset status_monitor
+        electrumsv-sdk reset merchant_api
         electrumsv-sdk status
-      displayName: 'reset all components'
+      displayName: 'Reset all components'
       continueOnError: true
 
     - script: |
@@ -328,14 +381,15 @@ jobs:
         electrumsv-sdk reset --id=electrumx1 electrumx
         electrumsv-sdk reset --id=electrumsv1 --deterministic-seed electrumsv
         electrumsv-sdk status
-      displayName: 'reset by id'
+      displayName: 'Reset by id'
       continueOnError: true
 
     - task: PublishBuildArtifacts@1
       inputs:
-        pathToPublish: 'C:\Users\VssAdministrator\AppData\Local\ElectrumSV-SDK\logs'
-        artifactName: 'WindowsLogs'
+        pathToPublish: $(LOG_DIR)
+        artifactName: 'WindowsMigrationLogs'
       displayName: 'Publish logs'
+      continueOnError: true
 
 
 - job: BuildMacOS
@@ -350,14 +404,14 @@ jobs:
       inputs:
         artifactName: 'MacOS'
         pathtoPublish: 'wheelhouse'
-      displayName: 'build wheel macos'
+      displayName: 'Build wheel macos'
 
 - job: BuildWindows
   pool: {vmImage: 'windows-latest'}
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.9
+        versionSpec: 3.10
 
     - script: |
         py -3 -m pip install --upgrade pip
@@ -368,7 +422,7 @@ jobs:
       inputs:
         artifactName: 'Windows'
         pathtoPublish: 'wheelhouse'
-      displayName: 'build wheel windows'
+      displayName: 'Build wheel windows'
 
 
 - job: BuildLinux
@@ -377,7 +431,7 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.9
+        versionSpec: 3.10
 
     - bash: |
         python3 -m pip install --upgrade pip
@@ -388,4 +442,4 @@ jobs:
       inputs:
         artifactName: 'Linux'
         pathtoPublish: 'wheelhouse'
-      displayName: 'build wheel linux'
+      displayName: 'Build wheel linux'

@@ -36,10 +36,9 @@ from pathlib import Path
 from typing import Optional, Union, Dict, cast
 from filelock import FileLock
 
-from .config import Config
-from .types import AbstractPlugin, AbstractModuleType
-from .constants import SDK_HOME_DIR, LOCAL_PLUGINS_DIR, USER_PLUGINS_DIR, BUILTIN_COMPONENTS_DIR, \
-    LOCAL_PLUGINS_DIRNAME, ComponentState, BUILTIN_PLUGINS_DIRNAME, USER_PLUGINS_DIRNAME
+from .config import CLIInputs, Config
+from .constants import ComponentState
+from .sdk_types import AbstractPlugin, AbstractModuleType
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -135,10 +134,12 @@ class ComponentStore:
     (which is basically acting as a stand-in for a database - which would be major overkill)"""
 
     def __init__(self) -> None:
+        self.config = Config()
         self.file_name = "component_state.json"
-        self.lock_path = SDK_HOME_DIR / "component_state.json.lock"
-        self.file_lock = FileLock(str(self.lock_path), timeout=5)
-        self.component_state_path = SDK_HOME_DIR / self.file_name
+        assert self.config.SDK_HOME_DIR is not None
+        self.lock_path = self.config.SDK_HOME_DIR / "component_state.json.lock"
+        self.file_lock = FileLock(str(self.lock_path), timeout=5)  # pylint: disable=abstract-class-instantiated
+        self.component_state_path = self.config.SDK_HOME_DIR / self.file_name
         if not self.component_state_path.exists():
             open(self.component_state_path, 'w').close()
         self.component_map = self.get_component_map()
@@ -221,36 +222,40 @@ class ComponentStore:
         return None
 
     def get_component_map(self) -> Dict[str, Path]:
+        assert self.config.BUILTIN_COMPONENTS_DIR is not None
+        assert self.config.USER_PLUGINS_DIR is not None
+        assert self.config.LOCAL_PLUGINS_DIR is not None
+
         component_map = {}  # component_name: <component_dir>
-        ignored = {'__init__.py', '__pycache__', '.idea', '.vscode'}
+        ignored = {'__init__.py', '__pycache__', '.idea', '.vscode', '_postgres', '_common'}
 
         # Layer 1
         builtin_components_list = [
             component_type for component_type
-            in os.listdir(BUILTIN_COMPONENTS_DIR)
+            in os.listdir(self.config.BUILTIN_COMPONENTS_DIR)
             if component_type not in ignored
         ]
         for component_type in builtin_components_list:
-            component_map[component_type] = BUILTIN_COMPONENTS_DIR
+            component_map[component_type] = self.config.BUILTIN_COMPONENTS_DIR
 
         # Layer 2 - overrides builtins (if there is a name clash)
         user_plugins_list = [
             component_type for component_type
-            in os.listdir(USER_PLUGINS_DIR)
+            in os.listdir(self.config.USER_PLUGINS_DIR)
             if component_type not in ignored
         ]
         for component_type in user_plugins_list:
-            component_map[component_type] = USER_PLUGINS_DIR
+            component_map[component_type] = self.config.USER_PLUGINS_DIR
 
         # Layer 3 - overrides both builtin & user_plugins_list (if there is a name clash)
-        if LOCAL_PLUGINS_DIR.exists():
+        if self.config.LOCAL_PLUGINS_DIR.exists():
             local_components_list = [
                 component_type for component_type
-                in os.listdir(LOCAL_PLUGINS_DIR)
+                in os.listdir(self.config.LOCAL_PLUGINS_DIR)
                 if component_type not in ignored
             ]
             for component_type in local_components_list:
-                component_map[component_type] = LOCAL_PLUGINS_DIR
+                component_map[component_type] = self.config.LOCAL_PLUGINS_DIR
 
         return component_map
 
@@ -261,35 +266,35 @@ class ComponentStore:
             sys.exit(1)
         basename = os.path.basename(plugin_dir)
 
-        if basename == BUILTIN_PLUGINS_DIRNAME:
+        if basename == self.config.BUILTIN_PLUGINS_DIRNAME:
             # do relative import
             component_module = import_module(f'.{basename}.{component_name}',
                 package="electrumsv_sdk")
 
-        elif basename == USER_PLUGINS_DIRNAME:
+        elif basename == self.config.USER_PLUGINS_DIRNAME:
             # do absolute import (SDK_HOME_DIR was added to sys.path to make this work)
             component_module = import_module(f'{basename}.{component_name}')
 
-        elif basename == LOCAL_PLUGINS_DIRNAME:
+        elif basename == self.config.LOCAL_PLUGINS_DIRNAME:
             # do absolute import
             component_module = import_module(f'{basename}.{component_name}')
 
         component_module = cast(AbstractModuleType, component_module)
         return component_module
 
-    def instantiate_plugin(self, config: Config) -> AbstractPlugin:
+    def instantiate_plugin(self, cli_inputs: CLIInputs) -> AbstractPlugin:
         """
         Each plugin must have a 'Plugin' class that is instantiated and has the main entrypoints:
         (install, start, stop, reset, status_check) as instance methods.
         """
-        if not config.selected_component:  # i.e. if --id set
-            component_dict = self.component_status_data_by_id(config.component_id)
+        if not cli_inputs.selected_component:  # i.e. if --id set
+            component_dict = self.component_status_data_by_id(cli_inputs.component_id)
             if component_dict:
                 component_name = component_dict["component_type"]
             else:
                 logger.exception("component_name not found")
         else:
-            component_name = config.selected_component
+            component_name = cli_inputs.selected_component
 
         component_module = self.import_plugin_module(component_name)
-        return component_module.Plugin(config)
+        return component_module.Plugin(cli_inputs)

@@ -6,8 +6,8 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional, Tuple, List, Set
 
-from electrumsv_sdk.types import AbstractPlugin
-from electrumsv_sdk.config import Config
+from electrumsv_sdk.sdk_types import AbstractPlugin
+from electrumsv_sdk.config import CLIInputs, Config
 from electrumsv_sdk.components import Component, ComponentTypedDict
 from electrumsv_sdk.utils import is_remote_repo, get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
@@ -17,7 +17,7 @@ from .local_tools import LocalTools
 
 def extend_start_cli(start_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
     """if this method is present it allows extension of the start argparser only.
-    This occurs dynamically and adds the new cli options as attributes of the Config object"""
+    This occurs dynamically and adds the new cli options as attributes of the CLIInputs object"""
     start_parser.add_argument("--regtest", action="store_true", help="run on regtest")
     start_parser.add_argument("--testnet", action="store_true", help="run on testnet")
 
@@ -47,9 +47,10 @@ class Plugin(AbstractPlugin):
     COMPONENT_NAME = get_directory_name(__file__)
     DEFAULT_REMOTE_REPO = "https://github.com/kyuupichan/electrumx.git"
 
-    def __init__(self, config: Config) -> None:
-        self.config = config
-        self.plugin_tools = PluginTools(self, self.config)
+    def __init__(self, cli_inputs: CLIInputs) -> None:
+        self.cli_inputs = cli_inputs
+        self.config = Config()
+        self.plugin_tools = PluginTools(self, self.cli_inputs)
         self.tools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
@@ -63,13 +64,15 @@ class Plugin(AbstractPlugin):
 
     def install(self) -> None:
         """required state: source_dir  - which are derivable from 'repo' and 'branch' flags"""
-        repo = self.config.repo
-        if self.config.repo == "":
+        self.plugin_tools.modify_pythonpath_for_portability(self.src)
+
+        repo = self.cli_inputs.repo
+        if self.cli_inputs.repo == "":
             repo = self.DEFAULT_REMOTE_REPO
         if is_remote_repo(repo):
-            self.tools.fetch_electrumx(repo, self.config.branch)
+            self.tools.fetch_electrumx(repo, self.cli_inputs.branch)
 
-        self.tools.packages_electrumx(repo, self.config.branch)
+        self.tools.packages_electrumx(repo, self.cli_inputs.branch)
 
     def start(self) -> None:
         """plugin datadir, id, port are allocated dynamically"""
@@ -80,6 +83,7 @@ class Plugin(AbstractPlugin):
                               f"{self.COMPONENT_NAME}' to install the plugin first")
             sys.exit(1)
 
+        self.plugin_tools.modify_pythonpath_for_portability(self.src)
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.port = self.plugin_tools.allocate_port()
         self.tools.process_cli_args()  # cli args may override network in env vars

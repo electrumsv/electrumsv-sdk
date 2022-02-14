@@ -1,34 +1,20 @@
+import logging
 import os
-import sys
-from pathlib import Path
 from typing import Optional
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-
-# copied from utils to avoid circular import
-def get_sdk_datadir() -> Path:
-    sdk_home_datadir = None
-    if sys.platform == "win32":
-        sdk_home_datadir = Path(os.environ["LOCALAPPDATA"]) / "ElectrumSV-SDK"
-    if sdk_home_datadir is None:
-        sdk_home_datadir = Path.home() / ".electrumsv-sdk"
-    return sdk_home_datadir
-
-# Directory structure
-SDK_HOME_DIR: Path = get_sdk_datadir()
-REMOTE_REPOS_DIR: Path = SDK_HOME_DIR.joinpath("remote_repos")
-DATADIR: Path = SDK_HOME_DIR.joinpath("component_datadirs")
-LOGS_DIR: Path = SDK_HOME_DIR.joinpath("logs")
-CONFIG_PATH: Path = SDK_HOME_DIR.joinpath("config.json")
-
-# Three plugin locations
-BUILTIN_PLUGINS_DIRNAME = 'builtin_components'
-USER_PLUGINS_DIRNAME = 'user_plugins'
-LOCAL_PLUGINS_DIRNAME = 'electrumsv_sdk_plugins'
-BUILTIN_COMPONENTS_DIR: Path = Path(MODULE_DIR).joinpath(BUILTIN_PLUGINS_DIRNAME)
-USER_PLUGINS_DIR: Path = SDK_HOME_DIR.joinpath(USER_PLUGINS_DIRNAME)
-LOCAL_PLUGINS_DIR: Path = Path(os.getcwd()).joinpath(LOCAL_PLUGINS_DIRNAME)
+sdk_log_level = os.environ.get("SDK_LOG_LEVEL", 'INFO')
+if sdk_log_level.upper() == 'DEBUG':
+    LOG_LEVEL = logging.DEBUG
+if sdk_log_level.upper() == 'INFO':
+    LOG_LEVEL = logging.INFO
+if sdk_log_level.upper() == 'WARNING':
+    LOG_LEVEL = logging.WARNING
+if sdk_log_level.upper() == 'ERROR':
+    LOG_LEVEL = logging.ERROR
+if sdk_log_level.upper() == 'CRITICAL':
+    LOG_LEVEL = logging.CRITICAL
 
 
 class NameSpace:
@@ -39,6 +25,7 @@ class NameSpace:
     RESET = "reset"
     NODE = "node"
     STATUS = 'status'
+    CONFIG = 'config'
 
 
 class ComponentOptions:
@@ -76,6 +63,8 @@ class ComponentState(str):
 SUCCESS_EXITCODE = 0
 SIGINT_EXITCODE = 130  # (2 + 128)
 SIGKILL_EXITCODE = 137  # (9 + 128)
+SIGINT_EXITCODE_LINUX = -2
+SIGKILL_EXITCODE_LINUX = -9
 
 
 class NETWORKS:

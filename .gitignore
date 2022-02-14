@@ -14,9 +14,8 @@ electrumsv-server/data
 electrumsv_sdk/electrumsv_sdk/run_scripts/proc_ids.json
 electrumsv_sdk/electrumsv_sdk/config.json
 electrumsv_sdk/electrumsv_sdk/component_state.json
-
-*localhost.cer
-*localhost.pfx
-*localhost.crt
-electrumsv_sdk/builtin_components/merchant_api/exe-config/.env
 *.dat
+*.zip
+electrumsv_sdk/builtin_components/merchant_api/zzz/*
+local_headers.mmap
+node_headers.mmap

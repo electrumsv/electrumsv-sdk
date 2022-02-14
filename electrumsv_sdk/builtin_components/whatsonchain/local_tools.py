@@ -6,7 +6,6 @@ import typing
 
 from electrumsv_node import electrumsv_node
 
-from electrumsv_sdk.constants import REMOTE_REPOS_DIR
 from electrumsv_sdk.utils import checkout_branch
 
 
@@ -20,15 +19,16 @@ class LocalTools:
     def __init__(self, plugin: 'Plugin'):
         self.plugin = plugin
         self.plugin_tools = self.plugin.plugin_tools
-        self.config = plugin.config
+        self.config = plugin.cli_inputs
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
     def fetch_whatsonchain(self, url: str="https://github.com/AustEcon/woc-explorer.git",
                            branch: str='') -> None:
         assert self.plugin.src is not None  # typing bug
+        assert self.plugin.config.REMOTE_REPOS_DIR is not None  # typing bug
         if not self.plugin.src.exists():
             os.makedirs(self.plugin.src, exist_ok=True)
-            os.chdir(REMOTE_REPOS_DIR)
+            os.chdir(self.plugin.config.REMOTE_REPOS_DIR)
             subprocess.run(f"git clone {url}", shell=True, check=True)
 
             os.chdir(self.plugin.src)

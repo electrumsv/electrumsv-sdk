@@ -10,7 +10,6 @@ import sys
 import typing
 from typing import Any, Callable, Dict
 from aiorpcx import timeout_after
-from electrumsv_sdk.constants import REMOTE_REPOS_DIR
 from electrumsv_sdk.utils import checkout_branch
 
 
@@ -28,7 +27,7 @@ class LocalTools:
     def __init__(self, plugin: 'Plugin'):
         self.plugin = plugin
         self.plugin_tools = self.plugin.plugin_tools
-        self.config = plugin.config
+        self.cli_inputs = plugin.cli_inputs
         self.logger = logging.getLogger(self.plugin.COMPONENT_NAME)
 
     def process_cli_args(self) -> None:
@@ -42,72 +41,52 @@ class LocalTools:
         (dir exists, url does not match - it's a forked repo)
         """
         assert self.plugin.src is not None  # typing bug
+        assert self.plugin.config.REMOTE_REPOS_DIR is not None  # typing bug
         if not self.plugin.src.exists():
             self.logger.debug(f"Installing electrumx (url={url})")
-            os.chdir(REMOTE_REPOS_DIR)
+            os.chdir(self.plugin.config.REMOTE_REPOS_DIR)
             process = subprocess.Popen(["git", "clone", f"{url}"])
             process.wait()
 
         elif self.plugin.src.exists():
-            os.chdir(self.plugin.src)
-            result = subprocess.run(
-                f"git config --get remote.origin.url",
-                shell=True,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            if result.stdout.strip() == url:
-                self.logger.debug(f"ElectrumSV is already installed (url={url})")
-                process = subprocess.Popen(["git", "config", "pull.ff", "only"])
-                process.wait()
-                process = subprocess.Popen(["git", "pull"])
-                process.wait()
-                checkout_branch(branch)
-            if result.stdout.strip() != url:
-                existing_fork = self.plugin.src
-                self.logger.debug(f"Alternate fork of electrumx is already installed")
-                self.logger.debug(f"Moving existing fork (to '{existing_fork}.bak')")
-                self.logger.debug(f"Installing electrumx (url={url})")
-                os.rename(
-                    self.plugin.src,
-                    self.plugin.src.with_suffix(".bak"),
-                )
+            self.logger.debug(f"ElectrumX is already installed (url={url})")
+            process = subprocess.Popen(["git", "pull"])
+            process.wait()
+            checkout_branch(branch)
 
     def packages_electrumx(self, url: str, branch: str) -> None:
         """plyvel wheels are not available on windows so it is swapped out for plyvel-win32 to
         make it work"""
-        assert self.plugin.src is not None  # typing bug
-        os.chdir(self.plugin.src)
 
-        checkout_branch(branch)
-        requirements_path = self.plugin.src.joinpath('requirements.txt')
+        assert self.plugin.config.PYTHON_LIB_DIR is not None
+        assert self.plugin.COMPONENT_NAME is not None
 
-        if sys.platform in ['linux', 'darwin']:
-            if sys.platform == 'darwin':
-                # so that plyvel dependency can build wheel
-                process = subprocess.Popen(["brew", "install", "leveldb"])
-                process.wait()
-            process = subprocess.Popen(
-                f"{sys.executable} -m pip install -r {requirements_path}", shell=True)
-            process.wait()
-
-        elif sys.platform == 'win32':
-            temp_requirements = self.plugin.src.joinpath('requirements-temp.txt')
+        def modify_requirements(temp_requirements):
+            """replaces plyvel with plyvel-wheels"""
             packages = []
             with open(requirements_path, 'r') as f:
                 for line in f.readlines():
                     if line.strip() == 'plyvel':
                         continue
                     packages.append(line)
-            packages.append('plyvel-win32')
+            packages.append('plyvel-wheels')
             with open(temp_requirements, 'w') as f:
                 f.writelines(packages)
-            process = subprocess.Popen(
-                f"{sys.executable} -m pip install --user -r {temp_requirements}", shell=True)
-            process.wait()
-            os.remove(temp_requirements)
+
+        assert self.plugin.src is not None  # typing bug
+        os.chdir(self.plugin.src)
+
+        checkout_branch(branch)
+        requirements_path = self.plugin.src.joinpath('requirements.txt')
+        electrumx_libs_path = self.plugin.config.PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
+
+        temp_requirements = self.plugin.src.joinpath('requirements-temp.txt')
+        modify_requirements(temp_requirements)
+        process = subprocess.Popen(
+            f"{sys.executable} -m pip install --target {electrumx_libs_path} "
+            f"-r {temp_requirements} --upgrade", shell=True)
+        process.wait()
+        os.remove(temp_requirements)
 
     async def stop_electrumx(self, rpcport: int=8000) -> bool:
         try:

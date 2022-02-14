@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Optional, Tuple, List, Set
 import shutil
 
-from electrumsv_sdk.types import AbstractPlugin
-from electrumsv_sdk.config import Config
+from electrumsv_sdk.sdk_types import AbstractPlugin
+from electrumsv_sdk.config import CLIInputs
 from electrumsv_sdk.components import Component, ComponentTypedDict
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
@@ -20,7 +20,7 @@ MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def extend_start_cli(start_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
     """if this method is present it allows extension of the start argparser only.
-    This occurs dynamically and adds the new cli options as attributes of the Config object"""
+    This occurs dynamically and adds the new cli options as attributes of the CLIInputs object"""
     start_parser.add_argument("--mapi-broadcast", action="store_true",
         help="turn on broadcasting via the merchant api")
     start_parser.add_argument("--mapi-host", type=str, default="127.0.0.1",
@@ -50,9 +50,9 @@ class Plugin(AbstractPlugin):
     ELECTRUMSV_SERVER_MODULE_PATH = Path(MODULE_DIR).parent.parent.parent.joinpath(
         "electrumsv-server")
 
-    def __init__(self, config: Config) -> None:
-        self.config = config
-        self.plugin_tools = PluginTools(self, self.config)
+    def __init__(self, cli_inputs: CLIInputs) -> None:
+        self.cli_inputs = cli_inputs
+        self.plugin_tools = PluginTools(self, self.cli_inputs)
         self.tools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
@@ -77,12 +77,12 @@ class Plugin(AbstractPlugin):
         network_choice = self.tools.get_network_choice()
         command += f"--{network_choice}"
 
-        # These mapi attributes are added to config as extension cli options
+        # These mapi attributes are added to cli_inputs as extension cli options
         # (see: extend_start_cli() above)
-        if self.config.cli_extension_args['mapi_broadcast']:
+        if self.cli_inputs.cli_extension_args['mapi_broadcast']:
             command += (f" --mapi-broadcast "
-                        f"--mapi-host={self.config.cli_extension_args['mapi_host']} "
-                        f"--mapi-port={self.config.cli_extension_args['mapi_port']}")
+                        f"--mapi-host={self.cli_inputs.cli_extension_args['mapi_host']} "
+                        f"--mapi-port={self.cli_inputs.cli_extension_args['mapi_port']}")
 
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,

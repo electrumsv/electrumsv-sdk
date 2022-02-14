@@ -4,8 +4,8 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional, Tuple, List, Set
 
-from electrumsv_sdk.types import AbstractPlugin
-from electrumsv_sdk.config import Config
+from electrumsv_sdk.sdk_types import AbstractPlugin
+from electrumsv_sdk.config import CLIInputs, Config
 from electrumsv_sdk.components import Component, ComponentTypedDict, ComponentMetadata
 from electrumsv_sdk.utils import get_directory_name
 from electrumsv_sdk.plugin_tools import PluginTools
@@ -17,7 +17,7 @@ from .local_tools import LocalTools
 
 def extend_start_cli(start_parser: ArgumentParser) -> Tuple[ArgumentParser, List[str]]:
     """if this method is present it allows extension of the start argparser only.
-    This occurs dynamically and adds the new cli options as attributes of the Config object"""
+    This occurs dynamically and adds the new cli options as attributes of the CLIInputs object"""
     start_parser.add_argument("--regtest", action="store_true", help="run on regtest")
     start_parser.add_argument("--testnet", action="store_true", help="run on testnet")
 
@@ -45,9 +45,10 @@ class Plugin(AbstractPlugin):
     RESERVED_PORTS: Set[int] = {DEFAULT_PORT, DEFAULT_P2P_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
 
-    def __init__(self, config: Config):
-        self.config = config
-        self.plugin_tools = PluginTools(self, self.config)
+    def __init__(self, cli_inputs: CLIInputs):
+        self.cli_inputs = cli_inputs
+        self.config = Config()
+        self.plugin_tools = PluginTools(self, self.cli_inputs)
         self.tools = LocalTools(self)
         self.logger = logging.getLogger(self.COMPONENT_NAME)
 
@@ -64,10 +65,14 @@ class Plugin(AbstractPlugin):
     def install(self) -> None:
         """The node component has a pip installer at https://pypi.org/project/electrumsv-node/ and
         only official releases from pypi are supported"""
+        self.plugin_tools.modify_pythonpath_for_portability(self.src)
+
         self.tools.fetch_node()
         self.logger.debug(f"Installed {self.COMPONENT_NAME}")
 
     def start(self) -> None:
+        self.plugin_tools.modify_pythonpath_for_portability(self.src)
+
         # env vars take precedence for port and dbdir
         self.datadir, self.id = self.plugin_tools.allocate_datadir_and_id()
         self.tools.process_cli_args()  # cli args may override network in env vars
@@ -90,6 +95,8 @@ class Plugin(AbstractPlugin):
                 self.COMPONENT_NAME, self.id)
 
         extra_params = []
+        # TODO: NODE_RPCALLOWIP and NODE_RPCBIND can be removed after the next release of
+        #  electrumsv-node as they now default to 0.0.0.0/0 and 0.0.0.0 respectively
         if self.NODE_RPCALLOWIP:
             extra_params.append(f"-rpcallowip={self.NODE_RPCALLOWIP}")
         if self.NODE_RPCBIND:

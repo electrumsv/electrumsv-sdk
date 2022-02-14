@@ -78,6 +78,11 @@ Solution:
 - You will never have to ask for more testnet coins - just mine more blocks and top up.
 - You will not be at the mercy of 3rd party service providers staying operational to continue to build and test your application.
 
+Release Notes:
+^^^^^^^^^^^^^^
+See :ref:`release-notes-label`.
+
+
 .. toctree::
    :maxdepth: 1
    :hidden:
@@ -85,6 +90,12 @@ Solution:
 
    /getting-started/installing-the-SDK
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Release Notes
+
+   /release-notes/release-notes
 
 .. toctree::
    :maxdepth: 1

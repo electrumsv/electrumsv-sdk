@@ -1,5 +1,5 @@
 """
-See exe-config/.env for hard-coded settings
+See exe-cli_inputs/.env for hard-coded settings
 
 Pre-requisites for this plugin to work are:
 - postgres running (e.g. via a docker container or a system installation - this is up to the user)
@@ -14,6 +14,7 @@ this is the workaround.
 """
 import asyncio
 import logging
+import os
 import sys
 
 import asyncpg
@@ -23,12 +24,15 @@ from electrumsv_sdk.utils import get_directory_name
 COMPONENT_NAME = get_directory_name(__file__)
 logger = logging.getLogger(COMPONENT_NAME)
 
+POSTGRES_HOST = os.getenv('PG_HOST', "127.0.0.1")
+SDK_POSTGRES_PORT = os.environ.get('SDK_POSTGRES_PORT', 5432)
+
 
 async def pg_connect(db_name='postgres') -> asyncpg.connection.Connection:
     pg_conn = await asyncpg.connect(
         user="mapimaster",  # usually would be 'postgres'
-        host="127.0.0.1",
-        port=5432,
+        host=POSTGRES_HOST,
+        port=SDK_POSTGRES_PORT,
         password="mapimasterpass",  # usually would be 'postgres'
         database=db_name,
     )
@@ -52,7 +56,7 @@ async def drop_db_if_exists() -> None:
     except Exception:
         logger.exception("postgres database check failed - please see documentation to configure "
             "postgres")
-        sys.exit(1)
+        raise
     finally:
         if pg_conn:
             await pg_conn.close()
@@ -70,7 +74,7 @@ async def create_user_if_not_exists(pg_conn: asyncpg.Connection) -> None:
         """SELECT * FROM pg_catalog.pg_roles WHERE rolname = 'mapi_crud';""")
     if not result:
         logger.debug("creating user: 'mapi_crud'")
-        await pg_conn.execute("""           
+        await pg_conn.execute("""
                 CREATE ROLE "mapi_crud" LOGIN
                     PASSWORD 'merchant'
                     NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;

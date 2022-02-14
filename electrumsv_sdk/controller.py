@@ -6,9 +6,9 @@ import typing
 from typing import List, Optional
 
 from .constants import NameSpace
-from .config import Config
+from .config import CLIInputs
 from .components import ComponentStore, ComponentTypedDict
-from .types import SelectedComponent
+from .sdk_types import SelectedComponent
 from .utils import cast_str_int_args_to_int, call_any_node_rpc
 
 logger = logging.getLogger("runners")
@@ -41,87 +41,87 @@ class Controller:
                 relevant_components.append(component_dict)
         return relevant_components
 
-    def install(self, config: Config) -> None:
+    def install(self, cli_inputs: CLIInputs) -> None:
         logger.info("Installing component...")
-        if config.component_id or config.selected_component:
-            component_module = self.component_store.instantiate_plugin(config)
+        if cli_inputs.component_id or cli_inputs.selected_component:
+            component_module = self.component_store.instantiate_plugin(cli_inputs)
             component_module.install()
 
         # no args implies start all
-        if not config.component_id and not config.selected_component:
+        if not cli_inputs.component_id and not cli_inputs.selected_component:
             for component in self.component_store.component_map:
-                new_config = Config(
+                new_cli_inputs = CLIInputs(
                     selected_component=component,
-                    background_flag=config.background_flag
+                    background_flag=cli_inputs.background_flag
                 )
-                self.install(new_config)
+                self.install(new_cli_inputs)
 
-    def start(self, config: Config) -> None:
-        if config.component_id or config.selected_component:
-            logger.info(f"Starting {config.selected_component or config.component_id} ...")
-            component_module = self.component_store.instantiate_plugin(config)
+    def start(self, cli_inputs: CLIInputs) -> None:
+        if cli_inputs.component_id or cli_inputs.selected_component:
+            logger.info(f"Starting {cli_inputs.selected_component or cli_inputs.component_id} ...")
+            component_module = self.component_store.instantiate_plugin(cli_inputs)
             component_module.start()
 
         # no args implies start all (default component ids only - e.g. node1, electrumx1 etc.)
-        if not config.component_id and not config.selected_component:
+        if not cli_inputs.component_id and not cli_inputs.selected_component:
             for component in self.component_store.component_map:
-                new_config = Config(
+                new_cli_inputs = CLIInputs(
                     selected_component=component,
-                    background_flag=config.background_flag
+                    background_flag=cli_inputs.background_flag
                 )
-                self.start(new_config)
+                self.start(new_cli_inputs)
 
-    def stop(self, config: Config) -> None:
+    def stop(self, cli_inputs: CLIInputs) -> None:
         """stop all (no args) does not only stop default component ids but all component ids of
         each type - hence the need to hunt them all down."""
-        if config.component_id:
-            component_module = self.component_store.instantiate_plugin(config)
+        if cli_inputs.component_id:
+            component_module = self.component_store.instantiate_plugin(cli_inputs)
             component_module.stop()
 
-        elif config.selected_component:
-            relevant_components = self.get_relevant_components(config.selected_component)
+        elif cli_inputs.selected_component:
+            relevant_components = self.get_relevant_components(cli_inputs.selected_component)
             if relevant_components:
                 # dynamic imports of plugin
                 for component_dict in relevant_components:
                     component_name = component_dict.get("component_type", "")
-                    new_config = Config(
+                    new_cli_inputs = CLIInputs(
                         selected_component=component_name,
-                        background_flag=config.background_flag,
+                        background_flag=cli_inputs.background_flag,
                     )
-                    component_module = self.component_store.instantiate_plugin(new_config)
+                    component_module = self.component_store.instantiate_plugin(new_cli_inputs)
                     component_module.stop()
 
         # no args implies stop all - (recursive)
-        if not config.component_id and not config.selected_component:
+        if not cli_inputs.component_id and not cli_inputs.selected_component:
             for component in sorted(self.component_store.component_map.keys(), reverse=True):
-                new_config = Config(
+                new_cli_inputs = CLIInputs(
                     selected_component=component,
-                    background_flag=config.background_flag,
+                    background_flag=cli_inputs.background_flag,
                 )
-                self.stop(new_config)
+                self.stop(new_cli_inputs)
             logger.info(f"terminated: all")
 
-    def reset(self, config: Config) -> None:
-        if config.component_id or config.selected_component:
-            component_module = self.component_store.instantiate_plugin(config)
+    def reset(self, cli_inputs: CLIInputs) -> None:
+        if cli_inputs.component_id or cli_inputs.selected_component:
+            component_module = self.component_store.instantiate_plugin(cli_inputs)
             component_module.reset()
 
         # no args (no --id or <component_type>) implies reset all (node, electrumx, electrumsv)
-        if not config.component_id and not config.selected_component:
+        if not cli_inputs.component_id and not cli_inputs.selected_component:
             for component in self.component_store.component_map.keys():
-                new_config = Config(
+                new_cli_inputs = CLIInputs(
                     selected_component=component,
-                    background_flag=config.background_flag,
+                    background_flag=cli_inputs.background_flag,
                 )
-                self.reset(new_config)
+                self.reset(new_cli_inputs)
             logger.info(f"reset: all")
 
-    def node(self, config: Config) -> None:
+    def node(self, cli_inputs: CLIInputs) -> None:
         """Essentially bitcoin-cli interface to RPC API that works 'out of the box' with minimal
-        config."""
+        cli_inputs."""
         node_argparser = self.app_state.argparser.parser_map[NameSpace.NODE]
-        cli_options = [str(arg) for arg in config.node_args if arg.startswith("--")]
-        rpc_args = [str(arg) for arg in config.node_args if not arg.startswith("--")]
+        cli_options = [str(arg) for arg in cli_inputs.node_args if arg.startswith("--")]
+        rpc_args = [str(arg) for arg in cli_inputs.node_args if not arg.startswith("--")]
         rpc_args = cast_str_int_args_to_int(rpc_args)
 
         parsed_node_options = node_argparser.parse_args(cli_options)
@@ -138,6 +138,7 @@ class Controller:
         if result:
             logger.info(result["result"])
 
-    def status(self, config: Config) -> None:
-        status = self.component_store.get_status(config.selected_component, config.component_id)
+    def status(self, cli_inputs: CLIInputs) -> None:
+        status = self.component_store.get_status(cli_inputs.selected_component,
+            cli_inputs.component_id)
         pprint.pprint(status, indent=4)
