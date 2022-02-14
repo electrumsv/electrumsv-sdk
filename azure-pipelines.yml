@@ -323,6 +323,9 @@ jobs:
         electrumsv-sdk install electrumx
         electrumsv-sdk install electrumsv
         electrumsv-sdk install whatsonchain
+        electrumsv-sdk install merchant_api
+        electrumsv-sdk install simple_indexer
+        electrumsv-sdk install reference_server
       displayName: 'Install all components'
 
     - script: |
@@ -330,12 +333,14 @@ jobs:
         py -3.10 -m pip install -e .
       displayName: 'Install electrumsv-sdk latest master'
 
-    - script: | 
+    - script: |
         electrumsv-sdk install node
         electrumsv-sdk install electrumx
         electrumsv-sdk install electrumsv
         electrumsv-sdk install whatsonchain
         electrumsv-sdk install merchant_api
+        electrumsv-sdk install simple_indexer
+        electrumsv-sdk install reference_server
       displayName: 'Re-install all components (including mAPI)'
 
     - script: |
@@ -346,8 +351,10 @@ jobs:
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
         electrumsv-sdk start --background merchant_api
+        electrumsv-sdk start --background simple_indexer
+        electrumsv-sdk start --background reference_server
         electrumsv-sdk status
-        python3 ./contrib/check_all_started.py 6
+        python3 ./contrib/check_all_started.py 8
       displayName: 'Start all components'
       continueOnError: true
 
@@ -358,6 +365,8 @@ jobs:
         electrumsv-sdk stop whatsonchain
         electrumsv-sdk stop status_monitor
         electrumsv-sdk stop merchant_api
+        electrumsv-sdk stop simple_indexer
+        electrumsv-sdk stop reference_server
         electrumsv-sdk status
         python3 ./contrib/check_all_stopped.py
       displayName: 'Stop all components'
@@ -371,6 +380,8 @@ jobs:
         electrumsv-sdk reset whatsonchain
         electrumsv-sdk reset status_monitor
         electrumsv-sdk reset merchant_api
+        electrumsv-sdk reset simple_indexer
+        electrumsv-sdk reset reference_server
         electrumsv-sdk status
       displayName: 'Reset all components'
       continueOnError: true

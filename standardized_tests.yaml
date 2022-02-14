@@ -7,6 +7,7 @@ steps:
     electrumsv-sdk install merchant_api
     electrumsv-sdk install peer_channels
     electrumsv-sdk install simple_indexer
+    electrumsv-sdk install reference_server
   displayName: 'Install all components'
 
 - script: |
@@ -19,8 +20,9 @@ steps:
     electrumsv-sdk start --background merchant_api
     electrumsv-sdk start --background peer_channels
     electrumsv-sdk start --background simple_indexer
+    electrumsv-sdk start --background reference_server
     electrumsv-sdk status
-    python3 ./contrib/check_all_started.py 8
+    python3 ./contrib/check_all_started.py 9
   displayName: 'Start all components'
   continueOnError: true
 
@@ -33,6 +35,7 @@ steps:
     electrumsv-sdk stop merchant_api
     electrumsv-sdk stop peer_channels
     electrumsv-sdk stop simple_indexer
+    electrumsv-sdk stop reference_server
     electrumsv-sdk status
     python3 ./contrib/check_all_stopped.py
   displayName: 'Stop all components'
