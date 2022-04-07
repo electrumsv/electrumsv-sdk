@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 import subprocess
 import sys
 import time
@@ -93,23 +94,23 @@ class LocalTools:
         os.chdir(self.plugin.src)
         checkout_branch(branch)
 
-        electrumsv_requirements_path = (
-            self.plugin.src.joinpath("contrib/deterministic-build/requirements.txt")
-        )
-        electrumsv_binary_requirements_path = (
-            self.plugin.src.joinpath(
-                "contrib/deterministic-build/requirements-binaries.txt")
-        )
+        platform_name = ""
+        if platform.system() == "Windows":
+            platform_name = "win64"
+        elif platform.system() == "Darwin":
+            platform_name = "macos"
+        elif platform.system() == "Linux":
+            platform_name = "linux"
+        assert platform_name != ""
+
+        electrumsv_requirements_path = self.plugin.src.joinpath(
+            f"contrib/deterministic-build/{platform_name}-py3.10-requirements.txt")
 
         electrumsv_libs_path = self.plugin.config.PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
         cmd1 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
                f"-r {electrumsv_requirements_path}"
-        cmd2 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
-               f"-r {electrumsv_binary_requirements_path}"
         process1 = subprocess.Popen(cmd1, shell=True)
         process1.wait()
-        process2 = subprocess.Popen(cmd2, shell=True)
-        process2.wait()
 
     def normalize_wallet_name(self, wallet_name: Optional[str]) -> str:
         if wallet_name is not None:
