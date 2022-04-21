@@ -1,4 +1,5 @@
 electrumsv-node>=0.0.21
+electrumsv_database
 requests
 filelock>=3.3.2
 psutil-wheels>=5.6.6

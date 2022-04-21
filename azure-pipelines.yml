@@ -190,6 +190,7 @@ jobs:
     SDK_LOG_LEVEL:            DEBUG
     SDK_POSTGRES_PORT:        55432
 
+
   steps:
     - task: UsePythonVersion@0
       inputs:
@@ -337,6 +338,7 @@ jobs:
         electrumsv-sdk install electrumsv
         electrumsv-sdk install whatsonchain
         electrumsv-sdk install merchant_api
+        electrumsv-sdk install header_sv
         electrumsv-sdk install simple_indexer
         electrumsv-sdk install reference_server
       displayName: 'Re-install all components (including mAPI)'
@@ -348,6 +350,7 @@ jobs:
         electrumsv-sdk node generate 1
         electrumsv-sdk start --background whatsonchain
         electrumsv-sdk start --background merchant_api
+        electrumsv-sdk start --background header_sv
         electrumsv-sdk start --background simple_indexer
         electrumsv-sdk start --background reference_server
         electrumsv-sdk status
@@ -361,6 +364,7 @@ jobs:
         electrumsv-sdk stop whatsonchain
         electrumsv-sdk stop status_monitor
         electrumsv-sdk stop merchant_api
+        electrumsv-sdk stop header_sv
         electrumsv-sdk stop simple_indexer
         electrumsv-sdk stop reference_server
         electrumsv-sdk status
@@ -375,6 +379,7 @@ jobs:
         electrumsv-sdk reset whatsonchain
         electrumsv-sdk reset status_monitor
         electrumsv-sdk reset merchant_api
+        electrumsv-sdk reset header_sv
         electrumsv-sdk reset simple_indexer
         electrumsv-sdk reset reference_server
         electrumsv-sdk status
