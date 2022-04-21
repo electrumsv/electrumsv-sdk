@@ -1,5 +1,6 @@
 electrumsv-node>=0.0.21
 electrumsv_database
+mypy_extensions
 requests
 filelock>=3.3.2
 psutil-wheels>=5.6.6
@@ -9,6 +10,7 @@ bitcoinX>=0.2.4
 peewee>=3.13.3
 wheel
 aiohttp>=3.7.3
+aiohttp_middlewares
 tailer
 stringcase
 colorama

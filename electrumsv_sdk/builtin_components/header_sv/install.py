@@ -141,8 +141,10 @@ def get_run_command(install_path: pathlib.Path) -> str:
     Work out where the executable is located for the given platform/architecture.
     """
     entry = _get_entry()
-    return f"{install_path / entry['jre_dirname'] / 'bin' / 'java.exe'} -jar " \
-           f"{install_path / HEADER_SV_VERSION / entry['exe']}"
+    java_exe_filename = "java.exe" if sys.platform == "win32" else "java"
+    java_exe_path = install_path / entry['jre_dirname'] / 'bin' / java_exe_filename
+    jar_file_path = install_path / HEADER_SV_VERSION / entry['exe']
+    return f"{java_exe_path.as_posix()} -jar {jar_file_path}"
 
 
 def load_env_vars() -> None:

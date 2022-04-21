@@ -20,15 +20,6 @@ resources:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
 
-  - container: pg12-win32
-    image: stellirin/postgres-windows:12
-    ports:
-      - 55432:5432
-    env:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-
 jobs:
 - job: TestLinux
   pool:
@@ -176,59 +167,8 @@ jobs:
         artifactName: 'MacOSXLogs'
       displayName: 'Publish logs'
 
+
 - job: TestWindows
-
-  pool:
-    vmImage: 'windows-latest'
-
-  services:
-    postgres: pg12-win32
-
-  variables:
-    MODIFIED_SDK_HOME_DIR:    $(Agent.HomeDirectory)\my_portable_sdk_datadir
-    NEW_LOG_DIR:              $(Agent.HomeDirectory)\my_portable_sdk_datadir\logs
-    SDK_LOG_LEVEL:            DEBUG
-    SDK_POSTGRES_PORT:        55432
-
-
-  steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: 3.10
-        addToPath: true
-        architecture: 'x64'
-
-    # need to add python Scripts/ dir to PATH to find 'electrumsv-sdk' command
-    - pwsh: |
-        $scripts_dir = py -3.10 -c "import os, sys, pathlib;print(pathlib.Path(sys.executable).parent.joinpath(r'Scripts'));"
-        $env:PATH += $scripts_dir
-        py -3.10 -m pip install --upgrade pip
-        py -3.10 -m pip install wheel
-        py -3.10 -m pip install -e .
-        py -3.10 -m pip install pytest pytest-cov
-      displayName: 'Install electrumsv-sdk'
-
-    - script: |
-        set -e
-        electrumsv-sdk config --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
-      displayName: 'Configure for portable sdk-home-dir'
-
-    - script: |
-        cd $(Build.Repository.LocalPath)/contrib/azure
-        python3 -m pip install asyncpg
-        python3 ./mapi_db_config.py
-      displayName: 'Prepare postgres'
-
-    - template: standardized_tests.yaml
-
-    - task: PublishBuildArtifacts@1
-      inputs:
-        pathToPublish: $(NEW_LOG_DIR)
-        artifactName: 'WindowsLogs'
-      displayName: 'Publish logs'
-
-
-- job: TestWindowsPortableMode
 
   pool:
     vmImage: 'windows-latest'
@@ -261,12 +201,6 @@ jobs:
         mkdir -p $(Agent.ToolsDirectory)\SDK_HOME_DIR
       displayName: 'Turn on portable mode (searches for "SDK_HOME_DIR")'
 
-    - script: |
-        cd $(Build.Repository.LocalPath)/contrib/azure
-        python3 -m pip install asyncpg
-        python3 ./mapi_db_config.py
-      displayName: 'Prepare postgres'
-
     - template: standardized_tests.yaml
 
     - task: PublishBuildArtifacts@1
@@ -282,14 +216,13 @@ jobs:
   pool:
     vmImage: 'windows-latest'
 
-  services:
-    postgres: pg12-win32
-
   variables:
+    MODIFIED_SDK_HOME_DIR:  $(Agent.ToolsDirectory)\SDK_HOME_DIR
     LOG_DIR:                C:\Users\VssAdministrator\AppData\Local\ElectrumSV-SDK\logs
     SDK_LOG_LEVEL:          INFO
     PREVIOUS_SDK_VERSION:   0.0.37
     SDK_POSTGRES_PORT:      55432
+    SDK_PORTABLE_MODE:      1
 
   steps:
     - task: UsePythonVersion@0
@@ -308,16 +241,9 @@ jobs:
         py -3.10 -m pip install electrumsv-sdk==$(PREVIOUS_SDK_VERSION)
       displayName: 'Install electrumsv-sdk previous version'
 
-#    - script: |
-#        set -e
-#        electrumsv-sdk config --sdk-home-dir=$(MODIFIED_SDK_HOME_DIR)
-#      displayName: 'configure for portable sdk-home-dir'
-
     - script: |
-        cd $(Build.Repository.LocalPath)/contrib/azure
-        python3 -m pip install asyncpg
-        python3 ./mapi_db_config.py
-      displayName: 'Prepare postgres'
+        mkdir -p $(Agent.ToolsDirectory)\SDK_HOME_DIR
+      displayName: 'Turn on portable mode (searches for "SDK_HOME_DIR")'
 
     - script: |
         electrumsv-sdk install node
