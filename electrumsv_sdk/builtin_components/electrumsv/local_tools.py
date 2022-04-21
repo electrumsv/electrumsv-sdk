@@ -20,6 +20,13 @@ if typing.TYPE_CHECKING:
     from .electrumsv import Plugin
 
 
+REQUIREMENTS = {
+    "win32": "win64-py3.10-requirements.txt",
+    "darwin": "macos-py3.10-requirements.txt",
+    "linux": "linux-py3.10-requirements.txt"
+}
+
+
 class LocalTools:
     """helper for operating on plugin-specific state (like source dir, port, datadir etc.)"""
 
@@ -103,8 +110,9 @@ class LocalTools:
             platform_name = "linux"
         assert platform_name != ""
 
-        electrumsv_requirements_path = self.plugin.src.joinpath(
-            f"contrib/deterministic-build/{platform_name}-py3.10-requirements.txt")
+        electrumsv_requirements_path = (
+            self.plugin.src.joinpath(f"contrib/deterministic-build/{REQUIREMENTS[sys.platform]}")
+        )
 
         electrumsv_libs_path = self.plugin.config.PYTHON_LIB_DIR / self.plugin.COMPONENT_NAME
         cmd1 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \

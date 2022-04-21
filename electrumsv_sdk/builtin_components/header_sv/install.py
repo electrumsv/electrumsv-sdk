@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 import platform
+import tarfile
 
 import requests
 import sys
@@ -31,6 +32,7 @@ PREBUILT_ENTRIES = {
         "dirname": "MacOSXMerchantAPI",
         "jre_uri": "https://github.com/adoptium/temurin17-binaries/releases/"
                    "download/jdk-17.0.2%2B8/OpenJDK17U-jre_x64_mac_hotspot_17.0.2_8.tar.gz",
+        "jre_path": "jdk-17.0.2+8-jre/Contents/Home/bin/java",
         "jre_dirname": "jdk-17.0.2+8-jre"
     },
     "Linux": {
@@ -40,6 +42,7 @@ PREBUILT_ENTRIES = {
         "dirname": "LinuxMerchantAPI",
         "jre_uri": "https://github.com/adoptium/temurin17-binaries/releases/"
                    "download/jdk-17.0.3%2B7/OpenJDK17U-jre_x64_linux_hotspot_17.0.3_7.tar.gz",
+        "jre_path": "jdk-17.0.3+7-jre/bin/java",
         "jre_dirname": "jdk-17.0.3+7-jre"
     },
     "Windows": {
@@ -49,6 +52,7 @@ PREBUILT_ENTRIES = {
         "dirname": "WindowsMerchantAPI",
         "jre_uri": "https://github.com/adoptium/temurin17-binaries/releases/"
                    "download/jdk-17.0.2%2B8/OpenJDK17U-jre_x64_windows_hotspot_17.0.2_8.zip",
+        "jre_path": "jdk-17.0.2+8-jre/bin/java.exe",
         "jre_dirname": "jdk-17.0.2+8-jre"
     }
 }
@@ -122,10 +126,18 @@ def download_and_install_jre(install_path: pathlib.Path) -> None:
             f.write(r.content)
 
     # Extract the build.
-    output_path = install_path / "jre"
+    output_path = install_path / entry['jre_dirname']
     if not output_path.exists():
-        with zipfile.ZipFile(download_path, 'r') as z:
-            z.extractall(install_path)
+        if entry['jre_uri'].endswith('.tar.gz'):
+            with tarfile.open(download_path, 'r') as z:
+                z.extractall(install_path)
+
+        elif entry['jre_uri'].endswith('.zip'):
+            with zipfile.ZipFile(download_path, 'r') as z:
+                z.extractall(install_path)
+
+        else:
+            logger.error("Unsupported archive format")
 
     if download_path.exists():
         os.remove(download_path)
@@ -141,8 +153,7 @@ def get_run_command(install_path: pathlib.Path) -> str:
     Work out where the executable is located for the given platform/architecture.
     """
     entry = _get_entry()
-    java_exe_filename = "java.exe" if sys.platform == "win32" else "java"
-    java_exe_path = install_path / entry['jre_dirname'] / 'bin' / java_exe_filename
+    java_exe_path = install_path / entry['jre_path']
     jar_file_path = install_path / HEADER_SV_VERSION / entry['exe']
     return f"{java_exe_path.as_posix()} -jar {jar_file_path}"
 
@@ -163,7 +174,6 @@ if __name__ == "__main__":
     SDK_PORTABLE_MODE = int(os.environ['SDK_PORTABLE_MODE'])
     download_path = pathlib.Path("zzz")
     config = Config()
-    # download_and_install_jar(download_path)
-    download_and_install_jre(download_path)
+    download_and_install(download_path)
 
     run_path = get_run_command(download_path)
