@@ -4,6 +4,7 @@ steps:
     electrumsv-sdk install electrumsv
     electrumsv-sdk install whatsonchain
     electrumsv-sdk install merchant_api
+    electrumsv-sdk install header_sv
     electrumsv-sdk install simple_indexer
     electrumsv-sdk install reference_server
   displayName: 'Install all components'
@@ -15,10 +16,11 @@ steps:
     electrumsv-sdk node generate 1
     electrumsv-sdk start --background whatsonchain
     electrumsv-sdk start --background merchant_api
+    electrumsv-sdk start --background header_sv
     electrumsv-sdk start --background simple_indexer
     electrumsv-sdk start --background reference_server
     electrumsv-sdk status
-    python3 ./contrib/check_all_started.py 7
+    python3 ./contrib/check_all_started.py 8
   displayName: 'Start all components'
   continueOnError: true
 
@@ -28,6 +30,7 @@ steps:
     electrumsv-sdk stop whatsonchain
     electrumsv-sdk stop status_monitor
     electrumsv-sdk stop merchant_api
+    electrumsv-sdk stop header_sv
     electrumsv-sdk stop simple_indexer
     electrumsv-sdk stop reference_server
     electrumsv-sdk status
