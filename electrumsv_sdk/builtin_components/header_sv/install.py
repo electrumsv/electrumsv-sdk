@@ -129,12 +129,12 @@ def download_and_install_jre(install_path: pathlib.Path) -> None:
     output_path = install_path / entry['jre_dirname']
     if not output_path.exists():
         if entry['jre_uri'].endswith('.tar.gz'):
-            with tarfile.open(download_path, 'r') as z:
-                z.extractall(install_path)
+            with tarfile.open(download_path, 'r') as tar:
+                tar.extractall(install_path)
 
         elif entry['jre_uri'].endswith('.zip'):
-            with zipfile.ZipFile(download_path, 'r') as z:
-                z.extractall(install_path)
+            with zipfile.ZipFile(download_path, 'r') as zip:
+                zip.extractall(install_path)
 
         else:
             logger.error("Unsupported archive format")
