@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 from typing import Optional, Set
 
-from electrumsv_sdk.builtin_components._common.utils import download_and_init_postgres
 from electrumsv_sdk.sdk_types import AbstractPlugin
 from electrumsv_sdk.config import CLIInputs, Config
 from electrumsv_sdk.components import Component, ComponentTypedDict
@@ -34,7 +33,6 @@ class Plugin(AbstractPlugin):
         self.id: Optional[str] = None  # dynamically allocated
         self.port: Optional[int] = None  # dynamically allocated
         self.component_info: Optional[Component] = None
-        download_and_init_postgres()  # only if necessary
 
     def install(self) -> None:
         assert self.src is not None  # typing bug in mypy

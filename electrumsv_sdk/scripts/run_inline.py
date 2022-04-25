@@ -4,9 +4,11 @@ the ability to capture both stdout & logging output to file at the same time
 """
 import argparse
 import base64
+import ctypes
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 
 import bitcoinx
@@ -47,6 +49,9 @@ def main() -> None:
     component_info = Component.from_dict(component_info)
 
     component_name = component_info.component_type
+    if sys.platform == 'win32':
+        ctypes.windll.kernel32.SetConsoleTitleW(component_name)
+
     if parsed_args.env_vars_encryption_key:
         infile = config.DATADIR / component_name / "encrypted.env"
         with open(infile, 'r') as f:
