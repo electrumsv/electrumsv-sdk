@@ -412,7 +412,8 @@ def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, componen
     command += f" --component_info {b64_component_json}"
 
     if sys.platform in 'linux':
-        split_command = shlex.split(f"xterm -fa 'Monospace' -fs 10 -e {command}", posix=True)
+        split_command = shlex.split(f"xterm -T {component_name} -n {component_name} "
+                                    f"-fa 'Monospace' -fs 10 -e {command}", posix=True)
         subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE)
 
