@@ -255,7 +255,7 @@ jobs:
       displayName: 'Install all components'
 
     - script: |
-        py -3.10 -m pip uninstall electrumsv-sdk
+        py -3.10 -m pip uninstall electrumsv-sdk -y
         py -3.10 -m pip install -e .
       displayName: 'Install electrumsv-sdk latest master'
 
