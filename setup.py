@@ -74,7 +74,7 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows :: Windows 10',
-        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
     include_package_data=True,
@@ -82,7 +82,8 @@ setup(
         [
             "electrumsv_sdk/scripts/*",
             "electrumsv-server/*",
-            "electrumsv_sdk/builtin_components/merchant_api/exe-config/*"
+            "electrumsv_sdk/builtin_components/merchant_api/exe-config/*",
+            "electrumsv_sdk/builtin_components/header_sv/exe-config/*"
         ],
     },
     packages=find_packages(),

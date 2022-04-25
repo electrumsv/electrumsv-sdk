@@ -1,3 +1,4 @@
 include electrumsv-sdk/electrumsv_sdk/scripts/*
 include electrumsv-server/*
 include electrumsv_sdk/builtin_components/merchant_api/exe-config/*
+include electrumsv_sdk/builtin_components/header_sv/exe-config/*
