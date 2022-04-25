@@ -129,4 +129,8 @@ class Plugin(AbstractPlugin):
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self) -> None:
-        self.logger.info("resetting Merchant API is not applicable")
+        self.stop()
+        prepare_fresh_postgres()
+        drop_db_on_install()
+        check_postgres_db()
+        self.logger.info("Merchant API database reset complete")
