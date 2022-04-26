@@ -38,9 +38,9 @@ class AppState:
         self.sdk_package_dir: Path = Path(MODULE_DIR)
 
         # Ensure all three plugin locations are importable
-        sys.path.append(str(self.sdk_package_dir))  # builtin_components
-        sys.path.append(f"{self.config.SDK_HOME_DIR}")  # user_components
-        sys.path.append(f"{self.calling_context_dir}")  # local plugins
+        sys.path.insert(0, f"{self.config.SDK_HOME_DIR}")  # user_components
+        sys.path.insert(0, f"{self.calling_context_dir}")  # local plugins
+        sys.path.insert(0, str(self.sdk_package_dir))  # builtin_components
 
         self.controller = Controller(self)
 

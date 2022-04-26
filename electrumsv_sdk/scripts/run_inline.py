@@ -4,15 +4,22 @@ the ability to capture both stdout & logging output to file at the same time
 """
 import argparse
 import base64
+import bitcoinx
 import ctypes
 import json
 import logging
 import os
-import sys
 from pathlib import Path
+import sys
 
-import bitcoinx
+# Ensure that the following imports are reachable via sys.path
+ELECTRUMSV_SDK_ROOT = Path(os.path.dirname(os.path.abspath(__file__))).parent.parent
+for idx, path in enumerate(sys.path):
+    if Path(path).as_posix().lower() == ELECTRUMSV_SDK_ROOT.as_posix().lower():
+        del sys.path[idx]
+        sys.path.insert(0, str(ELECTRUMSV_SDK_ROOT))
 
+from electrumsv_sdk.app_versions import APP_VERSIONS
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import spawn_inline
@@ -50,7 +57,9 @@ def main() -> None:
 
     component_name = component_info.component_type
     if sys.platform == 'win32':
-        ctypes.windll.kernel32.SetConsoleTitleW(component_name)
+        app_version = APP_VERSIONS[component_name]
+        title = f"{component_name} v{app_version}"
+        ctypes.windll.kernel32.SetConsoleTitleW(title)
 
     if parsed_args.env_vars_encryption_key:
         infile = config.DATADIR / component_name / "encrypted.env"

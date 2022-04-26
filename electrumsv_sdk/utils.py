@@ -17,6 +17,7 @@ import psutil
 import tailer
 from electrumsv_node import electrumsv_node
 
+from .app_versions import APP_VERSIONS
 from .components import Component, ComponentStore, ComponentTypedDict, ComponentMetadata
 from .config import Config
 from .constants import ComponentState, SUCCESS_EXITCODE, SIGINT_EXITCODE, SIGKILL_EXITCODE, \
@@ -412,7 +413,9 @@ def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, componen
     command += f" --component_info {b64_component_json}"
 
     if sys.platform in 'linux':
-        split_command = shlex.split(f"xterm -T {component_name} -n {component_name} "
+        app_version = APP_VERSIONS[component_name]
+        title = f"{component_name} v{app_version}"
+        split_command = shlex.split(f"xterm -T {title} -n {title} "
             f"-geometry 200x200 -fa 'Monospace' -fs 10 -e {command}", posix=True)
         subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE)
@@ -424,6 +427,7 @@ def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, componen
             stdin=subprocess.PIPE)
 
     elif sys.platform == 'win32':
+        # NOTE: Window title is set in `run_inline.py` script (whereas for linux we use xterm args)
         split_command = shlex.split(f"cmd /c {command}", posix=False)
         subprocess.Popen(split_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
 

@@ -82,3 +82,8 @@ Please check that one out too. Jad and co. are better placed to keep up with the
 edge versioning of the node, mAPI and LiteClient services as they are directly involved
 with many of those projects. They also do not have the additional python layer of
 abstraction to sort out when it comes to docker.
+
+App Versions
+============
+The current versions of each component are maintained in 
+`electrumsv_sdk/app_versions.py`.
