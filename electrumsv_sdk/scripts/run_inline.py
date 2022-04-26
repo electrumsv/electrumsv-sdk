@@ -13,6 +13,7 @@ from pathlib import Path
 
 import bitcoinx
 
+from electrumsv_sdk.app_versions import APP_VERSIONS
 from electrumsv_sdk.components import Component
 from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import spawn_inline
@@ -50,7 +51,9 @@ def main() -> None:
 
     component_name = component_info.component_type
     if sys.platform == 'win32':
-        ctypes.windll.kernel32.SetConsoleTitleW(component_name)
+        app_version = APP_VERSIONS[component_name]
+        title = f"{component_name} v{app_version}"
+        ctypes.windll.kernel32.SetConsoleTitleW(title)
 
     if parsed_args.env_vars_encryption_key:
         infile = config.DATADIR / component_name / "encrypted.env"
