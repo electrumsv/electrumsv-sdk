@@ -1,5 +1,5 @@
 APP_VERSIONS = {
-  "node": "1.0.9",
+  "node": "1.0.11",
   "electrumsv": "1.4.0b1",
   "electrumsv_server": "1.0.0",
   "reference_server": "1.0.0",
