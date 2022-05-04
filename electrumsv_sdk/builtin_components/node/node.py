@@ -94,13 +94,14 @@ class Plugin(AbstractPlugin):
             self.zmq_port = self.plugin_tools.get_component_port(self.DEFAULT_ZMQ_PORT,
                 self.COMPONENT_NAME, self.id)
 
-        extra_params = []
-        # TODO: NODE_RPCALLOWIP and NODE_RPCBIND can be removed after the next release of
-        #  electrumsv-node as they now default to 0.0.0.0/0 and 0.0.0.0 respectively
+        extra_params = ["-bind=127.0.0.1"]
         if self.NODE_RPCALLOWIP:
             extra_params.append(f"-rpcallowip={self.NODE_RPCALLOWIP}")
+
         if self.NODE_RPCBIND:
             extra_params.append(f"-rpcbind={self.NODE_RPCBIND}")
+        else:
+            extra_params.append("-rpcbind=127.0.0.1")
 
         shell_command = electrumsv_node.shell_command(data_path=str(self.datadir),
             rpcport=self.port, p2p_port=self.p2p_port, zmq_port=self.zmq_port, network=self.network,
