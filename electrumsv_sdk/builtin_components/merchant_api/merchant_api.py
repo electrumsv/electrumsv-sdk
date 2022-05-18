@@ -129,7 +129,13 @@ class Plugin(AbstractPlugin):
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self) -> None:
+        assert self.src is not None  # typing bug
         self.stop()
+
+        if SDK_PORTABLE_MODE == 1:
+            download_and_install(self.src)
+            start_postgres()
+
         prepare_fresh_postgres()
         drop_db_on_install()
         check_postgres_db()
