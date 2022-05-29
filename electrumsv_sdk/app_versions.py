@@ -7,5 +7,6 @@ APP_VERSIONS = {
   "simple_indexer": "1.0.0",
   "status_monitor": "1.0.0",
   "whatsonchain": "1.0.0",
-  "header_sv": "1.0.2"
+  "header_sv": "1.0.2",
+  "dpp_proxy": "0.1.7"
 }

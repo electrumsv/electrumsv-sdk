@@ -252,6 +252,7 @@ jobs:
         electrumsv-sdk install merchant_api
         electrumsv-sdk install simple_indexer
         electrumsv-sdk install reference_server
+        electrumsv-sdk install dpp_proxy
       displayName: 'Install all components'
 
     - script: |
@@ -267,6 +268,7 @@ jobs:
         electrumsv-sdk install header_sv
         electrumsv-sdk install simple_indexer
         electrumsv-sdk install reference_server
+        electrumsv-sdk install dpp_proxy
       displayName: 'Re-install all components (including mAPI)'
 
     - script: |
@@ -279,8 +281,9 @@ jobs:
         electrumsv-sdk start --background header_sv
         electrumsv-sdk start --background simple_indexer
         electrumsv-sdk start --background reference_server
+        electrumsv-sdk start --background dpp_proxy
         electrumsv-sdk status
-        python3 ./contrib/check_all_started.py 8
+        python3 ./contrib/check_all_started.py 9
       displayName: 'Start all components'
       continueOnError: true
 
@@ -293,6 +296,7 @@ jobs:
         electrumsv-sdk stop header_sv
         electrumsv-sdk stop simple_indexer
         electrumsv-sdk stop reference_server
+        electrumsv-sdk stop dpp_proxy
         electrumsv-sdk status
         python3 ./contrib/check_all_stopped.py
       displayName: 'Stop all components'
@@ -308,6 +312,7 @@ jobs:
         electrumsv-sdk reset header_sv
         electrumsv-sdk reset simple_indexer
         electrumsv-sdk reset reference_server
+        electrumsv-sdk reset dpp_proxy
         electrumsv-sdk status
       displayName: 'Reset all components'
       continueOnError: true
