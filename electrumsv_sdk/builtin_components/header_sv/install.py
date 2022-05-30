@@ -80,7 +80,7 @@ def download_and_install_jar(install_path: pathlib.Path) -> None:
 
     entry = _get_entry()
     uri = urlparse(entry["uri"])
-    logger.debug(f"downloading mAPI executable from: {uri.path}")
+    logger.debug(f"downloading HeaderSV executable from: {uri.path}")
     filename = os.path.basename(uri.path)
     os.makedirs(install_path / HEADER_SV_VERSION, exist_ok=True)
     download_path = install_path / HEADER_SV_VERSION / filename

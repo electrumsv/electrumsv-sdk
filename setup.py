@@ -83,7 +83,8 @@ setup(
             "electrumsv_sdk/scripts/*",
             "electrumsv-server/*",
             "electrumsv_sdk/builtin_components/merchant_api/exe-config/*",
-            "electrumsv_sdk/builtin_components/header_sv/exe-config/*"
+            "electrumsv_sdk/builtin_components/header_sv/exe-config/*",
+            "electrumsv_sdk/builtin_components/dpp_proxy/exe-config/*"
         ],
     },
     packages=find_packages(),
