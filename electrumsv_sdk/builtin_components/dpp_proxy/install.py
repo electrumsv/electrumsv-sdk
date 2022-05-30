@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 import platform
+import stat
 
 import requests
 import sys
@@ -103,6 +104,12 @@ def load_env_vars() -> None:
     from dotenv import load_dotenv
     env_path = pathlib.Path(MODULE_DIR) / 'exe-config' / '.env'
     load_dotenv(dotenv_path=env_path)
+
+
+def chmod_exe(install_path: pathlib.Path) -> None:
+    run_path = get_run_command(install_path)
+    st = os.stat(run_path)
+    os.chmod(run_path, st.st_mode | stat.S_IEXEC)
 
 
 if __name__ == "__main__":

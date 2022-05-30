@@ -10,7 +10,8 @@ from electrumsv_sdk.components import Component, ComponentTypedDict
 from electrumsv_sdk.utils import get_directory_name, kill_process
 from electrumsv_sdk.plugin_tools import PluginTools
 
-from .install import download_and_install, get_run_command, load_env_vars, DPP_PROXY_VERSION
+from .install import download_and_install, get_run_command, load_env_vars, DPP_PROXY_VERSION, \
+    chmod_exe
 
 
 class Plugin(AbstractPlugin):
@@ -56,6 +57,7 @@ class Plugin(AbstractPlugin):
         load_env_vars()
         try:
             command = get_run_command(self.src)
+            chmod_exe(self.src)
         except FileNotFoundError:
             self.logger.error(f"Could not find version: {DPP_PROXY_VERSION} of "
                 f"{self.COMPONENT_NAME}. Have you tried re-running 'electrumsv-sdk install "
