@@ -165,18 +165,18 @@ class Config:
             if last_dir == current_dir:
                 raise FileNotFoundError("SDK_HOME_DIR not found")
 
+    def is_portable_mode(self):
+        portable_mode = int(os.environ.get("SDK_PORTABLE_MODE", 0))
+        if portable_mode == 1:
+            return True
+
     def get_dynamic_datadir(self) -> Path:
         """Check config.json (which needs to *always* be located in the system home directory at
         initial startup) to see if a local directory has been set for SDK_HOME_DIR
 
         There is an environment variable: SDK_PORTABLE_MODE=1 which will override everything else
-        and trigger an ascending search for a directory named: 'SDK_HOME_DIR'.
+        and trigger an ascending search for a directory containing: 'SDK_HOME_DIR' in the name.
         """
-        def is_portable_mode():
-            portable_mode = int(os.environ.get("SDK_PORTABLE_MODE", 0))
-            if portable_mode == 1:
-                return True
-
         sdk_home_dir = get_sdk_datadir()
         config = self.read_config_json()
         modified_sdk_home_dir = config.get("sdk_home_dir")
@@ -191,8 +191,11 @@ class Config:
             self.write_to_config_json(config)
 
         # Searches ascending directories for 'SDK_HOME_DIR'
-        if is_portable_mode():
-            sdk_home_dir = self.search_for_sdk_home_dir()
+        if self.is_portable_mode():
+            if os.environ.get('SDK_HOME_DIR'):
+                sdk_home_dir = Path(os.environ['SDK_HOME_DIR'])
+            else:
+                sdk_home_dir = self.search_for_sdk_home_dir()
 
         # Pull persisted sdk_home_dir value from config.json for usage
         elif modified_sdk_home_dir is not None:
