@@ -16,9 +16,9 @@ def install(component_type: str, repo: str = "", branch: str = "",
 
     arguments = ["", NameSpace.INSTALL]
     if repo:
-        arguments.append("--" + repo)
+        arguments.append(f"--repo={repo}")
     if branch:
-        arguments.append("--" + branch)
+        arguments.append(f"--branch={branch}")
     if component_id:
         arguments.append(f"--id={component_id}")
 
