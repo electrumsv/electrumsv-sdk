@@ -48,8 +48,7 @@ class AddNodeThread(threading.Thread):
                     self.logger.exception(f"Unexpected exception connecting to mAPI. "
                                           f"Reason: {result.content}")
                 else:
-                    # self.logger.exception("Unexpected exception connecting to mAPI")
-                    pass
+                    self.logger.exception("Unexpected exception connecting to mAPI")
             if time.time() >= self.start_time + self.wait_time:
                 raise MerchantAPIUnavailableError(f"The merchant API is still unreachable after "
                     f"{self.wait_time} seconds")
