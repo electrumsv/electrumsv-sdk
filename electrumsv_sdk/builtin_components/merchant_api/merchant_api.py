@@ -102,7 +102,7 @@ class Plugin(AbstractPlugin):
         logfile = self.plugin_tools.get_logfile_path(self.id)
         status_endpoint = "http://127.0.0.1:5050/mapi/feeQuote"
 
-        self.add_node_thread = AddNodeThread(mapi_url="http://127.0.0.1:5050", max_wait_time=10)
+        self.add_node_thread = AddNodeThread(mapi_url="http://127.0.0.1:5050", max_wait_time=20)
         self.add_node_thread.start()
 
         self.plugin_tools.spawn_process(str(command), env_vars=os.environ.copy(), id=self.id,
