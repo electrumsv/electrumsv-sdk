@@ -38,7 +38,7 @@ class AddNodeThread(threading.Thread):
             result = None
             try:
                 result = requests.post(self.mapi_add_node, data=json.dumps(body),
-                    headers=headers, timeout=1)
+                    headers=headers, timeout=5)
                 if result.status_code not in {409, 200}:
                     result.raise_for_status()
                 self.logger.info(f"Successfully added the node: {'127.0.0.1:18332'} to the mAPI")

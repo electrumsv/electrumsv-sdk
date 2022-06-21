@@ -211,7 +211,6 @@ class PluginTools:
         elif self.cli_inputs.inline_flag:
             spawn_inline(command, env_vars, id, component_name, src, logfile,
                 status_endpoint, metadata)
-            sys.exit(0)
         elif self.cli_inputs.new_terminal_flag:
             spawn_new_terminal(command, env_vars, id, component_name, src, logfile,
                 status_endpoint, metadata)

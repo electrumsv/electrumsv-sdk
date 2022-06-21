@@ -5,6 +5,8 @@ import sys
 from pathlib import Path
 from typing import Optional, Set
 
+from electrumsv_node import electrumsv_node
+
 from electrumsv_sdk.builtin_components._common.utils import download_and_init_postgres, \
     start_postgres, stop_postgres
 from electrumsv_sdk.builtin_components.merchant_api.add_node_to_mapi_thread import AddNodeThread
@@ -102,12 +104,18 @@ class Plugin(AbstractPlugin):
         logfile = self.plugin_tools.get_logfile_path(self.id)
         status_endpoint = "http://127.0.0.1:5050/mapi/feeQuote"
 
-        self.add_node_thread = AddNodeThread(mapi_url="http://127.0.0.1:5050", max_wait_time=20)
-        self.add_node_thread.start()
+        if not electrumsv_node.is_node_running(rpchost=self.NODE_HOST, rpcport=self.NODE_RPC_PORT,
+                rpcuser=self.NODE_RPC_USERNAME, rpcpassword=self.NODE_RPC_PASSWORD):
+            self.logger.error(f"The bitcoin node's RPC API is unreachable at "
+                f"{self.NODE_HOST}:{self.NODE_RPC_PORT}. Launching {self.COMPONENT_NAME} aborted.")
+            return
 
         self.plugin_tools.spawn_process(str(command), env_vars=os.environ.copy(), id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
             status_endpoint=status_endpoint)
+
+        self.add_node_thread = AddNodeThread(mapi_url="http://127.0.0.1:5050", max_wait_time=20)
+        self.add_node_thread.start()
 
         # will keep trying to add node until mAPI REST API available (up to a limited wait time)
         self.logger.info("Adding node to mAPI instance (if not already added)")
