@@ -74,6 +74,7 @@ class Controller:
     def stop(self, cli_inputs: CLIInputs) -> None:
         """stop all (no args) does not only stop default component ids but all component ids of
         each type - hence the need to hunt them all down."""
+
         if cli_inputs.component_id:
             component_module = self.component_store.instantiate_plugin(cli_inputs)
             component_module.stop()

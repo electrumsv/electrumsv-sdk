@@ -29,7 +29,7 @@ PREBUILT_ENTRIES = {
         "uri": f"https://github.com/electrumsv/header-sv-binaries/releases/"
                f"download/{VERSION}/headerSV-boot-{HEADER_SV_VERSION}.zip",
         "exe": "headerSV-boot-1.0.2/lib/headerSV-1.0.2.jar",
-        "dirname": "MacOSXMerchantAPI",
+        "dirname": "MacOSXHeaderSV",
         "jre_uri": "https://github.com/adoptium/temurin17-binaries/releases/"
                    "download/jdk-17.0.2%2B8/OpenJDK17U-jre_x64_mac_hotspot_17.0.2_8.tar.gz",
         "jre_path": "jdk-17.0.2+8-jre/Contents/Home/bin/java",
@@ -39,7 +39,7 @@ PREBUILT_ENTRIES = {
         "uri": f"https://github.com/electrumsv/header-sv-binaries/releases/"
                f"download/{VERSION}/headerSV-boot-{HEADER_SV_VERSION}.zip",
         "exe": "headerSV-boot-1.0.2/lib/headerSV-1.0.2.jar",
-        "dirname": "LinuxMerchantAPI",
+        "dirname": "LinuxHeaderSV",
         "jre_uri": "https://github.com/adoptium/temurin17-binaries/releases/"
                    "download/jdk-17.0.3%2B7/OpenJDK17U-jre_x64_linux_hotspot_17.0.3_7.tar.gz",
         "jre_path": "jdk-17.0.3+7-jre/bin/java",
@@ -49,7 +49,7 @@ PREBUILT_ENTRIES = {
         "uri": f"https://github.com/electrumsv/header-sv-binaries/releases/download/{VERSION}/"
                f"headerSV-boot-{HEADER_SV_VERSION}.zip",
         "exe": "headerSV-boot-1.0.2/lib/headerSV-1.0.2.jar",
-        "dirname": "WindowsMerchantAPI",
+        "dirname": "WindowsHeaderSV",
         "jre_uri": "https://github.com/adoptium/temurin17-binaries/releases/"
                    "download/jdk-17.0.2%2B8/OpenJDK17U-jre_x64_windows_hotspot_17.0.2_8.zip",
         "jre_path": "jdk-17.0.2+8-jre/bin/java.exe",

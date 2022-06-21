@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import os
@@ -32,6 +33,8 @@ class AppState:
         if self.cli_inputs.namespace == NameSpace.CONFIG:
             self.config.print_json()
 
+        self.add_file_logging_for_sdk_logs()
+
         self.argparser.validate_cli_args()
 
         self.calling_context_dir: Path = Path(os.getcwd())
@@ -43,6 +46,14 @@ class AppState:
         sys.path.insert(0, str(self.sdk_package_dir))  # builtin_components
 
         self.controller = Controller(self)
+
+    def add_file_logging_for_sdk_logs(self):
+        root_logger = logging.getLogger('root')
+        logfile_name = "sdk.log"
+        log_dir = self.config.SDK_HOME_DIR / "logs" / "sdk"
+        os.makedirs(log_dir, exist_ok=True)
+        file_handler = logging.FileHandler(log_dir / logfile_name)
+        root_logger.addHandler(file_handler)
 
     def handle_first_ever_run(self) -> None:
         assert self.config.CONFIG_PATH is not None

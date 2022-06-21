@@ -77,6 +77,7 @@ class Plugin(AbstractPlugin):
         self.logger.info("stopped selected %s instance (if running)", self.COMPONENT_NAME)
 
     def reset(self) -> None:
+        self.stop()
         self.logger.debug("Resetting state of RegTest reference_server...")
 
         assert self.src is not None

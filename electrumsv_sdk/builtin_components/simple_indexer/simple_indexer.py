@@ -77,6 +77,7 @@ class Plugin(AbstractPlugin):
         self.logger.info(f"stopped selected {self.COMPONENT_NAME} instance (if running)")
 
     def reset(self) -> None:
+        self.stop()
         self.logger.debug("Resetting state of RegTest simple_indexer server...")
 
         assert self.src is not None
