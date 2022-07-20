@@ -8,5 +8,6 @@ APP_VERSIONS = {
   "status_monitor": "1.0.0",
   "whatsonchain": "1.0.0",
   "header_sv": "1.0.2",
-  "dpp_proxy": "0.1.7"
+  "dpp_proxy": "0.1.7",
+  "electrumx": "1.20.2"
 }
