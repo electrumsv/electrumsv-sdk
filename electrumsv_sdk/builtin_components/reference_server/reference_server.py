@@ -20,6 +20,8 @@ class Plugin(AbstractPlugin):
     DEFAULT_REMOTE_REPO = "https://github.com/electrumsv/electrumsv-reference-server"
 
     REFERENCE_SERVER_RESET = os.environ.get("REFERENCE_SERVER_RESET", '1')
+    EXPOSE_HEADER_SV_APIS = os.environ.get("EXPOSE_HEADER_SV_APIS", '1')
+    HEADER_SV_URL = os.environ.get("HEADER_SV_URL", 'http://127.0.0.1:33444')
 
     def __init__(self, cli_inputs: CLIInputs) -> None:
         self.cli_inputs = cli_inputs
@@ -63,6 +65,8 @@ class Plugin(AbstractPlugin):
         env_vars = {
             "PYTHONUNBUFFERED": "1",
             "REFERENCE_SERVER_RESET": self.REFERENCE_SERVER_RESET,
+            "EXPOSE_HEADER_SV_APIS": self.EXPOSE_HEADER_SV_APIS,
+            "HEADER_SV_URL": self.HEADER_SV_URL
         }
         logfile = self.plugin_tools.get_logfile_path(self.id)
         self.plugin_tools.spawn_process(command, env_vars=env_vars, id=self.id,

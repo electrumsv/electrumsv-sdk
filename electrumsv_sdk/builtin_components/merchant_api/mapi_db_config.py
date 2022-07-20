@@ -16,6 +16,7 @@ logger.debug(f"Using postgres port: {SDK_POSTGRES_PORT}")
 
 
 async def pg_connect() -> None:
+    logger.debug(f"Connecting to postgres on {POSTGRES_HOST}:{SDK_POSTGRES_PORT}...")
     pg_conn = await asyncpg.connect(
         user="postgres",
         host=POSTGRES_HOST,

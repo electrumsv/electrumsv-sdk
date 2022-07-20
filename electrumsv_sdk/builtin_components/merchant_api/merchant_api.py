@@ -18,8 +18,7 @@ from electrumsv_sdk.plugin_tools import PluginTools
 
 from .install import download_and_install, get_run_path, chmod_exe, MERCHANT_API_VERSION, \
     load_env_vars, prepare_fresh_postgres
-from .check_db_config import check_postgres_db, drop_db_on_install
-
+from .check_db_config import check_postgres_db, drop_db_on_install, pg_connect, POSTGRES_HOST
 
 SDK_POSTGRES_PORT = int(os.environ.get('SDK_POSTGRES_PORT', "5432"))
 SDK_PORTABLE_MODE = int(os.environ.get('SDK_PORTABLE_MODE', "0"))
@@ -108,6 +107,13 @@ class Plugin(AbstractPlugin):
                 rpcuser=self.NODE_RPC_USERNAME, rpcpassword=self.NODE_RPC_PASSWORD):
             self.logger.error(f"The bitcoin node's RPC API is unreachable at "
                 f"{self.NODE_HOST}:{self.NODE_RPC_PORT}. Launching {self.COMPONENT_NAME} aborted.")
+            return
+
+        try:
+            asyncio.run(pg_connect())
+        except ConnectionRefusedError:
+            self.logger.exception(f"Connection to postgres on {POSTGRES_HOST}:{SDK_POSTGRES_PORT} "
+                                  f"failed")
             return
 
         self.plugin_tools.spawn_process(str(command), env_vars=os.environ.copy(), id=self.id,

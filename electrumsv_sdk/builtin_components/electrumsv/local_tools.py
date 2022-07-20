@@ -94,12 +94,13 @@ class LocalTools:
                     self.plugin.src.with_suffix(".bak"),
                 )
 
-    def packages_electrumsv(self, url: str, branch: str) -> None:
+    def packages_electrumsv(self, repo: str, branch: str) -> None:
         assert self.plugin.config.PYTHON_LIB_DIR is not None  # typing bug
         assert self.plugin.COMPONENT_NAME is not None  # typing bug
         assert self.plugin.src is not None  # typing bug
         os.chdir(self.plugin.src)
-        checkout_branch(branch)
+        if repo == "":
+            checkout_branch(branch)
 
         platform_name = ""
         if platform.system() == "Windows":
