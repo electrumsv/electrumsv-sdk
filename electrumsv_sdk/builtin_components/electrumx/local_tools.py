@@ -43,16 +43,16 @@ class LocalTools:
         assert self.plugin.src is not None  # typing bug
         assert self.plugin.config.REMOTE_REPOS_DIR is not None  # typing bug
         if not self.plugin.src.exists():
-            self.logger.debug(f"Installing electrumx (url={url})")
+            self.logger.debug(f"Installing {self.plugin.COMPONENT_NAME} (url={url})")
             os.chdir(self.plugin.config.REMOTE_REPOS_DIR)
-            process = subprocess.Popen(["git", "clone", f"{url}"])
-            process.wait()
+            subprocess.run(f"git clone {url}", shell=True, check=True)
+            os.chdir(self.plugin.src)
+            checkout_branch(branch)
 
         elif self.plugin.src.exists():
             self.logger.debug(f"ElectrumX is already installed (url={url})")
-            process = subprocess.Popen(["git", "pull"])
-            process.wait()
             checkout_branch(branch)
+            subprocess.run(f"git pull", shell=True, check=True)
 
     def packages_electrumx(self, url: str, branch: str) -> None:
         """plyvel wheels are not available on windows so it is swapped out for plyvel-win32 to
