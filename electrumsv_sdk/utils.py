@@ -381,7 +381,6 @@ def wrap_and_escape_text(string: str) -> str:
 def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, component_name:
         str, src: Optional[Path]=None, logfile: Optional[Path]=None,
         status_endpoint: Optional[str]=None, metadata: Optional[ComponentMetadata]=None) -> None:
-
     config = Config()
     env_vars.update(os.environ)
 
@@ -412,11 +411,13 @@ def spawn_new_terminal(command: str, env_vars: Dict[str, str], id: str, componen
     b64_component_json = base64.b64encode(component_json.encode('utf-8')).decode()
     command += f" --component_info {b64_component_json}"
 
+    is_portable_mode = os.environ.get('SDK_PORTABLE_MODE', '0')
+    command += f" --portable {is_portable_mode}"
     if sys.platform in 'linux':
         app_version = APP_VERSIONS[component_name]
         title = f"{component_name} v{app_version}"
-        split_command = shlex.split(f"xterm -T {title} -n {title} "
-            f"-geometry 200x200 -fa 'Monospace' -fs 10 -e {command}", posix=True)
+        split_command = shlex.split(f"xterm -T '{title}' -geometry 200x200 -fa 'Monospace' "
+                                    f"-fs 10 -e {command}", posix=True)
         subprocess.Popen(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE)
 
