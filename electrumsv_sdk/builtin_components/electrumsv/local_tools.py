@@ -14,7 +14,6 @@ from electrumsv_sdk.utils import get_directory_name, checkout_branch, split_comm
 from ...constants import NETWORKS
 
 COMPONENT_NAME = get_directory_name(__file__)
-logger = logging.getLogger(COMPONENT_NAME)
 
 if typing.TYPE_CHECKING:
     from .electrumsv import Plugin
@@ -66,9 +65,11 @@ class LocalTools:
         assert self.plugin.src is not None  # typing bug
         assert self.plugin.config.REMOTE_REPOS_DIR is not None  # typing bug
         if not self.plugin.src.exists():
-            logger.debug(f"Installing electrumsv (url={url})")
+            self.logger.debug(f"Installing {self.plugin.COMPONENT_NAME} (url={url})")
             os.chdir(self.plugin.config.REMOTE_REPOS_DIR)
             subprocess.run(f"git clone {url}", shell=True, check=True)
+            os.chdir(self.plugin.src)
+            checkout_branch(branch)
 
         elif self.plugin.src.exists():
             os.chdir(self.plugin.src)
@@ -81,14 +82,14 @@ class LocalTools:
                 text=True,
             )
             if result.stdout.strip() == url:
-                logger.debug(f"ElectrumSV is already installed (url={url})")
-                subprocess.run(f"git pull", shell=True, check=True)
+                self.logger.debug(f"ElectrumSV is already installed (url={url})")
                 checkout_branch(branch)
+                subprocess.run(f"git pull", shell=True, check=True)
             if result.stdout.strip() != url:
                 existing_fork = self.plugin.src
-                logger.debug(f"Alternate fork of electrumsv is already installed")
-                logger.debug(f"Moving existing fork (to '{existing_fork}.bak')")
-                logger.debug(f"Installing electrumsv (url={url})")
+                self.logger.debug(f"Alternate fork of electrumsv is already installed")
+                self.logger.debug(f"Moving existing fork (to '{existing_fork}.bak')")
+                self.logger.debug(f"Installing electrumsv (url={url})")
                 os.rename(
                     self.plugin.src,
                     self.plugin.src.with_suffix(".bak"),
@@ -157,7 +158,7 @@ class LocalTools:
 
     def create_wallet(self, datadir: Path, wallet_name: str) -> None:
         try:
-            logger.debug("Creating wallet...")
+            self.logger.debug("Creating wallet...")
             wallet_name = self.normalize_wallet_name(wallet_name)
             wallet_path = self.get_wallet_path_for_network(datadir, wallet_name)
             assert wallet_path is not None  # typing bug
@@ -171,7 +172,7 @@ class LocalTools:
             line = self.feed_commands_to_esv(command_string)
             process = subprocess.Popen(line, shell=True)
             process.wait()
-            logger.debug(f"New wallet created at : {wallet_path} ")
+            self.logger.debug(f"New wallet created at : {wallet_path} ")
 
             # New account
             command_string = (
@@ -180,10 +181,10 @@ class LocalTools:
             line = self.feed_commands_to_esv(command_string)
             process = subprocess.Popen(line, shell=True)
             process.wait()
-            logger.debug(f"New standard (bip32) account created for: '{wallet_path}'")
+            self.logger.debug(f"New standard (bip32) account created for: '{wallet_path}'")
 
         except Exception as e:
-            logger.exception("unexpected problem creating new wallet")
+            self.logger.exception("unexpected problem creating new wallet")
             raise
 
     def delete_wallet(self, datadir: Path) -> None:
@@ -192,8 +193,8 @@ class LocalTools:
 
         try:
             time.sleep(1)
-            logger.debug("Deleting wallet...")
-            logger.debug(
+            self.logger.debug("Deleting wallet...")
+            self.logger.debug(
                 "Wallet directory before: %s", os.listdir(esv_wallet_db_directory),
             )
             file_names = os.listdir(esv_wallet_db_directory)
@@ -201,11 +202,11 @@ class LocalTools:
                 file_path = esv_wallet_db_directory.joinpath(file_name)
                 if Path.exists(file_path):
                     os.remove(file_path)
-            logger.debug(
+            self.logger.debug(
                 "Wallet directory after: %s", os.listdir(esv_wallet_db_directory),
             )
         except Exception as e:
-            logger.exception(e)
+            self.logger.exception(e)
             raise
 
     def generate_command(self) -> typing.Tuple[str, Dict[str, str]]:
@@ -226,7 +227,7 @@ class LocalTools:
 
         esv_launcher = str(self.plugin.src.joinpath("electrum-sv"))
         port = self.plugin.port
-        logger.debug(f"esv_datadir = {self.plugin.datadir}")
+        self.logger.debug(f"esv_datadir = {self.plugin.datadir}")
 
         # custom script (user-specified arguments are fed to ESV)
         component_args = self.cli_inputs.component_args \
