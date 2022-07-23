@@ -50,10 +50,19 @@ def main() -> None:
         help="ephemeral encryption key to secure environment variables in a temp file")
     top_level_parser.add_argument("--component_info", type=str, default="",
         help="component_info")
+    top_level_parser.add_argument("--portable", type=str, default="0",
+        help="portable mode")
     parsed_args = top_level_parser.parse_args()
     command = unwrap_and_unescape_text(parsed_args.command)
     component_info = json.loads(base64.b64decode(parsed_args.component_info).decode())
     component_info = Component.from_dict(component_info)
+    is_portable_mode = parsed_args.portable
+    if is_portable_mode == '1':
+        os.environ['SDK_PORTABLE_MODE'] = '1'
+    else:
+        os.environ['SDK_PORTABLE_MODE'] = '0'
+
+    config = Config()
 
     component_name = component_info.component_type
     if sys.platform == 'win32':
