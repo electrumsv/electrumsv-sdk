@@ -7,10 +7,15 @@ from .constants import DEFAULT_HTTP_PORT, NAME_SQLITE, DEFAULT_MAPI_HOST, DEFAUL
 
 
 MAPI_URI_MAP = {
-    constants.REGTEST: "https://127.0.0.1:5051/mapi",
+    constants.REGTEST: "http://127.0.0.1:5050/mapi",
     constants.TESTNET: "https://austecondevserver.app/mapi",
     constants.SCALING_TESTNET: "https://mapi.test.taal.com/mapi",
     constants.MAINNET: "https://merchantapi.taal.com/mapi",
+}
+
+
+REFERENCE_SERVER_URI_MAP = {
+    constants.REGTEST: "http://127.0.0.1:47124",
 }
 
 
@@ -79,3 +84,6 @@ def get_network_choice(config):
 def get_mapi_uri(network_choice):
     return MAPI_URI_MAP[network_choice]
 
+
+def get_reference_server_uri(network_choice):
+    return REFERENCE_SERVER_URI_MAP[network_choice]

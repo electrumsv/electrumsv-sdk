@@ -87,7 +87,7 @@
                 <div class="dashboard-invoices-container table-responsive">
                     <table id="dashboard-invoices-table"
                           data-toggle="table"
-                          data-url="/api/bip270"
+                          data-url="/api/dpp"
                           data-detail-view="false"
                           data-filter-control="true"
                           data-filter-control-container=".dashboard-filter-controls"
@@ -617,7 +617,7 @@
             input_element.disabled = true;
           }
 
-          fetch("api/bip270", createPostData(data)).then(function (response) {
+          fetch("api/dpp", createPostData(data)).then(function (response) {
             response.json().then(function (invoiceId) {
               makePaymentPage.populateInvoiceFromId(invoiceId)
               makePaymentPage.show();
@@ -647,7 +647,7 @@
           this.clear();
 
           const callback = this.populateWithData.bind(this);
-          fetch("/api/bip270?sort=creationTimestamp&order=desc&offset=0&limit=5").then(function (response) {
+          fetch("/api/dpp?sort=creationTimestamp&order=desc&offset=0&limit=5").then(function (response) {
             response.json().then(callback);
           });
         }
@@ -791,7 +791,7 @@
           const setData = this.setData.bind(this);
           const setUri = this.setUri.bind(this);
 
-          fetch(`api/bip270/${invoiceId}/display`).then(function (response) {
+          fetch(`api/dpp/${invoiceId}/display`).then(function (response) {
             response.json().then(function (data) {
               setData(data.paymentRequest);
               setUri(data.paymentUri)
@@ -820,6 +820,7 @@
           let itemIndex = 0;
           let totalValue = 0;
           let precedingElement = container.firstChild;
+          console.log(data)
           for (const paymentItem of data.outputs) {
             itemIndex += 1;
             totalValue += paymentItem.amount;
@@ -853,6 +854,7 @@
             const descriptionElement = this.pageElement.querySelector("#make-payment-description-entry");
             descriptionElement.classList.add("d-none");
           } else {
+            console.log(descriptionText)
             const descriptionElement = this.pageElement.querySelector("#make-payment-description");
             descriptionElement.innerText = descriptionText;
           }
@@ -885,7 +887,7 @@
 
           if (confirm("Are you sure?")) {
             const postData = {}
-            fetch(`api/bip270/${invoiceId}/cancel`, createPostData(postData)).then(function (response) {
+            fetch(`api/dpp/${invoiceId}/cancel`, createPostData(postData)).then(function (response) {
               response.json().then(function (data) {
                 dashboardPage.show();
               });
