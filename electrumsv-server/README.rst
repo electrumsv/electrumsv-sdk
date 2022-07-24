@@ -12,15 +12,17 @@ ElectrumSV Server
 Overview
 ========
 
-This is a standalone server for access to the APIs required to run ElectrumSV. It is in no way
-intended to run against mainnet, testnet or scaling testnet. It should be run against regtest
-only.
+At present, this is a standalone server to act as a mock DPP (Direct Payment Protocol) with
+a connected payee merchant wallet. It also has a mock merchant website for creating purchase
+orders. It is in no way intended to run against mainnet, testnet or scaling testnet.
+It should be run against regtest only.
+
+It broadcasts the DPP Payment to mAPI and provides the details for a newly
+created peer channel for the mAPI callback.
+
+This server is therefore used for functional testing of the ElectrumSV wallet when it is
+acting as the **payee**.
 
 Exposed APIs:
 
-- BIP270 merchant payment server.
-
-Planned Work
-============
-
-- Merchant API server.
+- DPP merchant payment server.
