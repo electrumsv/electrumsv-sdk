@@ -39,7 +39,7 @@ class PaymentTermsDPP(TypedDict):
     creationTimestamp: int
     expirationTimestamp: int
     memo: str
-    paymentURL: str
+    paymentUrl: str
     beneficiary: dict
     modes: HybridPaymentModeDPP
     # for backwards compatibility:

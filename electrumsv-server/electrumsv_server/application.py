@@ -248,7 +248,7 @@ class ApplicationState(object):
             "creationTimestamp": calendar.timegm(pr.date_created.utctimetuple()),
             "expirationTimestamp": calendar.timegm(
                 pr.date_expires.utctimetuple()) if pr.date_expires else None,
-            "paymentURL": f"pay:?r=http://127.0.0.1:{self.config.http_server_port}"
+            "paymentUrl": f"pay:?r=http://127.0.0.1:{self.config.http_server_port}"
                           f"/api/dpp/v1/payment/{id_text}&sv",
             "beneficiary": {
                 "name": "GoldenSocks.com",
