@@ -14,7 +14,7 @@ from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import get_directory_name
 
 
-DPP_PROXY_VERSION = "0.1.11-feature-branch"
+DPP_PROXY_VERSION = "0.1.11-feature-branch2"
 MODULE_DIR = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
 
 COMPONENT_NAME = get_directory_name(__file__)
