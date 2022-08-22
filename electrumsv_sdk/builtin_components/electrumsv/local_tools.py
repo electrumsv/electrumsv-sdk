@@ -177,7 +177,7 @@ class LocalTools:
             # New account
             command_string = (
                 f"create_account --wallet {wallet_path} --walletpassword {password} --portable "
-                f"--no-password-check")
+                f"--no-password-check --{network_string}")
             line = self.feed_commands_to_esv(command_string)
             process = subprocess.Popen(line, shell=True)
             process.wait()
