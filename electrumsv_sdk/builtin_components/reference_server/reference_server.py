@@ -19,7 +19,7 @@ class Plugin(AbstractPlugin):
     COMPONENT_NAME = get_directory_name(__file__)
     DEFAULT_REMOTE_REPO = "https://github.com/electrumsv/electrumsv-reference-server"
 
-    REFERENCE_SERVER_RESET = os.environ.get("REFERENCE_SERVER_RESET", '1')
+    REFERENCE_SERVER_RESET = os.environ.get("REFERENCE_SERVER_RESET", '0')
     EXPOSE_HEADER_SV_APIS = os.environ.get("EXPOSE_HEADER_SV_APIS", '1')
     HEADER_SV_URL = os.environ.get("HEADER_SV_URL", 'http://127.0.0.1:33444')
 
