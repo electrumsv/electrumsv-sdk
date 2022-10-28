@@ -334,7 +334,7 @@ jobs:
 
 
 - job: BuildMacOS
-  pool: {vmImage: 'macOS-10.15'}
+  pool: {vmImage: 'macOS-latest'}
   steps:
     - script: |
         python3 -m pip install --upgrade pip
