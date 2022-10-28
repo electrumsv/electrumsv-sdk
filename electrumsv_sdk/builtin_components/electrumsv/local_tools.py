@@ -121,6 +121,11 @@ class LocalTools:
                f"-r {electrumsv_requirements_path}"
         process1 = subprocess.Popen(cmd1, shell=True)
         process1.wait()
+        # Workaround for the ESV deterministic requirements not including `typing_extensions`.
+        cmd1 = f"{sys.executable} -m pip install --target {electrumsv_libs_path} --upgrade " \
+               "typing_extensions"
+        process1 = subprocess.Popen(cmd1, shell=True)
+        process1.wait()
 
     def normalize_wallet_name(self, wallet_name: Optional[str]) -> str:
         if wallet_name is not None:
