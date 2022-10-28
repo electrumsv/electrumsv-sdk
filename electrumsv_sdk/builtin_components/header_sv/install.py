@@ -14,8 +14,8 @@ from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import get_directory_name
 
 
-VERSION = "0.0.1"  # standalone-build-release
-HEADER_SV_VERSION = "1.0.2"
+VERSION = "1.0.0"  # standalone-build-release
+HEADER_SV_VERSION = "2.0.2"
 MODULE_DIR = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
 
 COMPONENT_NAME = get_directory_name(__file__)
@@ -28,7 +28,7 @@ PREBUILT_ENTRIES = {
     "Darwin": {
         "uri": f"https://github.com/electrumsv/header-sv-binaries/releases/"
                f"download/{VERSION}/headerSV-boot-{HEADER_SV_VERSION}.zip",
-        "exe": "headerSV-boot-1.0.2/lib/headerSV-1.0.2.jar",
+        "exe": f"app-boot-{HEADER_SV_VERSION}/lib/headersv-app-{HEADER_SV_VERSION}.jar",
         "dirname": "MacOSXHeaderSV",
         "jre_uri": "https://github.com/adoptium/temurin17-binaries/releases/"
                    "download/jdk-17.0.2%2B8/OpenJDK17U-jre_x64_mac_hotspot_17.0.2_8.tar.gz",
@@ -38,7 +38,7 @@ PREBUILT_ENTRIES = {
     "Linux": {
         "uri": f"https://github.com/electrumsv/header-sv-binaries/releases/"
                f"download/{VERSION}/headerSV-boot-{HEADER_SV_VERSION}.zip",
-        "exe": "headerSV-boot-1.0.2/lib/headerSV-1.0.2.jar",
+        "exe": f"app-boot-{HEADER_SV_VERSION}/lib/headersv-app-{HEADER_SV_VERSION}.jar",
         "dirname": "LinuxHeaderSV",
         "jre_uri": "https://github.com/adoptium/temurin17-binaries/releases/"
                    "download/jdk-17.0.3%2B7/OpenJDK17U-jre_x64_linux_hotspot_17.0.3_7.tar.gz",
@@ -48,7 +48,7 @@ PREBUILT_ENTRIES = {
     "Windows": {
         "uri": f"https://github.com/electrumsv/header-sv-binaries/releases/download/{VERSION}/"
                f"headerSV-boot-{HEADER_SV_VERSION}.zip",
-        "exe": "headerSV-boot-1.0.2/lib/headerSV-1.0.2.jar",
+        "exe": f"app-boot-{HEADER_SV_VERSION}/lib/headersv-app-{HEADER_SV_VERSION}.jar",
         "dirname": "WindowsHeaderSV",
         "jre_uri": "https://github.com/adoptium/temurin17-binaries/releases/"
                    "download/jdk-17.0.2%2B8/OpenJDK17U-jre_x64_windows_hotspot_17.0.2_8.zip",
