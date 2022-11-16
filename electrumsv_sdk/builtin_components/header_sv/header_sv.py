@@ -22,6 +22,10 @@ class Plugin(AbstractPlugin):
     RESERVED_PORTS: Set[int] = {DEFAULT_PORT}
     COMPONENT_NAME = get_directory_name(__file__)
 
+    HEADERSV_NETWORK_GENESISHEADERHEX = "01000000000000000000000000000000000000000000000000000000" \
+        "00000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494d" \
+        "ffff7f2002000000"
+
     def __init__(self, cli_inputs: CLIInputs):
         self.cli_inputs = cli_inputs
         self.config = Config()
@@ -68,7 +72,13 @@ class Plugin(AbstractPlugin):
         logfile = self.plugin_tools.get_logfile_path(self.id)
         status_endpoint = "http://localhost:33444/api/v1/chain/tips"
 
-        self.plugin_tools.spawn_process(str(command), env_vars=os.environ.copy(), id=self.id,
+        # NOTE(rt12) HeaderSV 2.0.2 appears to have the wrong genesis block for regtest.
+        # https://github.com/bitcoin-sv/block-headers-client/pull/20
+        environment = os.environ.copy()
+        environment.setdefault("HEADERSV_NETWORK_GENESISHEADERHEX",
+            self.HEADERSV_NETWORK_GENESISHEADERHEX)
+
+        self.plugin_tools.spawn_process(str(command), env_vars=environment, id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
             status_endpoint=status_endpoint)
 
