@@ -72,12 +72,7 @@ class Plugin(AbstractPlugin):
         logfile = self.plugin_tools.get_logfile_path(self.id)
         status_endpoint = "http://localhost:33444/api/v1/chain/tips"
 
-        # NOTE(rt12) HeaderSV 2.0.2 appears to have the wrong genesis block for regtest.
-        # https://github.com/bitcoin-sv/block-headers-client/pull/20
         environment = os.environ.copy()
-        environment.setdefault("HEADERSV_NETWORK_GENESISHEADERHEX",
-            self.HEADERSV_NETWORK_GENESISHEADERHEX)
-
         self.plugin_tools.spawn_process(str(command), env_vars=environment, id=self.id,
             component_name=self.COMPONENT_NAME, src=self.src, logfile=logfile,
             status_endpoint=status_endpoint)

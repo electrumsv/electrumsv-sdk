@@ -7,7 +7,7 @@ APP_VERSIONS = {
   "simple_indexer": "1.0.0",
   "status_monitor": "1.0.0",
   "whatsonchain": "1.0.0",
-  "header_sv": "2.0.2",
+  "header_sv": "2.0.4",
   "dpp_proxy": "0.1.11-feature-branch4",
   "electrumx": "1.20.2"
 }
