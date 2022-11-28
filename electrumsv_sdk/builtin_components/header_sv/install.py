@@ -14,7 +14,7 @@ from electrumsv_sdk.config import Config
 from electrumsv_sdk.utils import get_directory_name
 
 
-VERSION = "1.0.0"  # standalone-build-release
+VERSION = "2.0.4"  # standalone-build-release
 HEADER_SV_VERSION = "2.0.4"
 MODULE_DIR = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
 
