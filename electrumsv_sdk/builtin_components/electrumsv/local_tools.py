@@ -20,9 +20,9 @@ if typing.TYPE_CHECKING:
 
 
 REQUIREMENTS = {
-    "win32": "win64-py3.10-requirements.txt",
-    "darwin": "macos-py3.10-requirements.txt",
-    "linux": "linux-py3.10-requirements.txt"
+    "win32": "win64-py3.10-requirements-electrumsv.txt",
+    "darwin": "macos-py3.10-requirements-electrumsv.txt",
+    "linux": "linux-py3.10-requirements-electrumsv.txt"
 }
 
 
